@@ -44,19 +44,19 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) InitG
 	}
 
 	// Creates a new RegisterWorkerServer gRPC server
-	go func() {
-		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
-			"Id": "b0ccffb5-4367-464c-a3bc-460cafed16cb",
-		}).Info("Starting Backend gRPC Server")
-		registerfenixTestDataSyncServerServer = grpc.NewServer()
-		fenixTestDataSyncServerGrpcApi.RegisterFenixTestDataGrpcServicesServer(registerfenixTestDataSyncServerServer, &FenixTestDataGrpcServicesServer{})
+	//	go func() {
+	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"Id": "b0ccffb5-4367-464c-a3bc-460cafed16cb",
+	}).Info("Starting Backend gRPC Server")
+	registerfenixTestDataSyncServerServer = grpc.NewServer()
+	fenixTestDataSyncServerGrpcApi.RegisterFenixTestDataGrpcServicesServer(registerfenixTestDataSyncServerServer, &FenixTestDataGrpcServicesServer{})
 
-		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
-			"Id":                           "e843ece9-b707-4c60-b1d8-14464305e68f",
-			"localServerEngineLocalPort: ": localServerEngineLocalPort,
-		}).Info("registerfenixTestDataSyncServerServer for TestInstruction Backend Server started")
-		registerfenixTestDataSyncServerServer.Serve(lis)
-	}()
+	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"Id":                           "e843ece9-b707-4c60-b1d8-14464305e68f",
+		"localServerEngineLocalPort: ": localServerEngineLocalPort,
+	}).Info("registerfenixTestDataSyncServerServer for TestInstruction Backend Server started")
+	registerfenixTestDataSyncServerServer.Serve(lis)
+	//	}()
 
 }
 
