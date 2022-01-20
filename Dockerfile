@@ -22,5 +22,5 @@ COPY --from=build-env /fenixServer /
 ENTRYPOINT ["/fenixServer"]
 
 #// docker build -t  fenix-server .
-#// docker run -p 6660:6660 -it  fenix-client-server
+#// docker run -p 6660:6660 -it  fenix-server
 #//docker run --name fenix-server --rm -i -t fenix-server bash
