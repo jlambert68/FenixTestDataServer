@@ -42,7 +42,7 @@ func (s *FenixTestDataGrpcServicesServer) AreYouAlive(ctx context.Context, empty
 
 	}
 
-	return &fenixTestDataSyncServerGrpcApi.AckNackResponse{Acknack: true, Comments: "I'am alive"}, nil
+	return &fenixTestDataSyncServerGrpcApi.AckNackResponse{Acknack: true, Comments: "I'am Fenix TestDataSyncServer and I'm alive"}, nil
 }
 
 // *********************************************************************
