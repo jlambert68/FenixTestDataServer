@@ -174,7 +174,7 @@ func (s *FenixTestDataGrpcServicesServer) SendMerkleTree(ctx context.Context, me
 			"id": "e011e854-7854-425f-9592-dcfc785203cf",
 		}).Debug("Different in MerkleHash(MerkleTree was different) then ask client for TestData-rows that the Server hasn't got. Client: " + callingClientGuid)
 
-		defer fenixTestDataSyncServerObject.AskClientToSendTestDataRows(callingClientGuid)
+		defer fenixTestDataSyncServerObject.AskClientToSendAllTestDataRows(callingClientGuid)
 	}
 
 	return &fenixTestDataSyncServerGrpcApi.AckNackResponse{Acknack: true, Comments: ""}, nil

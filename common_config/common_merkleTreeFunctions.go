@@ -347,7 +347,7 @@ func ExtractMerkleRootHashFromMerkleTree(merkleTree dataframe.DataFrame) (merkle
 	merkleRootHashArray := uniqueGotaSeriesAsStringArray(merkleTreeRoot.Col("MerkleHash"))
 
 	// The result should be just one line
-	if len(merkleRootHashArray) != 0 {
+	if len(merkleRootHashArray) != 1 {
 		merkleRootHash = "666"
 	} else {
 		merkleRootHash = merkleRootHashArray[0]

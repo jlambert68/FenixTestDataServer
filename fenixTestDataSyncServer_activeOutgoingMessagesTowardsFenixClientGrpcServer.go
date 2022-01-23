@@ -88,7 +88,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) isCli
 	if protoFileExpected == protoFileUsed {
 		clientUseCorrectProtoFileVersion = true
 	} else {
-		clientUseCorrectProtoFileVersion = true
+		clientUseCorrectProtoFileVersion = false
 	}
 
 	//protoFileExpectedDescription := protoFileExpected.String()
@@ -108,7 +108,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) AskCl
 	fenixTestDataSyncServerObject.SetConnectionToFenixClientTestDataSyncServer()
 
 	emptyParameter := &fenixClientTestDataSyncServerGrpcApi.EmptyParameter{
-		ProtoFileVersionUsedByCaller: fenixClientTestDataSyncServerGrpcApi.CurrentFenixClientTestDataProtoFileVersionEnum(fenixTestDataSyncServerObject.getHighestClientProtoFileVersion()),
+		ProtoFileVersionUsedByClient: fenixClientTestDataSyncServerGrpcApi.CurrentFenixClientTestDataProtoFileVersionEnum(fenixTestDataSyncServerObject.getHighestClientProtoFileVersion()),
 	}
 
 	// Do gRPC-call
@@ -139,7 +139,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) AskCl
 	fenixTestDataSyncServerObject.SetConnectionToFenixClientTestDataSyncServer()
 
 	emptyParameter := &fenixClientTestDataSyncServerGrpcApi.EmptyParameter{
-		ProtoFileVersionUsedByCaller: fenixClientTestDataSyncServerGrpcApi.CurrentFenixClientTestDataProtoFileVersionEnum(fenixTestDataSyncServerObject.getHighestClientProtoFileVersion()),
+		ProtoFileVersionUsedByClient: fenixClientTestDataSyncServerGrpcApi.CurrentFenixClientTestDataProtoFileVersionEnum(fenixTestDataSyncServerObject.getHighestClientProtoFileVersion()),
 	}
 
 	// Do gRPC-call
@@ -171,7 +171,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) AskCl
 	fenixTestDataSyncServerObject.SetConnectionToFenixClientTestDataSyncServer()
 
 	emptyParameter := &fenixClientTestDataSyncServerGrpcApi.EmptyParameter{
-		ProtoFileVersionUsedByCaller: fenixClientTestDataSyncServerGrpcApi.CurrentFenixClientTestDataProtoFileVersionEnum(fenixTestDataSyncServerObject.getHighestClientProtoFileVersion()),
+		ProtoFileVersionUsedByClient: fenixClientTestDataSyncServerGrpcApi.CurrentFenixClientTestDataProtoFileVersionEnum(fenixTestDataSyncServerObject.getHighestClientProtoFileVersion()),
 	}
 
 	// Do gRPC-call
@@ -203,7 +203,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) AskCl
 	fenixTestDataSyncServerObject.SetConnectionToFenixClientTestDataSyncServer()
 
 	emptyParameter := &fenixClientTestDataSyncServerGrpcApi.EmptyParameter{
-		ProtoFileVersionUsedByCaller: fenixClientTestDataSyncServerGrpcApi.CurrentFenixClientTestDataProtoFileVersionEnum(fenixTestDataSyncServerObject.getHighestClientProtoFileVersion()),
+		ProtoFileVersionUsedByClient: fenixClientTestDataSyncServerGrpcApi.CurrentFenixClientTestDataProtoFileVersionEnum(fenixTestDataSyncServerObject.getHighestClientProtoFileVersion()),
 	}
 
 	// Do gRPC-call
@@ -230,5 +230,37 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) AskCl
 
 // Fenix Server asks Fenix client to  send TestData rows, based on list of MerklePaths, to Fenix Testdata sync server with this service
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) AskClientToSendTestDataRows(TestDataClientGuid string) {
+
+}
+
+// Fenix Server asks Fenix client to  send All TestData rows to Fenix Testdata sync server with this service
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) AskClientToSendAllTestDataRows(TestDataClientGuid string) {
+
+	// Set up connection to Client-server
+	fenixTestDataSyncServerObject.SetConnectionToFenixClientTestDataSyncServer()
+
+	emptyParameter := &fenixClientTestDataSyncServerGrpcApi.EmptyParameter{
+		ProtoFileVersionUsedByClient: fenixClientTestDataSyncServerGrpcApi.CurrentFenixClientTestDataProtoFileVersionEnum(fenixTestDataSyncServerObject.getHighestClientProtoFileVersion()),
+	}
+
+	// Do gRPC-call
+	ctx := context.Background()
+	returnMessage, err := fenixClientTestDataSyncServerClient.SendAllTestDataRows(ctx, emptyParameter)
+
+	// Shouldn't happen
+	if err != nil {
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"ID":    "5196e98c-ca19-45f1-a3b8-e4efa95cc312",
+			"error": err,
+		}).Fatal("Problem to do gRPC-call to FenixClientTestDataSyngocServer for 'AskClientToSendTestDataHeaders'")
+
+		// FenixTestDataSyncServer couldn't handle gPRC call
+		if returnMessage.Acknack == false {
+			fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+				"ID": "7105c16e-cf7d-48ca-8fbc-094d0d5b6f3f",
+				"Message from FenixClientTestDataSyncServerObject": returnMessage.Comments,
+			}).Error("Problem to do gRPC-call to FenixClientTestDataSyncServer for 'AskClientToSendTestDataHeaders'")
+		}
+	}
 
 }
