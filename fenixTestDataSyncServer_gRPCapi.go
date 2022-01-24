@@ -366,6 +366,15 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataRows(ctx context.Context, 
 		return returnMessage, nil
 	}
 
+	currentTestDataHeaders := fenixTestDataSyncServerObject.getCurrentHeadersForClient(callingClientGuid)
+
+	// If there are no headers in Database then Ask client for HeaderHash
+	if len(currentTestDataHeaders) == 0 {
+		fenixTestDataSyncServerObject.AskClientToSendTestDataHeaderHash(callingClientGuid)
+		currentTestDataHeaders = fenixTestDataSyncServerObject.getCurrentHeadersForClient(callingClientGuid)
+
+	}
+
 	// Concatenate with current Server data
 	allRowsAsDataFrame := fenixTestDataSyncServerObject.concartenateWithCurrentServerTestData(callingClientGuid, newRowsAsDataFrame)
 

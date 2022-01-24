@@ -84,6 +84,27 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) conve
 	if len(currentTestDataHeaders) == 0 {
 		fenixTestDataSyncServerObject.AskClientToSendTestDataHeaderHash(currentTestDataClientGuid)
 		currentTestDataHeaders = fenixTestDataSyncServerObject.getCurrentHeadersForClient(currentTestDataClientGuid)
+
+		// Validate that we got hte TestData Headers
+		if len(currentTestDataHeaders) == 0 {
+
+			// Set Error codes to return message
+			var errorCodes []fenixTestDataSyncServerGrpcApi.ErrorCodesEnum
+			var errorCode fenixTestDataSyncServerGrpcApi.ErrorCodesEnum
+
+			errorCode = fenixTestDataSyncServerGrpcApi.ErrorCodesEnum_ERROR_UNKNOWN_CALLER //TODO Change to correct error
+			errorCodes = append(errorCodes, errorCode)
+
+			// Create Return message
+			returnMessage = &fenixTestDataSyncServerGrpcApi.AckNackResponse{
+				Acknack:    false,
+				Comments:   "Fenix Asked for TestDataHeaders but didn't receive them i a correct way",
+				ErrorCodes: errorCodes,
+			}
+
+			// leave
+			return testdataAsDataFrame, returnMessage
+		}
 	}
 
 	testDataRows := testdataRowsMessages.TestDataRows
@@ -93,7 +114,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) conve
 
 		// Create one row, as a dataframe
 		rowDataframe := dataframe.New(
-			series.New([]string{""}, series.String, "TestDataHash"))
+			series.New([]string{"key"}, series.String, "KEY"))
 		var valuesToHash []string
 
 		for testDataItemCounter, testDataItem := range testDataRow.TestDataItems {
@@ -135,9 +156,9 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) conve
 		// Add the row to the Dataframe for the testdata
 		// When first time
 		if testdataAsDataFrame.Nrow() == 0 {
-			testdataAsDataFrame = rowDataframe
+			testdataAsDataFrame = rowDataframe.Copy()
 		} else {
-			testdataAsDataFrame.OuterJoin(rowDataframe)
+			testdataAsDataFrame = testdataAsDataFrame.OuterJoin(rowDataframe, "KEY")
 		}
 	}
 
