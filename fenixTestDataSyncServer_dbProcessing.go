@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/go-gota/gota/dataframe"
 	fenixTestDataSyncServerGrpcApi "github.com/jlambert68/FenixGrpcApi/Fenix/fenixTestDataSyncServerGrpcApi/go_grpc_api"
 )
@@ -25,7 +26,7 @@ type tempDBDataStruct struct {
 	merkleTree   dataframe.DataFrame
 	headerHash   string
 	headers      []string
-	testDataRows []tempTestDataRowStruct
+	testDataRows dataframe.DataFrame //[]tempTestDataRowStruct
 }
 type tempDB struct {
 	serverData tempDBDataStruct
@@ -46,6 +47,8 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) getCu
 
 	currentMerkleHashForClient = dbData.clientData.merkleHash
 
+	fmt.Println("dbData.clientData.merkleHash: ", dbData.clientData.merkleHash)
+
 	return currentMerkleHashForClient
 }
 
@@ -63,6 +66,8 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) getCu
 	var currentMerkleHashForServer string
 
 	currentMerkleHashForServer = dbData.serverData.merkleHash
+
+	fmt.Println("dbData.serverData.merkleHash: ", dbData.serverData.merkleHash)
 
 	return currentMerkleHashForServer
 }
@@ -128,6 +133,8 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) getCu
 
 	currentHeaderHashsForClient = dbData.clientData.headerHash
 
+	fmt.Println("dbData.clientData.headerHash: ", dbData.clientData.headerHash)
+
 	return currentHeaderHashsForClient
 }
 
@@ -163,6 +170,8 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) getCu
 	var currentHeaderHashsForServer string
 
 	currentHeaderHashsForServer = dbData.serverData.headerHash
+
+	fmt.Println("dbData.serverData.headerHash: ", dbData.serverData.headerHash)
 
 	return currentHeaderHashsForServer
 }
@@ -208,6 +217,30 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) moveC
 	dbData.serverData.merkleHash = dbData.clientData.merkleHash
 	dbData.serverData.merkleTree = dbData.clientData.merkleTree
 	dbData.serverData.testDataRows = dbData.clientData.testDataRows
+
+	return true
+}
+
+// Get current Server TestDataRows
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) getCurrentTestDataRowsForServer(testDataClientGuid string) (testDataRows dataframe.DataFrame) {
+
+	testDataRows = dbData.serverData.testDataRows
+
+	return testDataRows
+}
+
+// Get current Client TestDataRows
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) getCurrentTestDataRowsForClient(testDataClientGuid string) (testDataRows dataframe.DataFrame) {
+
+	testDataRows = dbData.clientData.testDataRows
+
+	return testDataRows
+}
+
+// Save current Client TestDataRows
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) saveCurrentTestDataRowsForClient(testDataClientGuid string, testDataRows dataframe.DataFrame) bool {
+
+	dbData.clientData.testDataRows = testDataRows
 
 	return true
 }

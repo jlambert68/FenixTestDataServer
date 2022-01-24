@@ -174,7 +174,7 @@ var merkleTreeDataFrame dataframe.DataFrame
 var changedFilesMerkleTreeDataFrame dataframe.DataFrame
 
 // Process incoming csv file and create MerkleRootHash and MerkleTree
-func LoadAndProcessFile(fileToprocess string) (string, dataframe.DataFrame) {
+func LoadAndProcessFile(fileToprocess string) (string, dataframe.DataFrame, dataframe.DataFrame) {
 
 	irisCsv, err := os.Open(fileToprocess)
 	if err != nil {
@@ -186,6 +186,13 @@ func LoadAndProcessFile(fileToprocess string) (string, dataframe.DataFrame) {
 		dataframe.WithDelimiter(';'),
 		dataframe.HasHeader(true))
 
+	merkleHash, merkleTreeDataFrame := CreateMerkleTreeFromDataFrame(df)
+
+	return merkleHash, merkleTreeDataFrame, df
+}
+
+// Create MerkleRootHash and MerkleTree
+func CreateMerkleTreeFromDataFrame(df dataframe.DataFrame) (merkleHash string, merkleTreeDataFrame dataframe.DataFrame) {
 	df = df.Arrange(dataframe.Sort("TestDataId"))
 
 	numberOfRows := df.Nrow()
@@ -217,7 +224,7 @@ func LoadAndProcessFile(fileToprocess string) (string, dataframe.DataFrame) {
 
 	merkleFilterPath := "AccountEnvironment/ClientJuristictionCountryCode/MarketSubType/MarketName/" //SecurityType/"
 
-	merkleHash := recursiveTreeCreator(0, merkleFilterPath, df, "MerkleRoot/")
+	merkleHash = recursiveTreeCreator(0, merkleFilterPath, df, "MerkleRoot/")
 
 	return merkleHash, merkleTreeDataFrame
 }

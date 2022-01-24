@@ -1,7 +1,9 @@
 package main
 
 import (
+	"FenixTestDataServer/common_config"
 	"github.com/go-gota/gota/dataframe"
+	"github.com/go-gota/gota/series"
 	fenixTestDataSyncServerGrpcApi "github.com/jlambert68/FenixGrpcApi/Fenix/fenixTestDataSyncServerGrpcApi/go_grpc_api"
 )
 
@@ -70,16 +72,86 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) conve
 }
 
 // Convert TestDataRow message into TestData dataframe object
-/*
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) convertgRpcTestDataRowsMessageToDataFrame(testDataHeaderMessage fenixTestDataSyncServerGrpcApi.TestDataHeaderMessage) (testdataAsDataFrame dataframe.DataFrame {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) convertgRpcTestDataRowsMessageToDataFrame(testdataRowsMessages *fenixTestDataSyncServerGrpcApi.TestdataRowsMessages) (testdataAsDataFrame dataframe.DataFrame, returnMessage *fenixTestDataSyncServerGrpcApi.AckNackResponse) {
 
-	jsonStr := `[{"COL.2":1,"COL.3":3},{"COL.1":5,"COL.2":2,"COL.3":2},{"COL.1":6,"COL.2":3,"COL.3":1}]`
-	df := dataframe.ReadJSON(strings.NewReader(jsonStr))
+	testdataAsDataFrame = dataframe.New()
 
+	currentTestDataClientGuid := testdataRowsMessages.TestDataClientGuid
 
-	return testdataAsDataFrame
+	currentTestDataHeaders := fenixTestDataSyncServerObject.getCurrentHeadersForClient(currentTestDataClientGuid)
+
+	// If there are no headers in Database then Ask client for HeaderHash
+	if len(currentTestDataHeaders) == 0 {
+		fenixTestDataSyncServerObject.AskClientToSendTestDataHeaderHash(currentTestDataClientGuid)
+		currentTestDataHeaders = fenixTestDataSyncServerObject.getCurrentHeadersForClient(currentTestDataClientGuid)
+	}
+
+	testDataRows := testdataRowsMessages.TestDataRows
+
+	// Loop all MerkleTreeNodes and create a DataFrame for the data
+	for _, testDataRow := range testDataRows {
+
+		// Create one row, as a dataframe
+		rowDataframe := dataframe.New(
+			series.New([]string{""}, series.String, "TestDataHash"))
+		var valuesToHash []string
+
+		for testDataItemCounter, testDataItem := range testDataRow.TestDataItems {
+			rowDataframe = rowDataframe.Mutate(
+				series.New([]string{testDataItem.TestDataItemValueAsString}, series.String, currentTestDataHeaders[testDataItemCounter]))
+
+			valuesToHash = append(valuesToHash, testDataItem.TestDataItemValueAsString)
+		}
+
+		// Hash all values for row
+		hashedRow := common_config.HashValues(valuesToHash)
+
+		// Validate that Row-hash is correct calculated
+		if hashedRow != testDataRow.RowHash {
+
+			// Set Error codes to return message
+			var errorCodes []fenixTestDataSyncServerGrpcApi.ErrorCodesEnum
+			var errorCode fenixTestDataSyncServerGrpcApi.ErrorCodesEnum
+
+			errorCode = fenixTestDataSyncServerGrpcApi.ErrorCodesEnum_ERROR_ROWHASH_NOT_CORRECT_CALCULATED
+			errorCodes = append(errorCodes, errorCode)
+
+			// Create Return message
+			returnMessage = &fenixTestDataSyncServerGrpcApi.AckNackResponse{
+				Acknack:    false,
+				Comments:   "RowsHashes seems not to be correct calculated",
+				ErrorCodes: errorCodes,
+			}
+
+			// Exit function Respond back to client when hash error
+			return testdataAsDataFrame, returnMessage
+		}
+
+		// Add TestDataHash to row DataFrame
+		rowDataframe.Elem(0, 0).Set(hashedRow)
+		//) Mutate(
+		//	series.New([]string{hashedRow}, series.String, "TestDataHash"))
+
+		// Add the row to the Dataframe for the testdata
+		// When first time
+		if testdataAsDataFrame.Nrow() == 0 {
+			testdataAsDataFrame = rowDataframe
+		} else {
+			testdataAsDataFrame.OuterJoin(rowDataframe)
+		}
+	}
+
+	return testdataAsDataFrame, nil
 
 }
 
+// Concartenate TestDataRows as a DataFrame with the current Server TestDataRows-DataFrame
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) concartenateWithCurrentServerTestData(testDataClientGuid string, testdataDataframe dataframe.DataFrame) (allTestdataAsDataFrame dataframe.DataFrame) {
 
-*/
+	allTestdataAsDataFrame = fenixTestDataSyncServerObject.getCurrentTestDataRowsForServer(testDataClientGuid)
+
+	allTestdataAsDataFrame = allTestdataAsDataFrame.OuterJoin(testdataDataframe)
+
+	return allTestdataAsDataFrame
+
+}

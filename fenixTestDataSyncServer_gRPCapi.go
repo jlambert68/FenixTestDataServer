@@ -221,6 +221,14 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataHeaderHash(ctx context.Con
 	// Convert gRPC-message into other 'format'
 	clientHeaderHash := testDataHeaderHashMessageMessage.HeadersHash
 
+	// Get current client Header Hash
+	currentClientHeaderHash := fenixTestDataSyncServerObject.getCurrentHeaderHashsForClient(callingClientGuid)
+
+	// If Header Hash is already in DB then return OK
+	if currentClientHeaderHash == clientHeaderHash {
+		return &fenixTestDataSyncServerGrpcApi.AckNackResponse{Acknack: true, Comments: ""}, nil
+	}
+
 	// Save the message
 	_ = fenixTestDataSyncServerObject.saveCurrentHeaderHashForClient(callingClientGuid, clientHeaderHash)
 
@@ -323,6 +331,9 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataRows(ctx context.Context, 
 		"id": "755e8b4f-f184-4277-ad41-e041714c2ca8",
 	}).Debug("Outgoing 'SendTestDataRows'")
 
+	// Get calling client
+	callingClientGuid := testdataRowsMessages.TestDataClientGuid
+
 	// Check if Client is using correct proto files version
 	clientUseCorrectProtoFileVersion, protoFileExpected, protoFileUsed := fenixTestDataSyncServerObject.isClientUsingCorrectProtoFileVersion(testdataRowsMessages.ProtoFileVersionUsedByClient)
 	if clientUseCorrectProtoFileVersion == false {
@@ -342,7 +353,50 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataRows(ctx context.Context, 
 			ErrorCodes: errorCodes,
 		}
 
+		// respond back to client when it used wrong proto-file
 		return returnMessage, nil
+
+	}
+
+	// Convert proto-message for rows into Dataframe object
+	newRowsAsDataFrame, returnMessage := fenixTestDataSyncServerObject.convertgRpcTestDataRowsMessageToDataFrame(testdataRowsMessages)
+
+	// When row-hash is wrong calculated from client then respond that back to client
+	if returnMessage != nil {
+		return returnMessage, nil
+	}
+
+	// Concatenate with current Server data
+	allRowsAsDataFrame := fenixTestDataSyncServerObject.concartenateWithCurrentServerTestData(callingClientGuid, newRowsAsDataFrame)
+
+	// Recreate MerkleHash from All testdata rows, both existing rows for Server and new from Client
+	computedMerkleHash, _ := common_config.CreateMerkleTreeFromDataFrame(allRowsAsDataFrame)
+
+	//Compare 'computedMerkleHash' with MerkleHash from Client
+	clientMerkleHash := fenixTestDataSyncServerObject.getCurrentMerkleHashForClient(callingClientGuid)
+
+	if computedMerkleHash != clientMerkleHash {
+		if clientUseCorrectProtoFileVersion == false {
+			// Computed MerkleHash is not the same as the one sent by the Client
+
+			// Set Error codes to return message
+			var errorCodes []fenixTestDataSyncServerGrpcApi.ErrorCodesEnum
+			var errorCode fenixTestDataSyncServerGrpcApi.ErrorCodesEnum
+
+			errorCode = fenixTestDataSyncServerGrpcApi.ErrorCodesEnum_ERROR_MERKLEHASH_NOT_CORRECT_CALCULATED
+			errorCodes = append(errorCodes, errorCode)
+
+			// Create Return message
+			returnMessage := &fenixTestDataSyncServerGrpcApi.AckNackResponse{
+				Acknack:    false,
+				Comments:   "MerklRoot hash is not the same as sent to server. Got " + clientMerkleHash + ", but recalculated to " + computedMerkleHash + " from testdata",
+				ErrorCodes: errorCodes,
+			}
+
+			// respond back to client when it used wrong proto-file
+			return returnMessage, nil
+
+		}
 
 	}
 
