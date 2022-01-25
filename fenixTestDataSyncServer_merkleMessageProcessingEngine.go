@@ -176,3 +176,20 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) conca
 	return allTestdataAsDataFrame
 
 }
+
+/*
+// Convert Dataframe into JSON
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) convertDataFramIntoJSON(testdataDataframe dataframe.DataFrame) (json string) {
+
+	var a io.Writer
+
+	err := testdataDataframe.WriteJSON(a)
+	if err != nil {
+		return ""
+	}
+
+	return ""
+}
+
+
+*/

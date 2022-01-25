@@ -85,6 +85,17 @@ func (s *FenixTestDataGrpcServicesServer) SendMerkleTree(ctx context.Context, me
 	// Get calling client
 	callingClientGuid := merkleTreeMessage.TestDataClientGuid
 
+	// Verify that Client Exists in DB
+	verfied, err := fenixTestDataSyncServerObject.existsClinetInDB(callingClientGuid)
+	if err != nil || verfied == false {
+
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"id": "f5eb251c-8639-496f-9101-bac8fc9300f7",
+		}).Debug(err.Error())
+
+		return &fenixTestDataSyncServerGrpcApi.AckNackResponse{Acknack: false, Comments: err.Error()}, nil
+	}
+
 	// Check if Client is using correct proto files version
 	returnMessage := fenixTestDataSyncServerObject.isClientUsingCorrectTestDataProtoFileVersion(merkleTreeMessage.ProtoFileVersionUsedByClient)
 	if returnMessage != nil {
@@ -94,6 +105,8 @@ func (s *FenixTestDataGrpcServicesServer) SendMerkleTree(ctx context.Context, me
 
 	// Convert the merkleTree into a DataFrame object
 	merkleTreeAsDataFrame := fenixTestDataSyncServerObject.convertgRpcMerkleTreeMessageToDataframe(*merkleTreeMessage)
+
+	//_ = fenixTestDataSyncServerObject.convertDataFramIntoJSON(merkleTreeAsDataFrame)
 
 	// Verify MerkleTree
 	clientsMerkleRootHash := common_config.ExtractMerkleRootHashFromMerkleTree(merkleTreeAsDataFrame)

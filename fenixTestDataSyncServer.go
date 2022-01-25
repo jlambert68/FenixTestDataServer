@@ -28,6 +28,8 @@ func cleanup() {
 
 func FenixServerMain() {
 
+	connectToDB()
+
 	// Set up BackendObject
 	fenixTestDataSyncServerObject = &fenixTestDataSyncServerObject_struct{
 		iAmBusy:               false,
