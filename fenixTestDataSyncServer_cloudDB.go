@@ -26,6 +26,8 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) exist
 	sqlToExecute = sqlToExecute + "clients.activated = true "
 	sqlToExecute = sqlToExecute + "AND "
 	sqlToExecute = sqlToExecute + "clients.deleted = false "
+	sqlToExecute = sqlToExecute + "AND "
+	sqlToExecute = sqlToExecute + "clients.replaced_by_new_version = false "
 
 	rows, _ := DbPool.Query(context.Background(), sqlToExecute)
 
