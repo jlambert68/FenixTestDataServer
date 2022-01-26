@@ -36,7 +36,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) isCli
 
 		// Create Return message
 		returnMessage = &fenixTestDataSyncServerGrpcApi.AckNackResponse{
-			Acknack:    false,
+			AckNack:    false,
 			Comments:   "Wrong proto file used. Expected: '" + protoFileExpected.String() + "', but got: '" + protoFileUsed.String() + "'",
 			ErrorCodes: errorCodes,
 		}

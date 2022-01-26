@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
@@ -31,14 +29,7 @@ func FenixServerMain() {
 	connectToDB()
 
 	// Set up BackendObject
-	fenixTestDataSyncServerObject = &fenixTestDataSyncServerObject_struct{
-		iAmBusy:               false,
-		qmlServerHasConnected: false}
-
-	// Create unique id for this Backend Server
-	uuId, _ := uuid.NewUUID()
-	fmt.Println(uuId)
-	fenixTestDataSyncServerObject.uuid = uuId.String()
+	fenixTestDataSyncServerObject = &fenixTestDataSyncServerObject_struct{}
 
 	// Init logger
 	fenixTestDataSyncServerObject.InitLogger("")

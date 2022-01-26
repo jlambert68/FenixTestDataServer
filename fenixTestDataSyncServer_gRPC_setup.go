@@ -1,7 +1,6 @@
 package main
 
 import (
-	"FenixTestDataServer/common_config"
 	fenixTestDataSyncServerGrpcApi "github.com/jlambert68/FenixGrpcApi/Fenix/fenixTestDataSyncServerGrpcApi/go_grpc_api"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
@@ -36,8 +35,6 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) InitG
 				"Id":                           "ba070b9b-5d57-4c0a-ab4c-a76247a50fd3",
 				"localServerEngineLocalPort: ": localServerEngineLocalPort,
 			}).Info("Success in listening on port:")
-			fenixTestDataSyncServerObject.port = strconv.Itoa(localServerEngineLocalPort)
-			fenixTestDataSyncServerObject.ip = common_config.FenixClientTestDataSyncServer_address
 
 			break
 		}

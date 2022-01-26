@@ -8,20 +8,10 @@ import (
 	"google.golang.org/grpc"
 	"net"
 	"strconv"
-	"time"
 )
 
 type fenixTestDataSyncServerObject_struct struct {
-	logger                *logrus.Logger
-	iAmBusy               bool
-	uuid                  string
-	startTime             time.Time
-	timeBeforeFinish      int32
-	currentTaskuuid       string
-	currentTaskName       string
-	ip                    string
-	port                  string
-	qmlServerHasConnected bool
+	logger *logrus.Logger
 }
 
 var fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct
@@ -60,7 +50,7 @@ var MerkleHashMessageChannel chan fenixTestDataSyncServerGrpcApi.MerkleHashMessa
 var MerkleTreeMessageChannel chan fenixTestDataSyncServerGrpcApi.MerkleTreeMessage
 
 // 'TestDataHeaderMessage' from 'gRPC-SendTestDataHeaders'
-var TestDataHeaderMessageChannel chan fenixTestDataSyncServerGrpcApi.TestDataHeaderMessage
+var TestDataHeaderMessageChannel chan fenixTestDataSyncServerGrpcApi.TestDataHeadersMessage
 
 // 'MerkleTreeMessage' from 'gRPC-SendTestDataRows'
 var MerkleTreeMessageMessageChannel chan fenixTestDataSyncServerGrpcApi.MerkleTreeMessage

@@ -39,10 +39,10 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) conve
 	// Loop all MerkleTreeNodes and create a DataFrame for the data
 	for _, merkleTreeNode := range merkleTreeNodes {
 		myMerkleTreeRow := MerkleTree_struct{
-			MerkleLevel:     int(merkleTreeNode.MerkleLevel),
-			MerklePath:      merkleTreeNode.MerklePath,
-			MerkleHash:      merkleTreeNode.MerkleHash,
-			MerkleChildHash: merkleTreeNode.MerkleChildHash,
+			MerkleLevel:     int(merkleTreeNode.NodeLevel),
+			MerklePath:      merkleTreeNode.NodeName,
+			MerkleHash:      merkleTreeNode.NodeHash,
+			MerkleChildHash: merkleTreeNode.NodeChildHash,
 		}
 		myMerkleTree = append(myMerkleTree, myMerkleTreeRow)
 
@@ -54,13 +54,13 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) conve
 }
 
 // Convert gRPC-Header message into string and string array objects
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) convertgRpcHeaderMessageToStringArray(testDataHeaderMessage fenixTestDataSyncServerGrpcApi.TestDataHeaderMessage) (headerHash string, headersItems []string) {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) convertgRpcHeaderMessageToStringArray(testDataHeadersMessage fenixTestDataSyncServerGrpcApi.TestDataHeadersMessage) (headerHash string, headersItems []string) {
 
 	// Extract  HeaderHash
-	headerHash = testDataHeaderMessage.HeadersHash
+	headerHash = testDataHeadersMessage.TestDataHeaderItemsHash
 
 	//dbCurrentMerkleTreeForClient = merkleTreeMessage.MerkleTreeNodes
-	testDataHeaderItems := testDataHeaderMessage.TestDataHeaderItems
+	testDataHeaderItems := testDataHeadersMessage.TestDataHeaderItems
 
 	// Loop all MerkleTreeNodes and create a DataFrame for the data
 	for _, headerItem := range testDataHeaderItems {
@@ -76,7 +76,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) conve
 
 	testdataAsDataFrame = dataframe.New()
 
-	currentTestDataClientGuid := testdataRowsMessages.TestDataClientGuid
+	currentTestDataClientGuid := testdataRowsMessages.TestDataClientUuid
 
 	currentTestDataHeaders := fenixTestDataSyncServerObject.getCurrentHeadersForClient(currentTestDataClientGuid)
 
@@ -97,7 +97,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) conve
 
 			// Create Return message
 			returnMessage = &fenixTestDataSyncServerGrpcApi.AckNackResponse{
-				Acknack:    false,
+				AckNack:    false,
 				Comments:   "Fenix Asked for TestDataHeaders but didn't receive them i a correct way",
 				ErrorCodes: errorCodes,
 			}
@@ -139,7 +139,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) conve
 
 			// Create Return message
 			returnMessage = &fenixTestDataSyncServerGrpcApi.AckNackResponse{
-				Acknack:    false,
+				AckNack:    false,
 				Comments:   "RowsHashes seems not to be correct calculated",
 				ErrorCodes: errorCodes,
 			}
