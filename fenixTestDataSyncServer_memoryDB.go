@@ -40,6 +40,67 @@ type MerkleTree_struct struct {
 	MerkleChildHash string
 }
 
+// Memory Object used as temporary storage before saving testdata to Cloud-DB
+// Memory Object also used as cash and there by minimize DB-access
+var memoryDB memDBTestDataDomainType
+
+type memDBTestDataDomainType map[memDBDomainUuidType]memDBTestDataContainerType
+type memDBTestDataContainerType map[memDBClientUuidType]memDBTestDataStruct
+
+type memDBClientUuidType string
+type memDBDomainUuidType string
+
+type memDBTestDataStruct struct {
+	serverData memDBDataStructureStruct
+	clientData memDBDataStructureStruct
+}
+
+type memDBDataStructureStruct struct {
+	merkleHash       string
+	merklePath       string
+	merkleTree       memDBMerkleTreeStruct
+	headerItemsHash  string
+	headerLabelsHash string
+	headerItems      memDBHeaderItemsStruct
+	testDataRows     memDBTestDataItemsStruct
+}
+
+type memDBMerkleTreeStruct struct {
+	nodeLevel     string
+	nodeName      string
+	nodePath      string
+	nodeHash      string
+	nodeChildHash string
+}
+
+type memDBHeaderItemsStruct struct {
+	headerItemHash             string
+	headerLabel                string
+	headerShouldBeUsedInFilter bool
+	headerIsMandatoryInFilter  bool
+	headerFilterSelectionType  HeaderFilterSelectionTypeType
+	headerFilterValuesItem     memDBHeaderFilterValuesItemStruct
+}
+
+type HeaderFilterSelectionTypeType int
+
+const (
+	HEADER_IS_SINGLE_SELECT HeaderFilterSelectionTypeType = iota
+	HEADER_IS_MULTI_SELECT
+)
+
+type memDBHeaderFilterValuesItemStruct struct {
+	HeaderFilterValuesHash string
+	HeaderFilterValues     []string
+}
+
+type memDBTestDataItemsStruct struct {
+	testDataRowHash        string
+	leafNodeName           string
+	leafNodePath           string
+	testDataValuesAsString []string
+}
+
 // Retrieve current TestData-MerkleHash for client
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) getCurrentMerkleHashForClient(testDataClientGuid string) string {
 
