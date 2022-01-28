@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) InitLogger(filename string) {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) InitLogger(filename string) {
 	fenixTestDataSyncServerObject.logger = logrus.StandardLogger()
 
 	switch common_config.LoggingLevel {

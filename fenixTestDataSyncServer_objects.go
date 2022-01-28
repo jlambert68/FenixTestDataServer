@@ -10,11 +10,11 @@ import (
 	"strconv"
 )
 
-type fenixTestDataSyncServerObject_struct struct {
+type fenixTestDataSyncServerObjectStruct struct {
 	logger *logrus.Logger
 }
 
-var fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct
+var fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct
 
 // Global connection constants
 var localServerEngineLocalPort = common_config.FenixTestDataSyncServer_port

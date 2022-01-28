@@ -7,7 +7,7 @@ import (
 
 // ********************************************************************************************************************
 // Check if Calling Client is using correct proto-file version
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) isClientUsingCorrectTestDataProtoFileVersion(usedProtoFileVersion fenixTestDataSyncServerGrpcApi.CurrentFenixTestDataProtoFileVersionEnum) (returnMessage *fenixTestDataSyncServerGrpcApi.AckNackResponse) {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) isClientUsingCorrectTestDataProtoFileVersion(usedProtoFileVersion fenixTestDataSyncServerGrpcApi.CurrentFenixTestDataProtoFileVersionEnum) (returnMessage *fenixTestDataSyncServerGrpcApi.AckNackResponse) {
 
 	var clientUseCorrectProtoFileVersion bool
 	var protoFileExpected fenixTestDataSyncServerGrpcApi.CurrentFenixTestDataProtoFileVersionEnum
@@ -51,7 +51,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) isCli
 
 // ********************************************************************************************************************
 // Get the highest FenixProtoFileVersionEnumeration
-func (fenixClientTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) getHighestFenixTestDataProtoFileVersion() int32 {
+func (fenixClientTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getHighestFenixTestDataProtoFileVersion() int32 {
 
 	// Check if there already is a 'highestFenixProtoFileVersion' saved, if so use that one
 	if highestFenixProtoFileVersion != -1 {
@@ -75,7 +75,7 @@ func (fenixClientTestDataSyncServerObject *fenixTestDataSyncServerObject_struct)
 
 // ********************************************************************************************************************
 // Get the highest ClientProtoFileVersionEnumeration
-func (fenixClientTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) getHighestClientTestDataProtoFileVersion() int32 {
+func (fenixClientTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getHighestClientTestDataProtoFileVersion() int32 {
 
 	// Check if there already is a 'highestclientProtoFileVersion' saved, if so use that one
 	if highestClientProtoFileVersion != -1 {

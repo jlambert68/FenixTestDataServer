@@ -42,7 +42,21 @@ type MerkleTree_struct struct {
 
 // Memory Object used as temporary storage before saving testdata to Cloud-DB
 // Memory Object also used as cash and there by minimize DB-access
-var memoryDB memDBTestDataDomainType
+var memoryDB memoryDBStruct
+
+type memoryDBStruct struct {
+	allowedClients memDBAllowedClientsStruct
+	client         memDBClientStruct
+	server         memDBServerStruct
+}
+
+type memDBClientStruct struct {
+	memDBTestDataDomain memDBTestDataDomainType
+}
+
+type memDBServerStruct struct {
+	memDBTestDataDomain memDBTestDataDomainType
+}
 
 type memDBTestDataDomainType map[memDBDomainUuidType]memDBTestDataContainerType
 type memDBTestDataContainerType map[memDBClientUuidType]memDBTestDataStruct
@@ -51,21 +65,25 @@ type memDBClientUuidType string
 type memDBDomainUuidType string
 
 type memDBTestDataStruct struct {
-	serverData memDBDataStructureStruct
-	clientData memDBDataStructureStruct
+	memDBDataStructure memDBDataStructureStruct
 }
 
 type memDBDataStructureStruct struct {
-	merkleHash       string
-	merklePath       string
-	merkleTree       memDBMerkleTreeStruct
-	headerItemsHash  string
-	headerLabelsHash string
-	headerItems      memDBHeaderItemsStruct
-	testDataRows     memDBTestDataItemsStruct
+	merkleHash          string
+	merklePath          string
+	merkleTree          memDBMerkleTreeRowsStruct
+	headerItemsHash     string
+	headerLabelsHash    string
+	headerItems         []memDBHeaderItemsStruct
+	testDataRows        []memDBTestDataItemsStruct
+	testDataAsDataFrame dataframe.DataFrame
 }
 
-type memDBMerkleTreeStruct struct {
+type memDBMerkleTreeRowsStruct struct {
+	merkleTreeRows []memDBMerkleTreeRowStruct
+}
+
+type memDBMerkleTreeRowStruct struct {
 	nodeLevel     string
 	nodeName      string
 	nodePath      string
@@ -101,8 +119,12 @@ type memDBTestDataItemsStruct struct {
 	testDataValuesAsString []string
 }
 
+type memDBAllowedClientsStruct struct {
+	memDBTestDataDomainType map[memDBClientUuidType]memDBDomainUuidType
+}
+
 // Retrieve current TestData-MerkleHash for client
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) getCurrentMerkleHashForClient(testDataClientGuid string) string {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCurrentMerkleHashForClient(testDataClientGuid string) string {
 
 	var currentMerkleHashForClient string
 
@@ -114,7 +136,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) getCu
 }
 
 // Save current TestData-MerkleHash for client
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) saveCurrentMerkleHashForClient(merkleHashMessage fenixTestDataSyncServerGrpcApi.MerkleHashMessage) bool {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveCurrentMerkleHashForClient(merkleHashMessage fenixTestDataSyncServerGrpcApi.MerkleHashMessage) bool {
 
 	dbData.clientData.merkleHash = merkleHashMessage.MerkleHash
 
@@ -122,7 +144,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) saveC
 }
 
 // Retrieve current TestData-MerkleHash for Server
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) getCurrentMerkleHashForServer(testDataClientGuid string) string {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCurrentMerkleHashForServer(testDataClientGuid string) string {
 
 	var currentMerkleHashForServer string
 
@@ -134,7 +156,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) getCu
 }
 
 // Save current TestData-MerkleHash for Server
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) saveCurrentMerkleHashForServer(merkleHashMessage fenixTestDataSyncServerGrpcApi.MerkleHashMessage) bool {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveCurrentMerkleHashForServer(merkleHashMessage fenixTestDataSyncServerGrpcApi.MerkleHashMessage) bool {
 
 	dbData.serverData.merkleHash = merkleHashMessage.MerkleHash
 
@@ -142,7 +164,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) saveC
 }
 
 // Retrieve current TestData-MerkleTree for client
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) getCurrentMerkleTreeForClient(testDataClientGuid string) dataframe.DataFrame {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCurrentMerkleTreeForClient(testDataClientGuid string) dataframe.DataFrame {
 
 	var currentMerkleTreeForClient dataframe.DataFrame
 
@@ -152,7 +174,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) getCu
 }
 
 // Save current TestData-MerkleTree for client
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) saveCurrentMerkleTreeForClient(testDataClientGuid string, merkleTreeDataFrameMessage dataframe.DataFrame) bool {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveCurrentMerkleTreeForClient(testDataClientGuid string, merkleTreeDataFrameMessage dataframe.DataFrame) bool {
 
 	dbData.clientData.merkleTree = merkleTreeDataFrameMessage
 
@@ -170,7 +192,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) saveC
 }
 
 // Retrieve current TestData-MerkleTree for Server
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) getCurrentMerkleTreeForServer(testDataClientGuid string) dataframe.DataFrame {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCurrentMerkleTreeForServer(testDataClientGuid string) dataframe.DataFrame {
 
 	var currentMerkleTreeForServer dataframe.DataFrame
 
@@ -180,7 +202,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) getCu
 }
 
 // Save current TestData-MerkleTree for Server
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) saveCurrentMerkleTreeForServer(merkleTreeDataFrameMessage dataframe.DataFrame) bool {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveCurrentMerkleTreeForServer(merkleTreeDataFrameMessage dataframe.DataFrame) bool {
 
 	dbData.serverData.merkleTree = merkleTreeDataFrameMessage
 
@@ -188,7 +210,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) saveC
 }
 
 // Retrieve current TestData-HeaderHash for client
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) getCurrentHeaderHashsForClient(testDataClientGuid string) string {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCurrentHeaderHashsForClient(testDataClientGuid string) string {
 
 	var currentHeaderHashsForClient string
 
@@ -200,7 +222,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) getCu
 }
 
 // Save current TestData-HeaderHash for client
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) saveCurrentHeaderHashForClient(testDataClientGuid string, currentHeaderHashsForClient string) bool {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveCurrentHeaderHashForClient(testDataClientGuid string, currentHeaderHashsForClient string) bool {
 
 	dbData.clientData.headerHash = currentHeaderHashsForClient
 
@@ -208,7 +230,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) saveC
 }
 
 // Retrieve currentTestData-Headers for client
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) getCurrentHeadersForClient(testDataClientGuid string) []string {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCurrentHeadersForClient(testDataClientGuid string) []string {
 
 	var currentHeadersForClient []string
 
@@ -218,7 +240,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) getCu
 }
 
 // Save currentTestData-Headers for client
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) saveCurrentHeadersForClient(testDataClientGuid string, testDataHeaderItems []string) bool {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveCurrentHeadersForClient(testDataClientGuid string, testDataHeaderItems []string) bool {
 
 	dbData.clientData.headers = testDataHeaderItems
 
@@ -226,7 +248,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) saveC
 }
 
 // Retrieve current TestData-HeaderHash for Server
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) getCurrentHeaderHashForServer(testDataClientGuid string) string {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCurrentHeaderHashForServer(testDataClientGuid string) string {
 
 	var currentHeaderHashsForServer string
 
@@ -238,7 +260,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) getCu
 }
 
 // Save current TestData-HeaderHash for Server
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) saveCurrentHeaderHashForServer(currentHeaderHashForServer string) bool {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveCurrentHeaderHashForServer(currentHeaderHashForServer string) bool {
 
 	dbData.serverData.headerHash = currentHeaderHashForServer
 
@@ -246,7 +268,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) saveC
 }
 
 // Retrieve current TestData-Header for Server
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) getCurrentHeadersForServer() []string {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCurrentHeadersForServer() []string {
 
 	var currentHeadersForServer []string
 
@@ -256,7 +278,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) getCu
 }
 
 // Retrieve current TestData-Header for Server
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) saveCurrentHeadersForServer(currentHeadersForServer []string) bool {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveCurrentHeadersForServer(currentHeadersForServer []string) bool {
 
 	dbData.serverData.headers = currentHeadersForServer
 
@@ -264,7 +286,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) saveC
 }
 
 // Transfer TestDataHeader from Client to Server
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) moveCurrentHeadersFromClientToServer(testDataClientGuid string) bool {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) moveCurrentHeadersFromClientToServer(testDataClientGuid string) bool {
 
 	dbData.serverData.headerHash = dbData.clientData.headerHash
 	dbData.serverData.headers = dbData.clientData.headers
@@ -273,7 +295,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) moveC
 }
 
 // Transfer MerkleTree and TestDataRows from Client to Server
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) moveCurrentTestDataAndMerkleTreeFromClientToServer(testDataClientGuid string) bool {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) moveCurrentTestDataAndMerkleTreeFromClientToServer(testDataClientGuid string) bool {
 
 	dbData.serverData.merkleHash = dbData.clientData.merkleHash
 	dbData.serverData.merkleTree = dbData.clientData.merkleTree
@@ -283,7 +305,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) moveC
 }
 
 // Get current Server TestDataRows
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) getCurrentTestDataRowsForServer(testDataClientGuid string) (testDataRows dataframe.DataFrame) {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCurrentTestDataRowsForServer(testDataClientGuid string) (testDataRows dataframe.DataFrame) {
 
 	testDataRows = dbData.serverData.testDataRows
 
@@ -291,7 +313,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) getCu
 }
 
 // Get current Client TestDataRows
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) getCurrentTestDataRowsForClient(testDataClientGuid string) (testDataRows dataframe.DataFrame) {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCurrentTestDataRowsForClient(testDataClientGuid string) (testDataRows dataframe.DataFrame) {
 
 	testDataRows = dbData.clientData.testDataRows
 
@@ -299,7 +321,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) getCu
 }
 
 // Save current Client TestDataRows
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) saveCurrentTestDataRowsForClient(testDataClientGuid string, testDataRows dataframe.DataFrame) bool {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveCurrentTestDataRowsForClient(testDataClientGuid string, testDataRows dataframe.DataFrame) bool {
 
 	dbData.clientData.testDataRows = testDataRows
 

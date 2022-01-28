@@ -29,13 +29,16 @@ func FenixServerMain() {
 	connectToDB()
 
 	// Set up BackendObject
-	fenixTestDataSyncServerObject = &fenixTestDataSyncServerObject_struct{}
+	fenixTestDataSyncServerObject = &fenixTestDataSyncServerObjectStruct{}
 
 	// Init logger
 	fenixTestDataSyncServerObject.InitLogger("")
 
 	// Celan up when leaving. Is placed after logger because shutdown logs information
 	defer cleanup()
+
+	// Load Data from cloudDB into memoryDB
+	fenixTestDataSyncServerObject.loadCloudDBIntoMemoryDB()
 
 	// Start Backend gRPC-server
 	fenixTestDataSyncServerObject.InitGrpcServer()

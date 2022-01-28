@@ -8,8 +8,8 @@ import (
 )
 
 /*
-// Initiate channels for "incomming gRPC-messages"
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) InitateProcessEngineChannels() {
+// Initiate channels for "incoming gRPC-messages"
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) InitiateProcessEngineChannels() {
 
 	make(TestDataClientInformationMessageChannel, fenixTestDataSyncServerGrpcApi.TestDataClientInformationMessage, 1)
 
@@ -29,7 +29,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) Inita
 */
 
 // Convert gRPC-MerkleTree message into a DataFrame object
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) convertgRpcMerkleTreeMessageToDataframe(merkleTreeMessage fenixTestDataSyncServerGrpcApi.MerkleTreeMessage) dataframe.DataFrame {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) convertgRpcMerkleTreeMessageToDataframe(merkleTreeMessage fenixTestDataSyncServerGrpcApi.MerkleTreeMessage) dataframe.DataFrame {
 
 	var myMerkleTree []MerkleTree_struct
 
@@ -54,7 +54,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) conve
 }
 
 // Convert gRPC-Header message into string and string array objects
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) convertgRpcHeaderMessageToStringArray(testDataHeadersMessage fenixTestDataSyncServerGrpcApi.TestDataHeadersMessage) (headerHash string, headersItems []string) {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) convertgRpcHeaderMessageToStringArray(testDataHeadersMessage fenixTestDataSyncServerGrpcApi.TestDataHeadersMessage) (headerHash string, headersItems []string) {
 
 	// Extract  HeaderHash
 	headerHash = testDataHeadersMessage.TestDataHeaderItemsHash
@@ -64,7 +64,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) conve
 
 	// Loop all MerkleTreeNodes and create a DataFrame for the data
 	for _, headerItem := range testDataHeaderItems {
-		headersItems = append(headersItems, headerItem.HeaderPresentationsLabel)
+		headersItems = append(headersItems, headerItem.HeaderLabel)
 
 	}
 
@@ -72,7 +72,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) conve
 }
 
 // Convert TestDataRow message into TestData dataframe object
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) convertgRpcTestDataRowsMessageToDataFrame(testdataRowsMessages *fenixTestDataSyncServerGrpcApi.TestdataRowsMessages) (testdataAsDataFrame dataframe.DataFrame, returnMessage *fenixTestDataSyncServerGrpcApi.AckNackResponse) {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) convertgRpcTestDataRowsMessageToDataFrame(testdataRowsMessages *fenixTestDataSyncServerGrpcApi.TestdataRowsMessages) (testdataAsDataFrame dataframe.DataFrame, returnMessage *fenixTestDataSyncServerGrpcApi.AckNackResponse) {
 
 	testdataAsDataFrame = dataframe.New()
 
@@ -125,7 +125,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) conve
 		}
 
 		// Hash all values for row
-		hashedRow := common_config.HashValues(valuesToHash)
+		hashedRow := common_config.HashValues(valuesToHash, true)
 
 		// Validate that Row-hash is correct calculated
 		if hashedRow != testDataRow.RowHash {
@@ -167,7 +167,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) conve
 }
 
 // Concartenate TestDataRows as a DataFrame with the current Server TestDataRows-DataFrame
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) concartenateWithCurrentServerTestData(testDataClientGuid string, testdataDataframe dataframe.DataFrame) (allTestdataAsDataFrame dataframe.DataFrame) {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) concartenateWithCurrentServerTestData(testDataClientGuid string, testdataDataframe dataframe.DataFrame) (allTestdataAsDataFrame dataframe.DataFrame) {
 
 	allTestdataAsDataFrame = fenixTestDataSyncServerObject.getCurrentTestDataRowsForServer(testDataClientGuid)
 
@@ -179,7 +179,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) conca
 
 /*
 // Convert Dataframe into JSON
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) convertDataFramIntoJSON(testdataDataframe dataframe.DataFrame) (json string) {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) convertDataFramIntoJSON(testdataDataframe dataframe.DataFrame) (json string) {
 
 	var a io.Writer
 

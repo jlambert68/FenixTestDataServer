@@ -8,7 +8,7 @@ import (
 )
 
 // Set upp connection and Dial to FenixTestDataSyncServer
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) SetConnectionToFenixClientTestDataSyncServer() {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) SetConnectionToFenixClientTestDataSyncServer() {
 
 	var err error
 
@@ -32,11 +32,11 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) SetCo
 }
 
 // Fenix Server asks Fenix client to register itself with the Fenix Testdata sync server
-//func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct)  RegisterTestDataClient(EmptyParameter) returns (AckNackResponse) {
+//func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct)  RegisterTestDataClient(EmptyParameter) returns (AckNackResponse) {
 //}
 
 // Fenix Server asks Fenix client to send TestData MerkleHash to Fenix Testdata sync server with this service
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) AskClientToSendMerkleHash(TestDataClientGuid string) {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) AskClientToSendMerkleHash(TestDataClientGuid string) {
 
 	// Set up connection to Client-server
 	fenixTestDataSyncServerObject.SetConnectionToFenixClientTestDataSyncServer()
@@ -67,7 +67,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) AskCl
 }
 
 // Fenix Server asks Fenix client to send TestData MerkleTree to Fenix Testdata sync server with this service
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) AskClientToSendMerkleTree(TestDataClientGuid string) {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) AskClientToSendMerkleTree(TestDataClientGuid string) {
 
 	// Set up connection to Client-server
 	fenixTestDataSyncServerObject.SetConnectionToFenixClientTestDataSyncServer()
@@ -99,7 +99,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) AskCl
 }
 
 // Fenix Server asks Fenix client to send TestDataHeaderHash to Fenix Testdata sync server with this service
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) AskClientToSendTestDataHeaderHash(TestDataClientGuid string) {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) AskClientToSendTestDataHeaderHash(TestDataClientGuid string) {
 
 	// Set up connection to Client-server
 	fenixTestDataSyncServerObject.SetConnectionToFenixClientTestDataSyncServer()
@@ -131,7 +131,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) AskCl
 }
 
 // Fenix Server asks Fenix client to send TestDataHeaders to Fenix Testdata sync server with this service
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) AskClientToSendTestDataHeaders(TestDataClientGuid string) {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) AskClientToSendTestDataHeaders(TestDataClientGuid string) {
 
 	// Set up connection to Client-server
 	fenixTestDataSyncServerObject.SetConnectionToFenixClientTestDataSyncServer()
@@ -163,12 +163,12 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) AskCl
 }
 
 // Fenix Server asks Fenix client to  send TestData rows, based on list of MerklePaths, to Fenix Testdata sync server with this service
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) AskClientToSendTestDataRows(TestDataClientGuid string) {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) AskClientToSendTestDataRows(TestDataClientGuid string) {
 
 }
 
 // Fenix Server asks Fenix client to  send All TestData rows to Fenix Testdata sync server with this service
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObject_struct) AskClientToSendAllTestDataRows(TestDataClientGuid string) {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) AskClientToSendAllTestDataRows(TestDataClientGuid string) {
 
 	// Set up connection to Client-server
 	fenixTestDataSyncServerObject.SetConnectionToFenixClientTestDataSyncServer()

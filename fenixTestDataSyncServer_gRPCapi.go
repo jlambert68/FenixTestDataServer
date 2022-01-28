@@ -30,7 +30,7 @@ func (s *FenixTestDataGrpcServicesServer) AreYouAlive(ctx context.Context, empty
 }
 
 // *********************************************************************
-// Fenix client can register itself with the Fenix Testdata sync server
+// Fenix client can send TestData MerkleHash to Fenix Testdata sync server with this service
 func (s *FenixTestDataGrpcServicesServer) SendMerkleHash(ctx context.Context, merkleHashMessage *fenixTestDataSyncServerGrpcApi.MerkleHashMessage) (*fenixTestDataSyncServerGrpcApi.AckNackResponse, error) {
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
@@ -47,14 +47,14 @@ func (s *FenixTestDataGrpcServicesServer) SendMerkleHash(ctx context.Context, me
 	// Check if Client is using correct proto files version
 	returnMessage := fenixTestDataSyncServerObject.isClientUsingCorrectTestDataProtoFileVersion(merkleHashMessage.ProtoFileVersionUsedByClient)
 	if returnMessage != nil {
-		// Not correct proto-file version is used
+		// Not the correct proto-file version is used
 		return returnMessage, nil
 	}
 
 	// Save the message
 	_ = fenixTestDataSyncServerObject.saveCurrentMerkleHashForClient(*merkleHashMessage)
 
-	// Compare current server- and client merklehash
+	// Compare current server- and client MerkleHash
 	currentServerMerkleHash := fenixTestDataSyncServerObject.getCurrentMerkleHashForServer(callingClientUuid)
 
 	//  if different in MerkleHash then ask client for MerkleTree
@@ -86,7 +86,7 @@ func (s *FenixTestDataGrpcServicesServer) SendMerkleTree(ctx context.Context, me
 	callingClientUuid := merkleTreeMessage.TestDataClientUuid
 
 	// Verify that Client Exists in DB
-	verfied, err := fenixTestDataSyncServerObject.existsClinetInDB(callingClientUuid)
+	verfied, err := fenixTestDataSyncServerObject.existsClientInDB(callingClientUuid)
 	if err != nil || verfied == false {
 
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
@@ -228,7 +228,7 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataHeaders(ctx context.Contex
 	headerHash, headerItems := fenixTestDataSyncServerObject.convertgRpcHeaderMessageToStringArray(*testDataHeaderMessage)
 
 	// Validate HeaderHash
-	computedHeaderHash := common_config.HashValues(headerItems)
+	computedHeaderHash := common_config.HashValues(headerItems, true)
 	if computedHeaderHash != headerHash {
 
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
