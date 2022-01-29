@@ -11,7 +11,8 @@ import (
 )
 
 type fenixTestDataSyncServerObjectStruct struct {
-	logger *logrus.Logger
+	logger                                 *logrus.Logger
+	stateProcessIncomingAndOutgoingMessage bool
 }
 
 var fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct

@@ -1,5 +1,10 @@
 package main
 
+/* START Cloud Sync
+./cloud_sql_proxy -instances=mycloud-run-project:europe-north1:fenix-sqlserver=tcp:5432
+
+*/
+
 import (
 	"context"
 	"errors"
@@ -75,6 +80,106 @@ type memDBAllTestDataRowItemStruct struct {
 	testdataValueAsString string
 	leafNodeName          string
 	leafNodePath          string
+}
+
+// Load TestData from CloudDB into memDB
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadTestDataFromCloudDB() (err error) {
+
+	if fenixTestDataSyncServerObject.stateProcessIncomingAndOutgoingMessage == false {
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"Id": "36fa4890-69d1-4e68-940a-915fdadd7968",
+		}).Error("Will not process 'loadTestDataFromCloudDB()' while stateProcessIncomingAndOutgoingMessage == false")
+		return nil
+	}
+
+	// All TestTDataClients in CloudDB
+	var tempMemDBAllClients []memDBAllTestDataClientStruct
+	err = fenixTestDataSyncServerObject.loadAllmemDBAllClientsFromCloudDB(&tempMemDBAllClients)
+	if err != nil {
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"Id":    "06e04586-c8ce-4172-8391-8fdd235b15ab",
+			"error": err,
+		}).Error("Problem when executing: 'loadAllmemDBAllClientsFromCloudDB()'")
+
+		fenixTestDataSyncServerObject.stateProcessIncomingAndOutgoingMessage = false
+		return err
+	}
+
+	// All TestDataHeaderFilterValues in CloudDB
+	var tempMemDBAllTestDataHeaderFilterValues []memDBAllTestDataHeaderFilterValueStruct
+	err = fenixTestDataSyncServerObject.loadAllmemDBAllTestDataHeaderFilterValuesFromCloudDB(&tempMemDBAllTestDataHeaderFilterValues)
+	if err != nil {
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"Id":    "3457adf0-ac33-4fdb-a23e-ce0b000bb64e",
+			"error": err,
+		}).Error("Problem when executing: 'loadAllmemDBAllTestDataHeaderFilterValuesFromCloudDB()'")
+
+		fenixTestDataSyncServerObject.stateProcessIncomingAndOutgoingMessage = false
+		return err
+	}
+
+	// All TestDataHeaderItems in CloudDB
+	var tempMemDBAllTestDataHeaderItems []memDBAllTestDataHeaderItemStruct
+	err = fenixTestDataSyncServerObject.loadAllmemDBAllTestDataHeaderItemsFromCloudDB(&tempMemDBAllTestDataHeaderItems)
+	if err != nil {
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"Id":    "a4e56ce6-2d5b-4941-91d2-2ebf9f91f5c2",
+			"error": err,
+		}).Error("Problem when executing: 'loadAllmemDBAllTestDataHeaderItemsFromCloudDB()'")
+
+		fenixTestDataSyncServerObject.stateProcessIncomingAndOutgoingMessage = false
+		return err
+	}
+
+	// All TestDataMerkleHashes in CloudDB
+	var tempMemDBAllTestDataMerkleHashes []memDBAllTestDataMerkleHashStruct
+	err = fenixTestDataSyncServerObject.loadAllmemDBAllTestDataMerkleHashesFromCloudDB(&tempMemDBAllTestDataMerkleHashes)
+	if err != nil {
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"Id":    "202bbd5b-19a1-4ebd-923d-0114161e6c2b",
+			"error": err,
+		}).Error("Problem when executing: 'loadAllmemDBAllTestDataMerkleHashesFromCloudDB()'")
+
+		fenixTestDataSyncServerObject.stateProcessIncomingAndOutgoingMessage = false
+		return err
+	}
+
+	// All TestDataMerkleTrees in CloudDB
+	var tempMemDBAllTestDataMerkleTrees []memDBAllTestDataMerkleTreeStruct
+	err = fenixTestDataSyncServerObject.loadAllmemDBAllTestDataMerkleTreesFromCloudDB(&tempMemDBAllTestDataMerkleTrees)
+	if err != nil {
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"Id":    "202bbd5b-19a1-4ebd-923d-0114161e6c2b",
+			"error": err,
+		}).Error("Problem when executing: 'loadAllmemDBAllTestDataMerkleTreesFromCloudDB()'")
+
+		fenixTestDataSyncServerObject.stateProcessIncomingAndOutgoingMessage = false
+		return err
+	}
+
+	// All TestDataRowItems in CloudDB
+	var tempMemDBAllTestDataRowItems []memDBAllTestDataRowItemStruct
+	err = fenixTestDataSyncServerObject.loadAllmemDBAllTestDataRowItemsFromCloudDB(&tempMemDBAllTestDataRowItems)
+	if err != nil {
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"Id":    "502b250c-1565-4a1b-bdf3-eea77382c957",
+			"error": err,
+		}).Error("Problem when executing: 'loadAllmemDBAllTestDataRowItemsFromCloudDB()'")
+
+		fenixTestDataSyncServerObject.stateProcessIncomingAndOutgoingMessage = false
+		return err
+	}
+
+	// Could get all data from CloudDB, so now we can move the tempObjects to memDB
+	memDBAllClients = tempMemDBAllClients
+	memDBAllTestDataHeaderFilterValues = tempMemDBAllTestDataHeaderFilterValues
+	memDBAllTestDataHeaderItems = tempMemDBAllTestDataHeaderItems
+	memDBAllTestDataMerkleHashes = tempMemDBAllTestDataMerkleHashes
+	memDBAllTestDataMerkleTrees = tempMemDBAllTestDataMerkleTrees
+	memDBAllTestDataRowItems = tempMemDBAllTestDataRowItems
+
+	return err
+
 }
 
 //
@@ -457,7 +562,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) mapTes
 // Load data from CloudDB into memory structures, to speed up stuff
 //
 // All TestTDataClients in CloudDB
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAllmemDBAllClientsFromCloudDB() (err error) {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAllmemDBAllClientsFromCloudDB(testDataClients *[]memDBAllTestDataClientStruct) (err error) {
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"Id": "16af90a4-aa07-4d8b-921a-a47c04811a9b",
@@ -485,7 +590,6 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 
 	// Variables to used when extract data from result set
 	var testDataClient memDBAllTestDataClientStruct
-	var testDataClients []memDBAllTestDataClientStruct
 
 	// Extract data from DB result set
 	for rows.Next() {
@@ -493,12 +597,9 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 		if err != nil {
 			return err
 		}
-		testDataClients = append(testDataClients, testDataClient)
+		*testDataClients = append(*testDataClients, testDataClient)
 
 	}
-
-	// Copy extracted data into memory object
-	memDBAllClients = testDataClients
 
 	// No errors occurred
 	return nil
@@ -509,7 +610,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 // Load data from CloudDB into memory structures, to speed up stuff
 //
 // All TestDataHeaderFilterValues in CloudDB
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAllmemDBAllTestDataHeaderFilterValuesFromCloudDB() (err error) {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAllmemDBAllTestDataHeaderFilterValuesFromCloudDB(testDataHeaderFilterValues *[]memDBAllTestDataHeaderFilterValueStruct) (err error) {
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"Id": "097f9f31-f29b-4c4a-aadb-0d4120429cf5",
@@ -530,7 +631,6 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 
 	// Variables to used when extract data from result set
 	var testDataHeaderFilterValue memDBAllTestDataHeaderFilterValueStruct
-	var testDataHeaderFilterValues []memDBAllTestDataHeaderFilterValueStruct
 
 	// Extract data from DB result set
 	for rows.Next() {
@@ -538,12 +638,9 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 		if err != nil {
 			return err
 		}
-		testDataHeaderFilterValues = append(testDataHeaderFilterValues, testDataHeaderFilterValue)
+		*testDataHeaderFilterValues = append(*testDataHeaderFilterValues, testDataHeaderFilterValue)
 
 	}
-
-	// Copy extracted data into memory object
-	memDBAllTestDataHeaderFilterValues = testDataHeaderFilterValues
 
 	// No errors occurred
 	return nil
@@ -554,7 +651,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 // Load data from CloudDB into memory structures, to speed up stuff
 //
 // All TestDataHeaderItems in CloudDB
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAllmemDBAllTestDataHeaderItemsFromCloudDB() (err error) {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAllmemDBAllTestDataHeaderItemsFromCloudDB(testDataHeaderItems *[]memDBAllTestDataHeaderItemStruct) (err error) {
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"Id": "a2951e5e-d7d0-4240-88a9-5dc570f2bbe9",
@@ -578,7 +675,6 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 
 	// Variables to used when extract data from result set
 	var testDataHeaderItem memDBAllTestDataHeaderItemStruct
-	var testDataHeaderItems []memDBAllTestDataHeaderItemStruct
 
 	// Extract data from DB result set
 	for rows.Next() {
@@ -588,12 +684,9 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 		if err != nil {
 			return err
 		}
-		testDataHeaderItems = append(testDataHeaderItems, testDataHeaderItem)
+		*testDataHeaderItems = append(*testDataHeaderItems, testDataHeaderItem)
 
 	}
-
-	// Copy extracted data into memory object
-	memDBAllTestDataHeaderItems = testDataHeaderItems
 
 	// No errors occurred
 	return nil
@@ -604,7 +697,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 // Load data from CloudDB into memory structures, to speed up stuff
 //
 // All TestDataMerkleHashes in CloudDB
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAllmemDBAllTestDataMerkleHashesFromCloudDB() (err error) {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAllmemDBAllTestDataMerkleHashesFromCloudDB(testDataMerkleHashs *[]memDBAllTestDataMerkleHashStruct) (err error) {
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"Id": "53461f88-c773-477e-b459-cfb93a1c3eaa",
@@ -626,7 +719,6 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 
 	// Variables to used when extract data from result set
 	var testDataMerkleHash memDBAllTestDataMerkleHashStruct
-	var testDataMerkleHashs []memDBAllTestDataMerkleHashStruct
 
 	// Extract data from DB result set
 	for rows.Next() {
@@ -635,12 +727,9 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 		if err != nil {
 			return err
 		}
-		testDataMerkleHashs = append(testDataMerkleHashs, testDataMerkleHash)
+		*testDataMerkleHashs = append(*testDataMerkleHashs, testDataMerkleHash)
 
 	}
-
-	// Copy extracted data into memory object
-	memDBAllTestDataMerkleHashes = testDataMerkleHashs
 
 	// No errors occurred
 	return nil
@@ -651,7 +740,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 // Load data from CloudDB into memory structures, to speed up stuff
 //
 // All TestDataMerkleTrees in CloudDB
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAllmemDBAllTestDataMerkleTreesFromCloudDB() (err error) {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAllmemDBAllTestDataMerkleTreesFromCloudDB(testDataMerkleTrees *[]memDBAllTestDataMerkleTreeStruct) (err error) {
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"Id": "6e0a6f4c-cc54-4aff-94f1-243aee6141ae",
@@ -675,7 +764,6 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 
 	// Variables to used when extract data from result set
 	var testDataMerkleTree memDBAllTestDataMerkleTreeStruct
-	var testDataMerkleTrees []memDBAllTestDataMerkleTreeStruct
 
 	// Extract data from DB result set
 	for rows.Next() {
@@ -686,12 +774,9 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 		if err != nil {
 			return err
 		}
-		testDataMerkleTrees = append(testDataMerkleTrees, testDataMerkleTree)
+		*testDataMerkleTrees = append(*testDataMerkleTrees, testDataMerkleTree)
 
 	}
-
-	// Copy extracted data into memory object
-	memDBAllTestDataMerkleTrees = testDataMerkleTrees
 
 	// No errors occurred
 	return nil
@@ -702,7 +787,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 // Load data from CloudDB into memory structures, to speed up stuff
 //
 // All TestDataRowItems in CloudDB
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAllmemDBAllTestDataRowItemsFromCloudDB() (err error) {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAllmemDBAllTestDataRowItemsFromCloudDB(testDataRowItems *[]memDBAllTestDataRowItemStruct) (err error) {
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"Id": "61b8b021-9568-463e-b867-ac1ddb10584d",
@@ -725,7 +810,6 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 
 	// Variables to used when extract data from result set
 	var testDataRowItem memDBAllTestDataRowItemStruct
-	var testDataRowItems []memDBAllTestDataRowItemStruct
 
 	// Extract data from DB result set
 	for rows.Next() {
@@ -735,12 +819,10 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 		if err != nil {
 			return err
 		}
-		testDataRowItems = append(testDataRowItems, testDataRowItem)
+		// Add values to the object that is pointed to by variable in function
+		*testDataRowItems = append(*testDataRowItems, testDataRowItem)
 
 	}
-
-	// Copy extracted data into memory object
-	memDBAllTestDataRowItems = testDataRowItems
 
 	// No errors occurred
 	return nil

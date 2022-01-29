@@ -29,7 +29,7 @@ func FenixServerMain() {
 	connectToDB()
 
 	// Set up BackendObject
-	fenixTestDataSyncServerObject = &fenixTestDataSyncServerObjectStruct{}
+	fenixTestDataSyncServerObject = &fenixTestDataSyncServerObjectStruct{stateProcessIncomingAndOutgoingMessage: true}
 
 	// Init logger
 	fenixTestDataSyncServerObject.InitLogger("")
