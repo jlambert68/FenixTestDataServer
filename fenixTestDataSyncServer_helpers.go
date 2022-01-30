@@ -6,6 +6,34 @@ import (
 )
 
 // ********************************************************************************************************************
+// Check if there is a temporary stop in processing incoming or outgoing messages
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) isThereATemporaryStopInProcessingInOrOutgoingMessages() (returnMessage *fenixTestDataSyncServerGrpcApi.AckNackResponse) {
+
+	// Check if there is a temporary stop in processing in- or outgoing messages
+	if fenixTestDataSyncServerObject.stateProcessIncomingAndOutgoingMessage == false {
+		// Set Error codes to return message
+		var errorCodes []fenixTestDataSyncServerGrpcApi.ErrorCodesEnum
+		var errorCode fenixTestDataSyncServerGrpcApi.ErrorCodesEnum
+
+		errorCode = fenixTestDataSyncServerGrpcApi.ErrorCodesEnum_ERROR_TEMPORARY_STOP_IN_PROCESSING
+		errorCodes = append(errorCodes, errorCode)
+
+		// Create Return message
+		returnMessage = &fenixTestDataSyncServerGrpcApi.AckNackResponse{
+			AckNack:    false,
+			Comments:   "There is a temporary stop in processing any ingoing or outgoing messages at Fenix TestSync-server",
+			ErrorCodes: errorCodes,
+		}
+
+		return returnMessage
+
+	} else {
+		return nil
+	}
+
+}
+
+// ********************************************************************************************************************
 // Check if Calling Client is using correct proto-file version
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) isClientUsingCorrectTestDataProtoFileVersion(usedProtoFileVersion fenixTestDataSyncServerGrpcApi.CurrentFenixTestDataProtoFileVersionEnum) (returnMessage *fenixTestDataSyncServerGrpcApi.AckNackResponse) {
 

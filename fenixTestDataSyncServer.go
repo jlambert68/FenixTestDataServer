@@ -29,7 +29,7 @@ func FenixServerMain() {
 	connectToDB()
 
 	// Set up BackendObject
-	fenixTestDataSyncServerObject = &fenixTestDataSyncServerObjectStruct{stateProcessIncomingAndOutgoingMessage: true}
+	fenixTestDataSyncServerObject = &fenixTestDataSyncServerObjectStruct{stateProcessIncomingAndOutgoingMessage: false}
 
 	// Init logger
 	fenixTestDataSyncServerObject.InitLogger("")
@@ -38,34 +38,9 @@ func FenixServerMain() {
 	defer cleanup()
 
 	// Load Data from cloudDB into memoryDB
-	fenixTestDataSyncServerObject.loadCloudDBIntoMemoryDB()
+	_ = fenixTestDataSyncServerObject.loadCloudDBIntoMemoryDB()
 
 	// Start Backend gRPC-server
 	fenixTestDataSyncServerObject.InitGrpcServer()
 
-	// Register at QML Server
-	// TODO Detta ska inte göras. Denna komponent ska vara passiv
-	//fenixTestDataSyncServerObject.SendMQmlServerIpAndPortForBackendServer()
-	/*
-		c := make(chan os.Signal, 2)
-		signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-		go func() {
-			<-c
-			cleanup()
-			os.Exit(0)
-		}()
-
-		for {
-			fmt.Println("sleeping...for another 5 minutes")
-			time.Sleep(300 * time.Second) // or runtime.Gosched() or similar per @misterbee
-		}
-
-
-	*/
-	//Wait until user exit
-	/*
-		   for {
-			   time.Sleep(10)
-		   }
-	*/
 }

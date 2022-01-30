@@ -178,7 +178,10 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadTe
 	memDBAllTestDataMerkleTrees = tempMemDBAllTestDataMerkleTrees
 	memDBAllTestDataRowItems = tempMemDBAllTestDataRowItems
 
+	// Everything was loaded, now allow in- and outgoing messages
+
 	return err
+	fenixTestDataSyncServerObject.stateProcessIncomingAndOutgoingMessage = true
 
 }
 

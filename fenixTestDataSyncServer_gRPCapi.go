@@ -13,11 +13,11 @@ func (s *FenixTestDataGrpcServicesServer) AreYouAlive(ctx context.Context, empty
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"id": "1ff67695-9a8b-4821-811d-0ab8d33c4d8b",
-	}).Debug("Incoming 'AreYouAlive'")
+	}).Debug("Incoming gRPC 'AreYouAlive'")
 
 	defer fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"id": "9c7f0c3d-7e9f-4c91-934e-8d7a22926d84isClientUsingCorrectTestDataProtoFileVersion",
-	}).Debug("Outgoing 'AreYouAlive'")
+	}).Debug("Incoming gRPC 'AreYouAlive'")
 
 	// Check if Client is using correct proto files version
 	returnMessage := fenixTestDataSyncServerObject.isClientUsingCorrectTestDataProtoFileVersion(emptyParameter.ProtoFileVersionUsedByClient)
@@ -35,11 +35,11 @@ func (s *FenixTestDataGrpcServicesServer) SendMerkleHash(ctx context.Context, me
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"id": "a55f9c82-1d74-44a5-8662-058b8bc9e48f",
-	}).Debug("Incoming 'SendMerkleHash'")
+	}).Debug("Incoming gRPC 'SendMerkleHash'")
 
 	defer fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"id": "27fb45fe-3266-41aa-a6af-958513977e28",
-	}).Debug("Outgoing 'SendMerkleHash'")
+	}).Debug("Incoming gRPC 'SendMerkleHash'")
 
 	// Get calling client
 	callingClientUuid := merkleHashMessage.TestDataClientUuid
@@ -48,6 +48,13 @@ func (s *FenixTestDataGrpcServicesServer) SendMerkleHash(ctx context.Context, me
 	returnMessage := fenixTestDataSyncServerObject.isClientUsingCorrectTestDataProtoFileVersion(merkleHashMessage.ProtoFileVersionUsedByClient)
 	if returnMessage != nil {
 		// Not the correct proto-file version is used
+		return returnMessage, nil
+	}
+
+	// Check if TestData server should process incoming messages
+	returnMessage = fenixTestDataSyncServerObject.isThereATemporaryStopInProcessingInOrOutgoingMessages()
+	if returnMessage != nil {
+		// No processing of incoming messages
 		return returnMessage, nil
 	}
 
@@ -76,11 +83,11 @@ func (s *FenixTestDataGrpcServicesServer) SendMerkleTree(ctx context.Context, me
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"id": "cffc25f0-b0e6-407a-942a-71fc74f831ac",
-	}).Debug("Incoming 'SendMerkleTree'")
+	}).Debug("Incoming gRPC 'SendMerkleTree'")
 
 	defer fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"id": "61e2c28d-b091-442a-b7f8-d2502d9547cf",
-	}).Debug("Outgoing 'SendMerkleTree'")
+	}).Debug("Incoming gRPC 'SendMerkleTree'")
 
 	// Get calling client
 	callingClientUuid := merkleTreeMessage.TestDataClientUuid
@@ -100,6 +107,13 @@ func (s *FenixTestDataGrpcServicesServer) SendMerkleTree(ctx context.Context, me
 	returnMessage := fenixTestDataSyncServerObject.isClientUsingCorrectTestDataProtoFileVersion(merkleTreeMessage.ProtoFileVersionUsedByClient)
 	if returnMessage != nil {
 		// Not correct proto-file version is used
+		return returnMessage, nil
+	}
+
+	// Check if TestData server should process incoming messages
+	returnMessage = fenixTestDataSyncServerObject.isThereATemporaryStopInProcessingInOrOutgoingMessages()
+	if returnMessage != nil {
+		// No processing of incoming messages
 		return returnMessage, nil
 	}
 
@@ -151,11 +165,11 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataHeaderHash(ctx context.Con
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"id": "c8e72834-338c-48be-885c-f083fe7951a6",
-	}).Debug("Incoming 'SendTestDataHeaders'")
+	}).Debug("Incoming gRPC 'SendTestDataHeaders'")
 
 	defer fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"id": "b3576bdc-ac11-44cd-9fa2-cd7065f1253d",
-	}).Debug("Outgoing 'SendTestDataHeaders'")
+	}).Debug("Incoming gRPC 'SendTestDataHeaders'")
 
 	// Get calling client
 	callingClientUuid := testDataHeaderHashMessageMessage.TestDataClientUuid
@@ -164,6 +178,13 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataHeaderHash(ctx context.Con
 	returnMessage := fenixTestDataSyncServerObject.isClientUsingCorrectTestDataProtoFileVersion(testDataHeaderHashMessageMessage.ProtoFileVersionUsedByClient)
 	if returnMessage != nil {
 		// Not correct proto-file version is used
+		return returnMessage, nil
+	}
+
+	// Check if TestData server should process incoming messages
+	returnMessage = fenixTestDataSyncServerObject.isThereATemporaryStopInProcessingInOrOutgoingMessages()
+	if returnMessage != nil {
+		// No processing of incoming messages
 		return returnMessage, nil
 	}
 
@@ -208,11 +229,11 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataHeaders(ctx context.Contex
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"id": "aee48999-12ad-4bb7-bc8a-96b62a8eeedf",
-	}).Debug("Incoming 'SendTestDataHeaders'")
+	}).Debug("Incoming gRPC 'SendTestDataHeaders'")
 
 	defer fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"id": "ca0b58a8-6d56-4392-8751-45906670e86b",
-	}).Debug("Outgoing 'SendTestDataHeaders'")
+	}).Debug("Incoming gRPC 'SendTestDataHeaders'")
 
 	// Get calling client
 	callingClientUuid := testDataHeaderMessage.TestDataClientUuid
@@ -221,6 +242,13 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataHeaders(ctx context.Contex
 	returnMessage := fenixTestDataSyncServerObject.isClientUsingCorrectTestDataProtoFileVersion(testDataHeaderMessage.ProtoFileVersionUsedByClient)
 	if returnMessage != nil {
 		// Not correct proto-file version is used
+		return returnMessage, nil
+	}
+
+	// Check if TestData server should process incoming messages
+	returnMessage = fenixTestDataSyncServerObject.isThereATemporaryStopInProcessingInOrOutgoingMessages()
+	if returnMessage != nil {
+		// No processing of incoming messages
 		return returnMessage, nil
 	}
 
@@ -258,11 +286,11 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataRows(ctx context.Context, 
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"id": "2b1c8752-eb84-4c15-b8a7-22e2464e5168",
-	}).Debug("Incoming 'SendTestDataRows'")
+	}).Debug("Incoming gRPC 'SendTestDataRows'")
 
 	defer fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"id": "755e8b4f-f184-4277-ad41-e041714c2ca8",
-	}).Debug("Outgoing 'SendTestDataRows'")
+	}).Debug("Incoming gRPC 'SendTestDataRows'")
 
 	// Get calling client
 	callingClientUuid := testdataRowsMessages.TestDataClientUuid
@@ -271,6 +299,13 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataRows(ctx context.Context, 
 	returnMessage := fenixTestDataSyncServerObject.isClientUsingCorrectTestDataProtoFileVersion(testdataRowsMessages.ProtoFileVersionUsedByClient)
 	if returnMessage != nil {
 		// Not correct proto-file version is used
+		return returnMessage, nil
+	}
+
+	// Check if TestData server should process incoming messages
+	returnMessage = fenixTestDataSyncServerObject.isThereATemporaryStopInProcessingInOrOutgoingMessages()
+	if returnMessage != nil {
+		// No processing of incoming messages
 		return returnMessage, nil
 	}
 
@@ -330,16 +365,78 @@ func (s *FenixTestDataGrpcServicesServer) RegisterTestDataClient(ctx context.Con
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"id": "5133b80b-6f3a-4562-9e62-1b3ceb169cc1",
-	}).Debug("Incoming 'RegisterTestDataClient'")
+	}).Debug("Incoming gRPC 'RegisterTestDataClient'")
 
 	defer fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"id": "316dcd7e-2229-4a82-b15b-0f808c2dd8aa",
-	}).Debug("Outgoing 'RegisterTestDataClient'")
+	}).Debug("Incoming gRPC 'RegisterTestDataClient'")
 
 	// Check if Client is using correct proto files version
 	returnMessage := fenixTestDataSyncServerObject.isClientUsingCorrectTestDataProtoFileVersion(testDataClientInformationMessage.ProtoFileVersionUsedByClient)
 	if returnMessage != nil {
 		// Not correct proto-file version is used
+		return returnMessage, nil
+	}
+
+	// Check if TestData server should process incoming messages
+	returnMessage = fenixTestDataSyncServerObject.isThereATemporaryStopInProcessingInOrOutgoingMessages()
+	if returnMessage != nil {
+		// No processing of incoming messages
+		return returnMessage, nil
+	}
+
+	return &fenixTestDataSyncServerGrpcApi.AckNackResponse{AckNack: true, Comments: ""}, nil
+}
+
+// AllowIncomingAndOutgoingMessages - Retry to allow incoming gRPC calls and process outgoing calls
+func (s *FenixTestDataGrpcServicesServer) AllowOrDisallowIncomingAndOutgoingMessages(ctx context.Context, allowOrDisallowIncomingAndOutgoingMessage *fenixTestDataSyncServerGrpcApi.AllowOrDisallowIncomingAndOutgoingMessage) (*fenixTestDataSyncServerGrpcApi.AckNackResponse, error) {
+
+	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"id": "e7b5686b-6bdf-4218-ac05-e184acf7feb1",
+	}).Debug("Incoming gRPC 'AllowOrDisallowIncomingAndOutgoingMessages'")
+
+	defer fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"id": "3961dda0-7af8-4746-a5b1-aa85a6fec479",
+	}).Debug("Incoming gRPC 'AllowOrDisallowIncomingAndOutgoingMessages'")
+
+	// Check if Client is using correct proto files version
+	returnMessage := fenixTestDataSyncServerObject.isClientUsingCorrectTestDataProtoFileVersion(allowOrDisallowIncomingAndOutgoingMessage.ProtoFileVersionUsedByClient)
+	if returnMessage != nil {
+		// Not correct proto-file version is used
+		return returnMessage, nil
+	}
+
+	// Set state depending on parameter so incoming and outgoing messages can be processed or not
+	fenixTestDataSyncServerObject.stateProcessIncomingAndOutgoingMessage = allowOrDisallowIncomingAndOutgoingMessage.AllowInAndOutgoingMessages
+
+	return &fenixTestDataSyncServerGrpcApi.AckNackResponse{AckNack: true, Comments: ""}, nil
+}
+
+// RestartFenixServerProcesses - Restart Fenix TestData Server processes
+func (s *FenixTestDataGrpcServicesServer) RestartFenixServerProcesses(ctx context.Context, emptyParameter *fenixTestDataSyncServerGrpcApi.EmptyParameter) (*fenixTestDataSyncServerGrpcApi.AckNackResponse, error) {
+
+	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"id": "8ecf6bfc-2ff6-4b50-b4be-faef443e0c0e",
+	}).Debug("Incoming 'RestartFenixServerProcesses'")
+
+	defer fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"id": "7144c46e-c3d9-4d44-b4c7-20641c103a27",
+	}).Debug("Outgoing 'RestartFenixServerProcesses'")
+
+	// Check if Client is using correct proto files version
+	returnMessage := fenixTestDataSyncServerObject.isClientUsingCorrectTestDataProtoFileVersion(emptyParameter.ProtoFileVersionUsedByClient)
+	if returnMessage != nil {
+		// Not correct proto-file version is used
+		return returnMessage, nil
+	}
+
+	// Reload Data from cloudDB into memoryDB
+	_ = fenixTestDataSyncServerObject.loadCloudDBIntoMemoryDB()
+	// Decide if TestData server could process incoming and outgoing messages
+	// Check if TestData server should process incoming messages
+	returnMessage = fenixTestDataSyncServerObject.isThereATemporaryStopInProcessingInOrOutgoingMessages()
+	if returnMessage != nil {
+		// Can't process ingoing or outgoing messages right now
 		return returnMessage, nil
 	}
 
