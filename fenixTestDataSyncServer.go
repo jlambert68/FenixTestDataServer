@@ -38,7 +38,7 @@ func FenixServerMain() {
 	defer cleanup()
 
 	// Load Data from cloudDB into memoryDB
-	_ = fenixTestDataSyncServerObject.loadCloudDBIntoMemoryDB()
+	_ = fenixTestDataSyncServerObject.loadTestDataFromCloudDB()
 
 	// Start Backend gRPC-server
 	fenixTestDataSyncServerObject.InitGrpcServer()

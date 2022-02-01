@@ -1,0 +1,225 @@
+package main
+
+import (
+	"errors"
+	"fmt"
+	"github.com/go-gota/gota/dataframe"
+	"github.com/sirupsen/logrus"
+)
+
+// XXXREMOVEXXX
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) existsClientInDB(testDataClientUUID string) (bool, error) {
+
+	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"Id": "73768ffb-e069-42cf-945f-009a332a9ac6",
+	}).Debug("Entering: ListTestInstructionsInDB()")
+
+	defer func() {
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"Id": "07e53e86-e45f-4799-a4cf-4d5c73872fbe",
+		}).Debug("Exiting: ListTestInstructionsInDB()")
+	}()
+
+	sqlToExecute := ""
+	sqlToExecute = sqlToExecute + "SELECT clients.\"client_uuid\" "
+	sqlToExecute = sqlToExecute + "FROM clients "
+	sqlToExecute = sqlToExecute + "WHERE clients.\"client_uuid\" = '" + testDataClientUUID + "' "
+	sqlToExecute = sqlToExecute + "AND "
+	sqlToExecute = sqlToExecute + "clients.activated = true "
+	sqlToExecute = sqlToExecute + "AND "
+	sqlToExecute = sqlToExecute + "clients.deleted = false "
+	sqlToExecute = sqlToExecute + "AND "
+	sqlToExecute = sqlToExecute + "clients.replaced_by_new_version = false "
+
+	rows, _ := DbPool.Query(context.Background(), sqlToExecute)
+
+	var clientUuid string
+	var clientUuidRows []string
+
+	for rows.Next() {
+		err := rows.Scan(&clientUuid)
+		if err != nil {
+			return false, err
+		}
+		clientUuidRows = append(clientUuidRows, clientUuid)
+
+	}
+
+	//Only OK result is ONE row
+	numberOfInstancesFound := len(clientUuidRows)
+	if numberOfInstancesFound != 1 {
+
+		myErr := errors.New("Found " + string(numberOfInstancesFound) + " but expected 1 instance of Client UUID, for: " + clientUuid)
+		return false, myErr
+
+	} else {
+
+		return true, nil
+
+	}
+
+}
+
+
+// Load all Clients and their Domains from CloudDB
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadClientsFromCloudDB() (allowedClients memDBAllowedClientsStruct, err error) {
+
+	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"Id": "6a407f6f-6a44-48e6-b50a-22a3775b55fe",
+	}).Debug("Entering: loadClientsFromCloudDB()")
+
+	defer func() {
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"Id": "6d20a55b-cb15-4d88-be7a-dee5a9b24630",
+		}).Debug("Exiting: loadClientsFromCloudDB()")
+	}()
+
+	sqlToExecute := ""
+	sqlToExecute = sqlToExecute + "SELECT clients.\"client_uuid\", clients.\"domain_uuid\"  "
+	sqlToExecute = sqlToExecute + "FROM clients "
+	sqlToExecute = sqlToExecute + "WHERE clients.activated = true "
+	sqlToExecute = sqlToExecute + "AND "
+	sqlToExecute = sqlToExecute + "clients.deleted = false "
+	sqlToExecute = sqlToExecute + "AND "
+	sqlToExecute = sqlToExecute + "clients.replaced_by_new_version = false "
+	sqlToExecute = sqlToExecute + "AND "
+	sqlToExecute = sqlToExecute + "clients.client_areatyp_id = 1 "
+
+	// Query DB
+	rows, _ := DbPool.Query(context.Background(), sqlToExecute)
+
+	// Variables to used when extract data from result set
+	var clientUuid memDBClientUuidType
+	var domainUuid memDBDomainUuidType
+	clientsWithDomains := make(map[memDBClientUuidType]memDBDomainUuidType)
+
+	// Extract data from DB result set
+	for rows.Next() {
+		err := rows.Scan(&clientUuid, &domainUuid)
+		if err != nil {
+			return memDBAllowedClientsStruct{}, err
+		}
+		clientsWithDomains[clientUuid] = domainUuid
+
+	}
+
+	allowedClients.memDBTestDataDomainType = clientsWithDomains
+
+	return allowedClients, nil
+
+}
+
+// Load all Testa sent by all Clients from CloudDB
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAllTestDataForEachClientFromCloudDB() (allowedClients memDBAllowedClientsStruct, err error) {
+
+	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"Id": "388717a0-87f4-4d91-b00c-01ef922f89f3",
+	}).Debug("Entering: loadAllTestDataForEachClientFromCloudDB()")
+
+	defer func() {
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"Id": "017921fd-fa8e-4c0f-8193-ee83121f32f6",
+		}).Debug("Exiting: loadAllTestDataForEachClientFromCloudDB()")
+	}()
+
+	sqlToExecute := ""
+	sqlToExecute = sqlToExecute + "SELECT clients.\"client_uuid\", clients.\"domain_uuid\"  "
+	sqlToExecute = sqlToExecute + "FROM clients "
+	sqlToExecute = sqlToExecute + "WHERE clients.activated = true "
+	sqlToExecute = sqlToExecute + "AND "
+	sqlToExecute = sqlToExecute + "clients.deleted = false "
+	sqlToExecute = sqlToExecute + "AND "
+	sqlToExecute = sqlToExecute + "clients.replaced_by_new_version = false "
+
+	// Query DB
+	rows, _ := DbPool.Query(context.Background(), sqlToExecute)
+
+	// Variables to used when extract data from result set
+	var clientUuid memDBClientUuidType
+	var domainUuid memDBDomainUuidType
+	clientsWithDomains := make(map[memDBClientUuidType]memDBDomainUuidType)
+
+	// Extract data from DB result set
+	for rows.Next() {
+		err := rows.Scan(&clientUuid, &domainUuid)
+		if err != nil {
+			return memDBAllowedClientsStruct{}, err
+		}
+		clientsWithDomains[clientUuid] = domainUuid
+
+	}
+
+	allowedClients.memDBTestDataDomainType = clientsWithDomains
+
+	return allowedClients, nil
+
+}
+
+// Load all MerkleHash data, from CloudDB, previously sent by all Clients
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAllMerkleHashesForEachClientFromCloudDB() (allowedClients memDBAllowedClientsStruct, err error) {
+
+	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"Id": "b709e284-5414-4695-b4f9-79d33593ec47",
+	}).Debug("Entering: loadAllMerkleHashesForEachClientFromCloudDB()")
+
+	defer func() {
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"Id": "89ac4da2-52b3-4108-ac77-83eb535b2003",
+		}).Debug("Exiting: loadAllMerkleHashesForEachClientFromCloudDB()")
+	}()
+
+	sqlToExecute := ""
+	sqlToExecute = sqlToExecute + "SELECT clients.\"client_uuid\", clients.\"domain_uuid\", clients.\"merklehash\", clients.\"merkle_path\"  "
+	sqlToExecute = sqlToExecute + "FROM testdata.merklehash "
+
+	// Query DB
+	rows, _ := DbPool.Query(context.Background(), sqlToExecute)
+
+	// Variables to used when extract data from result set
+	var clientUuid memDBClientUuidType
+	var domainUuid memDBDomainUuidType
+	var merkleHash string
+	var merklePath string
+
+	clientsWithDomains := make(map[memDBClientUuidType]memDBDomainUuidType)
+
+	// Extract data from DB result set
+	for rows.Next() {
+		err := rows.Scan(&clientUuid, &domainUuid, &merkleHash, &merklePath)
+		if err != nil {
+			return memDBAllowedClientsStruct{}, err
+		}
+		clientsWithDomains[clientUuid] = domainUuid
+
+	}
+
+	allowedClients.memDBTestDataDomainType = clientsWithDomains
+
+	return allowedClients, nil
+
+}
+
+// Add all testdata rows
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) mapTestDataRowsFromCloudDBToMemDB(allowedDomain memDBDomainUuidType, allowedClient memDBClientUuidType) (testDataRows []memDBTestDataItemsStruct, err error) {
+
+	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"Id": "2018c1fd-92eb-4413-a765-ccef99718410",
+	}).Debug("Entering: mapTestDataRowsFromCloudDBToMemDB()")
+
+	defer func() {
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"Id": "575294aa-9446-4d8c-8a5e-c0d3393076b2",
+		}).Debug("Exiting: mapTestDataRowsFromCloudDBToMemDB()")
+	}()
+
+	testDataRow := memDBTestDataItemsStruct{
+		testDataRowHash:        "",
+		leafNodeName:           "",
+		leafNodePath:           "",
+		testDataValuesAsString: nil,
+	}
+
+	testDataRows = []memDBTestDataItemsStruct{testDataRow}
+
+	return testDataRows, nil
+}

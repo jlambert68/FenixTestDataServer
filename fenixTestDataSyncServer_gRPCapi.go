@@ -98,7 +98,7 @@ func (s *FenixTestDataGrpcServicesServer) SendMerkleTree(ctx context.Context, me
 
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 			"id": "f5eb251c-8639-496f-9101-bac8fc9300f7",
-		}).Debug(err.Error())
+		}).Info(err.Error())
 
 		return &fenixTestDataSyncServerGrpcApi.AckNackResponse{AckNack: false, Comments: err.Error()}, nil
 	}
@@ -192,7 +192,7 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataHeaderHash(ctx context.Con
 	clientHeaderHash := testDataHeaderHashMessageMessage.TestDataHeaderItemsHash
 
 	// Get current client Header Hash
-	currentClientHeaderHash := fenixTestDataSyncServerObject.getCurrentHeaderHashsForClient(callingClientUuid)
+	currentClientHeaderHash := fenixTestDataSyncServerObject.getCurrentHeaderHashForClient(callingClientUuid)
 
 	// If Header Hash is already in DB then return OK
 	if currentClientHeaderHash == clientHeaderHash {
@@ -271,7 +271,7 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataHeaders(ctx context.Contex
 	_ = fenixTestDataSyncServerObject.saveCurrentHeadersForClient(callingClientUuid, headerItems)
 
 	// Replace Server version of Headers with Client version of Headers
-	_ = fenixTestDataSyncServerObject.moveCurrentHeadersFromClientToServer(callingClientUuid)
+	_ = fenixTestDataSyncServerObject.moveCurrentHeaderHashFromClientToServer(callingClientUuid)
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"id": "6c90bc16-890a-402e-91b1-68fc060986c6",
 	}).Debug("Saved Header hash and Headers to DB for client: " + callingClientUuid)
@@ -431,8 +431,7 @@ func (s *FenixTestDataGrpcServicesServer) RestartFenixServerProcesses(ctx contex
 	}
 
 	// Reload Data from cloudDB into memoryDB
-	_ = fenixTestDataSyncServerObject.loadCloudDBIntoMemoryDB()
-	// Decide if TestData server could process incoming and outgoing messages
+	_ = fenixTestDataSyncServerObject.loadTestDataFromCloudDB()
 	// Check if TestData server should process incoming messages
 	returnMessage = fenixTestDataSyncServerObject.isThereATemporaryStopInProcessingInOrOutgoingMessages()
 	if returnMessage != nil {

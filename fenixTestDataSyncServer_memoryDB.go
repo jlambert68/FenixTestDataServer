@@ -1,9 +1,10 @@
 package main
 
 import (
-	"fmt"
+	"errors"
 	"github.com/go-gota/gota/dataframe"
 	fenixTestDataSyncServerGrpcApi "github.com/jlambert68/FenixGrpcApi/Fenix/fenixTestDataSyncServerGrpcApi/go_grpc_api"
+	"github.com/sirupsen/logrus"
 )
 
 // ***** Before I implement a DB everthing will be stored in variables *****
@@ -14,7 +15,11 @@ var dbCurrentHeaderHashsForClient string
 var dbCurrentHeadersForClient []string
 */
 
-var dbData tempDB
+var dbDataMap map[memDBClientUuidType]*tempDBStruct
+
+//var dbData tempDBStruct
+
+//type tempDBMap map[memDBClientUuidType]tempDBStruct
 
 type tempTestDataRowStruct struct {
 	rowHash       string
@@ -28,9 +33,9 @@ type tempDBDataStruct struct {
 	headers      []string
 	testDataRows dataframe.DataFrame //[]tempTestDataRowStruct
 }
-type tempDB struct {
-	serverData tempDBDataStruct
-	clientData tempDBDataStruct
+type tempDBStruct struct {
+	serverData *tempDBDataStruct
+	clientData *tempDBDataStruct
 }
 
 type MerkleTree_struct struct {
@@ -124,13 +129,13 @@ type memDBAllowedClientsStruct struct {
 }
 
 // Retrieve current TestData-MerkleHash for client
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCurrentMerkleHashForClient(testDataClientGuid string) string {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCurrentMerkleHashForClient(testDataClientGuid string) (currentMerkleHashForClient string) {
 
-	var currentMerkleHashForClient string
+	// Get pointer to data for Client_UUID
+	tempdbData := dbDataMap[memDBClientUuidType(testDataClientGuid)]
 
-	currentMerkleHashForClient = dbData.clientData.merkleHash
-
-	fmt.Println("dbData.clientData.merkleHash: ", dbData.clientData.merkleHash)
+	// Get the data
+	currentMerkleHashForClient = tempdbData.clientData.merkleHash
 
 	return currentMerkleHashForClient
 }
@@ -138,19 +143,26 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCur
 // Save current TestData-MerkleHash for client
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveCurrentMerkleHashForClient(merkleHashMessage fenixTestDataSyncServerGrpcApi.MerkleHashMessage) bool {
 
-	dbData.clientData.merkleHash = merkleHashMessage.MerkleHash
+	// Get pointer to data for Client_UUID
+	tempdbData := dbDataMap[memDBClientUuidType(merkleHashMessage.TestDataClientUuid)]
+
+	// Get pointer to client data
+	clientData := tempdbData.clientData
+
+	// MerkleHash
+	clientData.merkleHash = merkleHashMessage.MerkleHash
 
 	return true
 }
 
 // Retrieve current TestData-MerkleHash for Server
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCurrentMerkleHashForServer(testDataClientGuid string) string {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCurrentMerkleHashForServer(testDataClientGuid string) (currentMerkleHashForServer string) {
 
-	var currentMerkleHashForServer string
+	// Get pointer to data for Client_UUID
+	tempdbData := dbDataMap[memDBClientUuidType(testDataClientGuid)]
 
-	currentMerkleHashForServer = dbData.serverData.merkleHash
-
-	fmt.Println("dbData.serverData.merkleHash: ", dbData.serverData.merkleHash)
+	// Get the data
+	currentMerkleHashForServer = tempdbData.serverData.merkleHash
 
 	return currentMerkleHashForServer
 }
@@ -158,17 +170,26 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCur
 // Save current TestData-MerkleHash for Server
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveCurrentMerkleHashForServer(merkleHashMessage fenixTestDataSyncServerGrpcApi.MerkleHashMessage) bool {
 
-	dbData.serverData.merkleHash = merkleHashMessage.MerkleHash
+	// Get pointer to data for Client_UUID
+	tempdbData := dbDataMap[memDBClientUuidType(merkleHashMessage.TestDataClientUuid)]
+
+	// Get pointer to server data
+	serverData := tempdbData.serverData
+
+	// MerkleHash
+	serverData.merkleHash = merkleHashMessage.MerkleHash
 
 	return true
 }
 
 // Retrieve current TestData-MerkleTree for client
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCurrentMerkleTreeForClient(testDataClientGuid string) dataframe.DataFrame {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCurrentMerkleTreeForClient(testDataClientGuid string) (currentMerkleTreeForClient dataframe.DataFrame) {
 
-	var currentMerkleTreeForClient dataframe.DataFrame
+	// Get pointer to data for Client_UUID
+	tempdbData := dbDataMap[memDBClientUuidType(testDataClientGuid)]
 
-	currentMerkleTreeForClient = dbData.clientData.merkleTree
+	// Get the data
+	currentMerkleTreeForClient = tempdbData.clientData.merkleTree
 
 	return currentMerkleTreeForClient
 }
@@ -176,47 +197,53 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCur
 // Save current TestData-MerkleTree for client
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveCurrentMerkleTreeForClient(testDataClientGuid string, merkleTreeDataFrameMessage dataframe.DataFrame) bool {
 
-	dbData.clientData.merkleTree = merkleTreeDataFrameMessage
+	// Get pointer to data for Client_UUID
+	tempdbData := dbDataMap[memDBClientUuidType(testDataClientGuid)]
 
-	/*
-		m := jsonpb.Marshaler{}
-		js, err := m.MarshalToString(&merkleTreeMessage)
-		if err != nil {
-			fmt.Println(err)
-		} else {
-			fmt.Println(js)
-		}
-	*/
+	// Get pointer to client data
+	clientData := tempdbData.clientData
+
+	// Save the data
+	clientData.merkleTree = merkleTreeDataFrameMessage
 
 	return true
 }
 
 // Retrieve current TestData-MerkleTree for Server
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCurrentMerkleTreeForServer(testDataClientGuid string) dataframe.DataFrame {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCurrentMerkleTreeForServer(testDataClientGuid string) (currentMerkleTreeForServer dataframe.DataFrame) {
 
-	var currentMerkleTreeForServer dataframe.DataFrame
+	// Get pointer to data for Client_UUID
+	tempdbData := dbDataMap[memDBClientUuidType(testDataClientGuid)]
 
-	currentMerkleTreeForServer = dbData.serverData.merkleTree
+	// Get the data
+	currentMerkleTreeForServer = tempdbData.serverData.merkleTree
 
 	return currentMerkleTreeForServer
 }
 
 // Save current TestData-MerkleTree for Server
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveCurrentMerkleTreeForServer(merkleTreeDataFrameMessage dataframe.DataFrame) bool {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveCurrentMerkleTreeForServer(testDataClientGuid string, merkleTreeDataFrameMessage dataframe.DataFrame) bool {
 
-	dbData.serverData.merkleTree = merkleTreeDataFrameMessage
+	// Get pointer to data for Client_UUID
+	tempdbData := dbDataMap[memDBClientUuidType(testDataClientGuid)]
+
+	// Get pointer to server data
+	serverData := tempdbData.serverData
+
+	// Save the data
+	serverData.merkleTree = merkleTreeDataFrameMessage
 
 	return true
 }
 
 // Retrieve current TestData-HeaderHash for client
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCurrentHeaderHashsForClient(testDataClientGuid string) string {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCurrentHeaderHashForClient(testDataClientGuid string) (currentHeaderHashsForClient string) {
 
-	var currentHeaderHashsForClient string
+	// Get pointer to data for Client_UUID
+	tempdbData := dbDataMap[memDBClientUuidType(testDataClientGuid)]
 
-	currentHeaderHashsForClient = dbData.clientData.headerHash
-
-	fmt.Println("dbData.clientData.headerHash: ", dbData.clientData.headerHash)
+	// Get the data
+	currentHeaderHashsForClient = tempdbData.clientData.headerHash
 
 	return currentHeaderHashsForClient
 }
@@ -224,17 +251,26 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCur
 // Save current TestData-HeaderHash for client
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveCurrentHeaderHashForClient(testDataClientGuid string, currentHeaderHashsForClient string) bool {
 
-	dbData.clientData.headerHash = currentHeaderHashsForClient
+	// Get pointer to data for Client_UUID
+	tempdbData := dbDataMap[memDBClientUuidType(testDataClientGuid)]
+
+	// Get pointer to client data
+	clientData := tempdbData.clientData
+
+	// Save the data
+	clientData.headerHash = currentHeaderHashsForClient
 
 	return true
 }
 
 // Retrieve currentTestData-Headers for client
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCurrentHeadersForClient(testDataClientGuid string) []string {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCurrentHeadersForClient(testDataClientGuid string) (currentHeadersForClient []string) {
 
-	var currentHeadersForClient []string
+	// Get pointer to data for Client_UUID
+	tempdbData := dbDataMap[memDBClientUuidType(testDataClientGuid)]
 
-	currentHeadersForClient = dbData.clientData.headers
+	// Get the data
+	currentHeadersForClient = tempdbData.clientData.headers
 
 	return currentHeadersForClient
 }
@@ -242,54 +278,81 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCur
 // Save currentTestData-Headers for client
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveCurrentHeadersForClient(testDataClientGuid string, testDataHeaderItems []string) bool {
 
-	dbData.clientData.headers = testDataHeaderItems
+	// Get pointer to data for Client_UUID
+	tempdbData := dbDataMap[memDBClientUuidType(testDataClientGuid)]
+
+	// Get pointer to client data
+	clientData := tempdbData.clientData
+
+	// Save the data
+	clientData.headers = testDataHeaderItems
 
 	return true
 }
 
 // Retrieve current TestData-HeaderHash for Server
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCurrentHeaderHashForServer(testDataClientGuid string) string {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCurrentHeaderHashForServer(testDataClientGuid string) (currentHeaderHashsForServer string) {
 
-	var currentHeaderHashsForServer string
+	// Get pointer to data for Client_UUID
+	tempdbData := dbDataMap[memDBClientUuidType(testDataClientGuid)]
 
-	currentHeaderHashsForServer = dbData.serverData.headerHash
-
-	fmt.Println("dbData.serverData.headerHash: ", dbData.serverData.headerHash)
+	// Get the data
+	currentHeaderHashsForServer = tempdbData.serverData.headerHash
 
 	return currentHeaderHashsForServer
 }
 
 // Save current TestData-HeaderHash for Server
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveCurrentHeaderHashForServer(currentHeaderHashForServer string) bool {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveCurrentHeaderHashForServer(testDataClientGuid string, currentHeaderHashForServer string) bool {
 
-	dbData.serverData.headerHash = currentHeaderHashForServer
+	// Get pointer to data for Client_UUID
+	tempdbData := dbDataMap[memDBClientUuidType(testDataClientGuid)]
+
+	// Get pointer to server data
+	serverData := tempdbData.serverData
+
+	// Save the data
+	serverData.headerHash = currentHeaderHashForServer
 
 	return true
 }
 
 // Retrieve current TestData-Header for Server
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCurrentHeadersForServer() []string {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCurrentHeadersForServer(testDataClientGuid string) (currentHeadersForServer []string) {
 
-	var currentHeadersForServer []string
+	// Get pointer to data for Client_UUID
+	tempdbData := dbDataMap[memDBClientUuidType(testDataClientGuid)]
 
-	currentHeadersForServer = dbData.serverData.headers
+	// Get the data
+	currentHeadersForServer = tempdbData.serverData.headers
 
 	return currentHeadersForServer
 }
 
-// Retrieve current TestData-Header for Server
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveCurrentHeadersForServer(currentHeadersForServer []string) bool {
+// Save current TestData-Header for Server
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveCurrentHeadersForServer(testDataClientGuid string, currentHeadersForServer []string) bool {
 
-	dbData.serverData.headers = currentHeadersForServer
+	// Get pointer to data for Client_UUID
+	tempdbData := dbDataMap[memDBClientUuidType(testDataClientGuid)]
+
+	// Get pointer to server data
+	serverData := tempdbData.serverData
+
+	// Save the data
+	serverData.headers = currentHeadersForServer
 
 	return true
 }
 
 // Transfer TestDataHeader from Client to Server
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) moveCurrentHeadersFromClientToServer(testDataClientGuid string) bool {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) moveCurrentHeaderHashFromClientToServer(testDataClientGuid string) bool {
 
-	dbData.serverData.headerHash = dbData.clientData.headerHash
-	dbData.serverData.headers = dbData.clientData.headers
+	// Get pointer to data for Client_UUID
+	tempdbData := dbDataMap[memDBClientUuidType(testDataClientGuid)]
+
+	// Move the data
+	tempdbData.serverData.headerHash = tempdbData.clientData.headerHash
+	tempdbData.serverData.headers = tempdbData.clientData.headers
 
 	return true
 }
@@ -297,9 +360,13 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) moveCu
 // Transfer MerkleTree and TestDataRows from Client to Server
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) moveCurrentTestDataAndMerkleTreeFromClientToServer(testDataClientGuid string) bool {
 
-	dbData.serverData.merkleHash = dbData.clientData.merkleHash
-	dbData.serverData.merkleTree = dbData.clientData.merkleTree
-	dbData.serverData.testDataRows = dbData.clientData.testDataRows
+	// Get pointer to data for Client_UUID
+	tempdbData := dbDataMap[memDBClientUuidType(testDataClientGuid)]
+
+	// Move the data
+	tempdbData.serverData.merkleHash = tempdbData.clientData.merkleHash
+	tempdbData.serverData.merkleTree = tempdbData.clientData.merkleTree
+	tempdbData.serverData.testDataRows = tempdbData.clientData.testDataRows
 
 	return true
 }
@@ -307,7 +374,11 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) moveCu
 // Get current Server TestDataRows
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCurrentTestDataRowsForServer(testDataClientGuid string) (testDataRows dataframe.DataFrame) {
 
-	testDataRows = dbData.serverData.testDataRows
+	// Get pointer to data for Client_UUID
+	tempdbData := dbDataMap[memDBClientUuidType(testDataClientGuid)]
+
+	// Get the data
+	testDataRows = tempdbData.serverData.testDataRows
 
 	return testDataRows
 }
@@ -315,7 +386,11 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCur
 // Get current Client TestDataRows
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCurrentTestDataRowsForClient(testDataClientGuid string) (testDataRows dataframe.DataFrame) {
 
-	testDataRows = dbData.clientData.testDataRows
+	// Get pointer to data for Client_UUID
+	tempdbData := dbDataMap[memDBClientUuidType(testDataClientGuid)]
+
+	// Get the data
+	testDataRows = tempdbData.clientData.testDataRows
 
 	return testDataRows
 }
@@ -323,7 +398,43 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCur
 // Save current Client TestDataRows
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveCurrentTestDataRowsForClient(testDataClientGuid string, testDataRows dataframe.DataFrame) bool {
 
-	dbData.clientData.testDataRows = testDataRows
+	// Get pointer to data for Client_UUID
+	tempdbData := dbDataMap[memDBClientUuidType(testDataClientGuid)]
+
+	// Get pointer to client data
+	clientData := tempdbData.clientData
+
+	// Save the data
+	clientData.testDataRows = testDataRows
 
 	return true
+}
+
+// Veriy if Client exists in Memory-copy of CloudDB
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) existsClientInDB(testDataClientUUID string) (bool, error) {
+
+	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"Id": "214a4c17-c2e5-42bc-9acb-8b8164efcb26",
+	}).Debug("Entering: ListTestInstructionsInDB()")
+
+	defer func() {
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"Id": "de2427f0-1ecf-42b9-823a-c3e677ba8ef0",
+		}).Debug("Exiting: ListTestInstructionsInDB()")
+	}()
+
+	_, clientExits := memCloudDBAllClientsMap[memDBClientUuidType(testDataClientUUID)]
+
+	//Only OK if client exists in memoryDBMap
+	if clientExits != true {
+
+		myErr := errors.New("Client '" + testDataClientUUID + "' does not exit in MemoryDB")
+		return false, myErr
+
+	} else {
+
+		return true, nil
+
+	}
+
 }
