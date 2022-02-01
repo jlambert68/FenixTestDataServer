@@ -3,6 +3,7 @@ package main
 import (
 	fenixClientTestDataSyncServerGrpcApi "github.com/jlambert68/FenixGrpcApi/Client/fenixClientTestDataSyncServerGrpcApi/go_grpc_api"
 	fenixTestDataSyncServerGrpcApi "github.com/jlambert68/FenixGrpcApi/Fenix/fenixTestDataSyncServerGrpcApi/go_grpc_api"
+	"github.com/sirupsen/logrus"
 )
 
 // ********************************************************************************************************************
@@ -25,6 +26,10 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) isTher
 			ErrorCodes: errorCodes,
 		}
 
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"id": "04df8862-3e76-45aa-9cee-9858c348e18d",
+		}).Debug("There is a temporary stop in processing any ingoing or outgoing messages at Fenix TestSync-server")
+
 		return returnMessage
 
 	} else {
@@ -35,7 +40,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) isTher
 
 // ********************************************************************************************************************
 // Check if Calling Client is using correct proto-file version
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) isClientUsingCorrectTestDataProtoFileVersion(usedProtoFileVersion fenixTestDataSyncServerGrpcApi.CurrentFenixTestDataProtoFileVersionEnum) (returnMessage *fenixTestDataSyncServerGrpcApi.AckNackResponse) {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) isClientUsingCorrectTestDataProtoFileVersion(callingClientUuid string, usedProtoFileVersion fenixTestDataSyncServerGrpcApi.CurrentFenixTestDataProtoFileVersionEnum) (returnMessage *fenixTestDataSyncServerGrpcApi.AckNackResponse) {
 
 	var clientUseCorrectProtoFileVersion bool
 	var protoFileExpected fenixTestDataSyncServerGrpcApi.CurrentFenixTestDataProtoFileVersionEnum
@@ -68,6 +73,10 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) isClie
 			Comments:   "Wrong proto file used. Expected: '" + protoFileExpected.String() + "', but got: '" + protoFileUsed.String() + "'",
 			ErrorCodes: errorCodes,
 		}
+
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"id": "513dd8fb-a0bb-4738-9a0b-b7eaf7bb8adb",
+		}).Debug("Wrong proto file used. Expected: '" + protoFileExpected.String() + "', but got: '" + protoFileUsed.String() + "' for Client: " + callingClientUuid)
 
 		return returnMessage
 

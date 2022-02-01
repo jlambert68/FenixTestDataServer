@@ -17,10 +17,10 @@ func (s *FenixTestDataGrpcServicesServer) AreYouAlive(ctx context.Context, empty
 
 	defer fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"id": "9c7f0c3d-7e9f-4c91-934e-8d7a22926d84isClientUsingCorrectTestDataProtoFileVersion",
-	}).Debug("Incoming gRPC 'AreYouAlive'")
+	}).Debug("Outgoing gRPC 'AreYouAlive'")
 
 	// Check if Client is using correct proto files version
-	returnMessage := fenixTestDataSyncServerObject.isClientUsingCorrectTestDataProtoFileVersion(emptyParameter.ProtoFileVersionUsedByClient)
+	returnMessage := fenixTestDataSyncServerObject.isClientUsingCorrectTestDataProtoFileVersion("666", emptyParameter.ProtoFileVersionUsedByClient)
 	if returnMessage != nil {
 		// Not correct proto-file version is used
 		return returnMessage, nil
@@ -39,13 +39,13 @@ func (s *FenixTestDataGrpcServicesServer) SendMerkleHash(ctx context.Context, me
 
 	defer fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"id": "27fb45fe-3266-41aa-a6af-958513977e28",
-	}).Debug("Incoming gRPC 'SendMerkleHash'")
+	}).Debug("Outgoing gRPC 'SendMerkleHash'")
 
 	// Get calling client
 	callingClientUuid := merkleHashMessage.TestDataClientUuid
 
 	// Check if Client is using correct proto files version
-	returnMessage := fenixTestDataSyncServerObject.isClientUsingCorrectTestDataProtoFileVersion(merkleHashMessage.ProtoFileVersionUsedByClient)
+	returnMessage := fenixTestDataSyncServerObject.isClientUsingCorrectTestDataProtoFileVersion(merkleHashMessage.GetTestDataClientUuid(), merkleHashMessage.ProtoFileVersionUsedByClient)
 	if returnMessage != nil {
 		// Not the correct proto-file version is used
 		return returnMessage, nil
@@ -87,7 +87,7 @@ func (s *FenixTestDataGrpcServicesServer) SendMerkleTree(ctx context.Context, me
 
 	defer fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"id": "61e2c28d-b091-442a-b7f8-d2502d9547cf",
-	}).Debug("Incoming gRPC 'SendMerkleTree'")
+	}).Debug("Outgoing gRPC 'SendMerkleTree'")
 
 	// Get calling client
 	callingClientUuid := merkleTreeMessage.TestDataClientUuid
@@ -104,7 +104,7 @@ func (s *FenixTestDataGrpcServicesServer) SendMerkleTree(ctx context.Context, me
 	}
 
 	// Check if Client is using correct proto files version
-	returnMessage := fenixTestDataSyncServerObject.isClientUsingCorrectTestDataProtoFileVersion(merkleTreeMessage.ProtoFileVersionUsedByClient)
+	returnMessage := fenixTestDataSyncServerObject.isClientUsingCorrectTestDataProtoFileVersion(merkleTreeMessage.GetTestDataClientUuid(), merkleTreeMessage.ProtoFileVersionUsedByClient)
 	if returnMessage != nil {
 		// Not correct proto-file version is used
 		return returnMessage, nil
@@ -169,13 +169,13 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataHeaderHash(ctx context.Con
 
 	defer fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"id": "b3576bdc-ac11-44cd-9fa2-cd7065f1253d",
-	}).Debug("Incoming gRPC 'SendTestDataHeaders'")
+	}).Debug("Outgoing gRPC 'SendTestDataHeaders'")
 
 	// Get calling client
 	callingClientUuid := testDataHeaderHashMessageMessage.TestDataClientUuid
 
 	// Check if Client is using correct proto files version
-	returnMessage := fenixTestDataSyncServerObject.isClientUsingCorrectTestDataProtoFileVersion(testDataHeaderHashMessageMessage.ProtoFileVersionUsedByClient)
+	returnMessage := fenixTestDataSyncServerObject.isClientUsingCorrectTestDataProtoFileVersion(testDataHeaderHashMessageMessage.GetTestDataClientUuid(), testDataHeaderHashMessageMessage.ProtoFileVersionUsedByClient)
 	if returnMessage != nil {
 		// Not correct proto-file version is used
 		return returnMessage, nil
@@ -233,13 +233,13 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataHeaders(ctx context.Contex
 
 	defer fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"id": "ca0b58a8-6d56-4392-8751-45906670e86b",
-	}).Debug("Incoming gRPC 'SendTestDataHeaders'")
+	}).Debug("Outgoing gRPC 'SendTestDataHeaders'")
 
 	// Get calling client
 	callingClientUuid := testDataHeaderMessage.TestDataClientUuid
 
 	// Check if Client is using correct proto files version
-	returnMessage := fenixTestDataSyncServerObject.isClientUsingCorrectTestDataProtoFileVersion(testDataHeaderMessage.ProtoFileVersionUsedByClient)
+	returnMessage := fenixTestDataSyncServerObject.isClientUsingCorrectTestDataProtoFileVersion(testDataHeaderMessage.GetTestDataClientUuid(), testDataHeaderMessage.ProtoFileVersionUsedByClient)
 	if returnMessage != nil {
 		// Not correct proto-file version is used
 		return returnMessage, nil
@@ -290,13 +290,13 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataRows(ctx context.Context, 
 
 	defer fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"id": "755e8b4f-f184-4277-ad41-e041714c2ca8",
-	}).Debug("Incoming gRPC 'SendTestDataRows'")
+	}).Debug("Outgoing gRPC 'SendTestDataRows'")
 
 	// Get calling client
 	callingClientUuid := testdataRowsMessages.TestDataClientUuid
 
 	// Check if Client is using correct proto files version
-	returnMessage := fenixTestDataSyncServerObject.isClientUsingCorrectTestDataProtoFileVersion(testdataRowsMessages.ProtoFileVersionUsedByClient)
+	returnMessage := fenixTestDataSyncServerObject.isClientUsingCorrectTestDataProtoFileVersion(testdataRowsMessages.TestDataClientUuid, testdataRowsMessages.ProtoFileVersionUsedByClient)
 	if returnMessage != nil {
 		// Not correct proto-file version is used
 		return returnMessage, nil
@@ -369,10 +369,10 @@ func (s *FenixTestDataGrpcServicesServer) RegisterTestDataClient(ctx context.Con
 
 	defer fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"id": "316dcd7e-2229-4a82-b15b-0f808c2dd8aa",
-	}).Debug("Incoming gRPC 'RegisterTestDataClient'")
+	}).Debug("Outgoing gRPC 'RegisterTestDataClient'")
 
 	// Check if Client is using correct proto files version
-	returnMessage := fenixTestDataSyncServerObject.isClientUsingCorrectTestDataProtoFileVersion(testDataClientInformationMessage.ProtoFileVersionUsedByClient)
+	returnMessage := fenixTestDataSyncServerObject.isClientUsingCorrectTestDataProtoFileVersion(testDataClientInformationMessage.TestDataClientUuid, testDataClientInformationMessage.ProtoFileVersionUsedByClient)
 	if returnMessage != nil {
 		// Not correct proto-file version is used
 		return returnMessage, nil
@@ -397,10 +397,10 @@ func (s *FenixTestDataGrpcServicesServer) AllowOrDisallowIncomingAndOutgoingMess
 
 	defer fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"id": "3961dda0-7af8-4746-a5b1-aa85a6fec479",
-	}).Debug("Incoming gRPC 'AllowOrDisallowIncomingAndOutgoingMessages'")
+	}).Debug("Outgoing gRPC 'AllowOrDisallowIncomingAndOutgoingMessages'")
 
 	// Check if Client is using correct proto files version
-	returnMessage := fenixTestDataSyncServerObject.isClientUsingCorrectTestDataProtoFileVersion(allowOrDisallowIncomingAndOutgoingMessage.ProtoFileVersionUsedByClient)
+	returnMessage := fenixTestDataSyncServerObject.isClientUsingCorrectTestDataProtoFileVersion("666", allowOrDisallowIncomingAndOutgoingMessage.ProtoFileVersionUsedByClient)
 	if returnMessage != nil {
 		// Not correct proto-file version is used
 		return returnMessage, nil
@@ -424,7 +424,7 @@ func (s *FenixTestDataGrpcServicesServer) RestartFenixServerProcesses(ctx contex
 	}).Debug("Outgoing 'RestartFenixServerProcesses'")
 
 	// Check if Client is using correct proto files version
-	returnMessage := fenixTestDataSyncServerObject.isClientUsingCorrectTestDataProtoFileVersion(emptyParameter.ProtoFileVersionUsedByClient)
+	returnMessage := fenixTestDataSyncServerObject.isClientUsingCorrectTestDataProtoFileVersion("666", emptyParameter.ProtoFileVersionUsedByClient)
 	if returnMessage != nil {
 		// Not correct proto-file version is used
 		return returnMessage, nil
