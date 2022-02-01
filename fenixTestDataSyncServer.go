@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/sirupsen/logrus"
 )
 
@@ -26,10 +27,24 @@ func cleanup() {
 
 func FenixServerMain() {
 
+	// Init variables
+	dbDataMap = make(map[memDBClientUuidType]*tempDBStruct)
+
+	tempDBStruct_val := &tempDBStruct{
+		clientData: &tempDBDataStruct{
+			merkleHash: "APAN",
+		},
+	}
+	a, b := dbDataMap[memDBClientUuidType("Hej")]
+	fmt.Println(a, b)
+	dbDataMap[memDBClientUuidType("Hej")] = tempDBStruct_val
+	a, b = dbDataMap[memDBClientUuidType("Hej")]
+	fmt.Println(a, b)
+
 	connectToDB()
 
 	// Set up BackendObject
-	fenixTestDataSyncServerObject = &fenixTestDataSyncServerObjectStruct{stateProcessIncomingAndOutgoingMessage: false}
+	fenixTestDataSyncServerObject = &fenixTestDataSyncServerObjectStruct{stateProcessIncomingAndOutgoingMessage: true}
 
 	// Init logger
 	fenixTestDataSyncServerObject.InitLogger("")

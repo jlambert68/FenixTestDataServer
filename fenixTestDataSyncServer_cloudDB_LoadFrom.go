@@ -22,7 +22,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 	}()
 
 	sqlToExecute := ""
-	sqlToExecute = sqlToExecute + "SELECT clients.\"client_uuid\", clients.\"client_name\" , clients.\"domain_uuid\", clients.\"client_description\"  "
+	sqlToExecute = sqlToExecute + "SELECT clients.\"client_uuid\", clients.\"client_name\" , clients.\"domain_uuid\", clients.\"description\"  "
 	sqlToExecute = sqlToExecute + "FROM clients "
 	sqlToExecute = sqlToExecute + "WHERE clients.activated = true "
 	sqlToExecute = sqlToExecute + "AND "
@@ -37,16 +37,17 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 
 	if err != nil {
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
-			"Id":           "e7e849d2-0279-4fe9-8366-5f62b7dca0a0",
+			"Id":           "831e74ff-e697-4228-9598-8f1dfcf24c65",
 			"Error":        err,
 			"sqlToExecute": sqlToExecute,
-		}).Debug("Something went wrong when executing SQL")
+		}).Error("Something went wrong when executing SQL")
 
 		return err, nil
 	}
 
 	// Variables to used when extract data from result set
 	var testDataClient memCloudDBAllTestDataClientStruct
+	memCloudDBAllClientsMap = make(map[memDBClientUuidType]memCloudDBAllTestDataClientMapStruct)
 
 	// Extract data from DB result set
 	for rows.Next() {
@@ -85,11 +86,21 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 	}()
 
 	sqlToExecute := ""
-	sqlToExecute = sqlToExecute + "SELECT testdata.header.filtervalues.\"header_item_hash\", testdata.header.filtervalues.\"header_filter_value\" , testdata.header.filtervalues.\"client_uuid\", testdata.header.filtervalues.\"domain_uuid\"  "
-	sqlToExecute = sqlToExecute + "FROM testdata.header.filtervalues "
+	sqlToExecute = sqlToExecute + "SELECT testdata_header_filtervalues.\"header_item_hash\", testdata_header_filtervalues.\"header_filter_value\" , testdata_header_filtervalues.\"client_uuid\", testdata_header_filtervalues.\"domain_uuid\"  "
+	sqlToExecute = sqlToExecute + "FROM testdata_header_filtervalues "
 
 	// Query DB
-	rows, _ := DbPool.Query(context.Background(), sqlToExecute)
+	rows, err := DbPool.Query(context.Background(), sqlToExecute)
+
+	if err != nil {
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"Id":           "66813fb3-73d1-4e99-98e7-d4161b1869e1",
+			"Error":        err,
+			"sqlToExecute": sqlToExecute,
+		}).Error("Something went wrong when executing SQL")
+
+		return err
+	}
 
 	// Variables to used when extract data from result set
 	var testDataHeaderFilterValue memCloudDBAllTestDataHeaderFilterValueStruct
@@ -126,14 +137,24 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 	}()
 
 	sqlToExecute := ""
-	sqlToExecute = sqlToExecute + "SELECT testdata.header.items.\"client_uuid\", testdata.header.items.\"domain_uuid\", "
-	sqlToExecute = sqlToExecute + "testdata.header.items.\"header_item_hash\", testdata.header.items.\"header_label\", "
-	sqlToExecute = sqlToExecute + "testdata.header.items.\"should_be_used_in_filter\", testdata.header.items.\"is_mandatory_in_filter\", "
-	sqlToExecute = sqlToExecute + "testdata.header.items.\"filter_selection_type\", testdata.header.items.\"filter_values_hash\" "
-	sqlToExecute = sqlToExecute + "FROM testdata.header.items "
+	sqlToExecute = sqlToExecute + "SELECT testdata_header_items.\"client_uuid\", testdata_header_items.\"domain_uuid\", "
+	sqlToExecute = sqlToExecute + "testdata_header_items.\"header_item_hash\", testdata_header_items.\"header_label\", "
+	sqlToExecute = sqlToExecute + "testdata_header_items.\"should_be_used_in_filter\", testdata_header_items.\"is_mandatory_in_filter\", "
+	sqlToExecute = sqlToExecute + "testdata_header_items.\"filter_selection_type\", testdata_header_items.\"filter_values_hash\" "
+	sqlToExecute = sqlToExecute + "FROM testdata_header_items "
 
 	// Query DB
-	rows, _ := DbPool.Query(context.Background(), sqlToExecute)
+	rows, err := DbPool.Query(context.Background(), sqlToExecute)
+
+	if err != nil {
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"Id":           "b425c42f-ddfa-4474-9099-40d38c2a968d",
+			"Error":        err,
+			"sqlToExecute": sqlToExecute,
+		}).Error("Something went wrong when executing SQL")
+
+		return err
+	}
 
 	// Variables to used when extract data from result set
 	var testDataHeaderItem memCloudDBAllTestDataHeaderItemStruct
@@ -172,12 +193,22 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 	}()
 
 	sqlToExecute := ""
-	sqlToExecute = sqlToExecute + "SELECT testdata.merklehashes.\"client_uuid\", testdata.merklehashes.\"domain_uuid\", "
-	sqlToExecute = sqlToExecute + "testdata.merklehashes.\"merklehash\", testdata.merklehashes.\"merkle_path\" "
-	sqlToExecute = sqlToExecute + "FROM testdata.merklehashes "
+	sqlToExecute = sqlToExecute + "SELECT testdata_merklehashes.\"client_uuid\", testdata_merklehashes.\"domain_uuid\", "
+	sqlToExecute = sqlToExecute + "testdata_merklehashes.\"merklehash\", testdata_merklehashes.\"merkle_path\" "
+	sqlToExecute = sqlToExecute + "FROM testdata_merklehashes "
 
 	// Query DB
-	rows, _ := DbPool.Query(context.Background(), sqlToExecute)
+	rows, err := DbPool.Query(context.Background(), sqlToExecute)
+
+	if err != nil {
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"Id":           "ab4dd291-a270-498b-9eb4-13da153f7afb",
+			"Error":        err,
+			"sqlToExecute": sqlToExecute,
+		}).Error("Something went wrong when executing SQL")
+
+		return err
+	}
 
 	// Variables to used when extract data from result set
 	var testDataMerkleHash memCloudDBAllTestDataMerkleHashStruct
@@ -215,14 +246,24 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 	}()
 
 	sqlToExecute := ""
-	sqlToExecute = sqlToExecute + "SELECT testdata.merkletrees.\"client_uuid\", testdata.merkletrees.\"domain_uuid\", "
-	sqlToExecute = sqlToExecute + "testdata.merkletrees.\"node_level\", testdata.merkletrees.\"node_name\", "
-	sqlToExecute = sqlToExecute + "testdata.merkletrees.\"node_path\", testdata.merkletrees.\"node_hash\", "
-	sqlToExecute = sqlToExecute + "testdata.merkletrees.\"node_child_hash\" "
-	sqlToExecute = sqlToExecute + "FROM testdata.merkletrees "
+	sqlToExecute = sqlToExecute + "SELECT testdata_merkletrees.\"client_uuid\", testdata_merkletrees.\"domain_uuid\", "
+	sqlToExecute = sqlToExecute + "testdata_merkletrees.\"node_level\", testdata_merkletrees.\"node_name\", "
+	sqlToExecute = sqlToExecute + "testdata_merkletrees.\"node_path\", testdata_merkletrees.\"node_hash\", "
+	sqlToExecute = sqlToExecute + "testdata_merkletrees.\"node_child_hash\" "
+	sqlToExecute = sqlToExecute + "FROM testdata_merkletrees "
 
 	// Query DB
-	rows, _ := DbPool.Query(context.Background(), sqlToExecute)
+	rows, err := DbPool.Query(context.Background(), sqlToExecute)
+
+	if err != nil {
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"Id":           "e60b727a-ae76-4188-b159-634d80978658",
+			"Error":        err,
+			"sqlToExecute": sqlToExecute,
+		}).Error("Something went wrong when executing SQL")
+
+		return err
+	}
 
 	// Variables to used when extract data from result set
 	var testDataMerkleTree memCloudDBAllTestDataMerkleTreeStruct
@@ -262,13 +303,23 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 	}()
 
 	sqlToExecute := ""
-	sqlToExecute = sqlToExecute + "SELECT testdata.row.items.current.\"client_uuid\", testdata.row.items.current.\"domain_uuid\", "
-	sqlToExecute = sqlToExecute + "testdata.row.items.current.\"row_hash\", testdata.row.items.current.\"testdata_value_as_string\", "
-	sqlToExecute = sqlToExecute + "testdata.row.items.current.\"leaf_node_name\", testdata.row.items.current.\"leaf_node_path\" "
-	sqlToExecute = sqlToExecute + "FROM testdata.row.items.current "
+	sqlToExecute = sqlToExecute + "SELECT testdata_row_items_current.\"client_uuid\", testdata_row_items_current.\"domain_uuid\", "
+	sqlToExecute = sqlToExecute + "testdata_row_items_current.\"row_hash\", testdata_row_items_current.\"testdata_value_as_string\", "
+	sqlToExecute = sqlToExecute + "testdata_row_items_current.\"leaf_node_name\", testdata_row_items_current.\"leaf_node_path\" "
+	sqlToExecute = sqlToExecute + "FROM testdata_row_items_current "
 
 	// Query DB
-	rows, _ := DbPool.Query(context.Background(), sqlToExecute)
+	rows, err := DbPool.Query(context.Background(), sqlToExecute)
+
+	if err != nil {
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"Id":           "2f130d7e-f8aa-466f-b29d-0fb63608c1a6",
+			"Error":        err,
+			"sqlToExecute": sqlToExecute,
+		}).Error("Something went wrong when executing SQL")
+
+		return err
+	}
 
 	// Variables to used when extract data from result set
 	var testDataRowItem memCloudDBAllTestDataRowItemStruct
