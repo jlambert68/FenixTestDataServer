@@ -416,7 +416,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveCu
 }
 
 // Transfer TestDataHeader from Client to Server
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) moveCurrentHeaderHashFromClientToServer(testDataClientGuid string) bool {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) moveCurrentHeaderDataFromClientToServer(testDataClientGuid string) bool {
 
 	// Get pointer to data for Client_UUID
 	tempdbData := dbDataMap[memDBClientUuidType(testDataClientGuid)]

@@ -5,6 +5,7 @@ import (
 	"github.com/go-gota/gota/dataframe"
 	"github.com/go-gota/gota/series"
 	fenixTestDataSyncServerGrpcApi "github.com/jlambert68/FenixGrpcApi/Fenix/fenixTestDataSyncServerGrpcApi/go_grpc_api"
+	"github.com/sirupsen/logrus"
 )
 
 /*
@@ -51,6 +52,52 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) conver
 	df := dataframe.LoadStructs(myMerkleTree)
 
 	return df
+}
+
+// Verify that HeaderHash is correct calculated
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) verifyThatHeaderItemsHashIsCorrectCalculated(testDataHeadersMessage fenixTestDataSyncServerGrpcApi.TestDataHeadersMessage) (returnMessage *fenixTestDataSyncServerGrpcApi.AckNackResponse) {
+
+	// Extract  HeaderHash
+	headerHash := testDataHeadersMessage.TestDataHeaderItemsHash
+
+	var headerItemValues []string
+	testDataHeaderItems := testDataHeadersMessage.TestDataHeaderItems
+
+	// Loop all MerkleTreeNodes and create a DataFrame for the data
+	for _, headerItem := range testDataHeaderItems {
+		testDataHeaderItemMessageHash := common_config.CreateTestDataHeaderItemMessageHash(headerItem)
+		headerItemValues = append(headerItemValues, testDataHeaderItemMessageHash)
+
+	}
+
+	// Hash all 'testDataHeaderItemMessageHash' into a single hash
+	reHashedHeaderItemMessageHash := common_config.HashValues(headerItemValues, false)
+
+	if headerHash != reHashedHeaderItemMessageHash {
+
+		// Set Error codes to return message
+		var errorCodes []fenixTestDataSyncServerGrpcApi.ErrorCodesEnum
+		var errorCode fenixTestDataSyncServerGrpcApi.ErrorCodesEnum
+
+		errorCode = fenixTestDataSyncServerGrpcApi.ErrorCodesEnum_ERROR_HEADERLABELHASH_NOT_CORRECT_CALCULATED
+		errorCodes = append(errorCodes, errorCode)
+
+		// Create Return message
+		returnMessage = &fenixTestDataSyncServerGrpcApi.AckNackResponse{
+			AckNack:    false,
+			Comments:   "HeaderItemsHash is not correct calculated. Expected '" + headerHash + "', but got '" + headerHash + "'",
+			ErrorCodes: errorCodes,
+		}
+
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"Id": "785424d8-2d82-4581-b8ce-4ac49650666c",
+		}).Info("HeaderItemsHash is not correct calculated. Expected '" + headerHash + "', but got '" + headerHash + "'")
+
+		// Exit function Respond back to client when hash error
+		return returnMessage
+	}
+
+	return nil
 }
 
 // Convert gRPC-Header message into string and string array objects
@@ -102,10 +149,19 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) conver
 				ErrorCodes: errorCodes,
 			}
 
+			fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+				"Id": "bccab03c-dda2-47bd-bbca-70f10bc052c7",
+			}).Info("Fenix Asked for TestDataHeaders but didn't receive them i a correct way")
+
 			// leave
 			return testdataAsDataFrame, returnMessage
 		}
 	}
+
+	// Add 'KEY' to all headers
+	var testDataHeadersInDataFrame []string
+	testDataHeadersInDataFrame = append(testDataHeadersInDataFrame, currentTestDataHeaders...)
+	testDataHeadersInDataFrame = append(testDataHeadersInDataFrame, "TestDataHash")
 
 	testDataRows := testdataRowsMessages.TestDataRows
 
@@ -113,16 +169,27 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) conver
 	for _, testDataRow := range testDataRows {
 
 		// Create one row, as a dataframe
-		rowDataframe := dataframe.New(
-			series.New([]string{"key"}, series.String, "KEY"))
+		rowDataframe := dataframe.New()
 		var valuesToHash []string
 
 		for testDataItemCounter, testDataItem := range testDataRow.TestDataItems {
-			rowDataframe = rowDataframe.Mutate(
-				series.New([]string{testDataItem.TestDataItemValueAsString}, series.String, currentTestDataHeaders[testDataItemCounter]))
+
+			if rowDataframe.Nrow() == 0 {
+				// Create New
+				rowDataframe = dataframe.New(
+					series.New([]string{testDataItem.TestDataItemValueAsString}, series.String, currentTestDataHeaders[testDataItemCounter]))
+			} else {
+				// Add to existing
+				rowDataframe = rowDataframe.Mutate(
+					series.New([]string{testDataItem.TestDataItemValueAsString}, series.String, currentTestDataHeaders[testDataItemCounter]))
+			}
 
 			valuesToHash = append(valuesToHash, testDataItem.TestDataItemValueAsString)
 		}
+
+		// Create and add column for 'TestDataHash'
+		testDataHashSeriesColumn := series.New([]string{"key"}, series.String, "TestDataHash")
+		rowDataframe = rowDataframe.Mutate(testDataHashSeriesColumn)
 
 		// Hash all values for row
 		hashedRow := common_config.HashValues(valuesToHash, true)
@@ -140,25 +207,30 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) conver
 			// Create Return message
 			returnMessage = &fenixTestDataSyncServerGrpcApi.AckNackResponse{
 				AckNack:    false,
-				Comments:   "RowsHashes seems not to be correct calculated",
+				Comments:   "RowsHashes seems not to be correct calculated.",
 				ErrorCodes: errorCodes,
 			}
+
+			fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+				"Id": "eff5fb2f-4fd5-4fc7-a4eb-69bee9f22d92",
+			}).Info("RowsHashes seems not to be correct calculated.")
 
 			// Exit function Respond back to client when hash error
 			return testdataAsDataFrame, returnMessage
 		}
 
 		// Add TestDataHash to row DataFrame
-		rowDataframe.Elem(0, 0).Set(hashedRow)
+		rowDataframe.Elem(0, rowDataframe.Ncol()-1).Set(hashedRow)
 		//) Mutate(
 		//	series.New([]string{hashedRow}, series.String, "TestDataHash"))
 
 		// Add the row to the Dataframe for the testdata
-		// When first time
+		// Special handling first when first time
 		if testdataAsDataFrame.Nrow() == 0 {
 			testdataAsDataFrame = rowDataframe.Copy()
+
 		} else {
-			testdataAsDataFrame = testdataAsDataFrame.OuterJoin(rowDataframe, "KEY")
+			testdataAsDataFrame = testdataAsDataFrame.OuterJoin(rowDataframe, testDataHeadersInDataFrame...)
 		}
 	}
 
@@ -171,7 +243,12 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) concar
 
 	allTestdataAsDataFrame = fenixTestDataSyncServerObject.getCurrentTestDataRowsForServer(testDataClientGuid)
 
-	allTestdataAsDataFrame = allTestdataAsDataFrame.OuterJoin(testdataDataframe)
+	if allTestdataAsDataFrame.Nrow() == 0 {
+		return testdataDataframe
+	} else {
+		headerKeys := testdataDataframe.Names()
+		allTestdataAsDataFrame = allTestdataAsDataFrame.OuterJoin(testdataDataframe, headerKeys...)
+	}
 
 	return allTestdataAsDataFrame
 

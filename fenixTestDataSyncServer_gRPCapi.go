@@ -58,14 +58,18 @@ func (s *FenixTestDataGrpcServicesServer) SendMerkleHash(ctx context.Context, me
 		return returnMessage, nil
 	}
 
-	// Save the message
-	_ = fenixTestDataSyncServerObject.saveCurrentMerkleHashForClient(*merkleHashMessage)
-
 	// Compare current server- and client MerkleHash
 	currentServerMerkleHash := fenixTestDataSyncServerObject.getCurrentMerkleHashForServer(callingClientUuid)
 
 	//  if different in MerkleHash then ask client for MerkleTree
 	if currentServerMerkleHash != merkleHashMessage.MerkleHash {
+
+		// Save the message
+		_ = fenixTestDataSyncServerObject.saveCurrentMerkleHashForClient(*merkleHashMessage)
+
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"id": "d9c676ca-11a1-4007-8182-2f54834013a5",
+		}).Debug("Saved the MerkleHash Client: " + callingClientUuid)
 
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 			"id": "cd30f2ae-6f79-4a0a-a8d8-a78d32dd6c71",
@@ -136,18 +140,18 @@ func (s *FenixTestDataGrpcServicesServer) SendMerkleTree(ctx context.Context, me
 		return &fenixTestDataSyncServerGrpcApi.AckNackResponse{AckNack: false, Comments: "There is something wrong with Hash computation. Expected: '" + recalculatedMerkleRootHash + "' as MerkleRoot based on MerkleTree-nodes"}, nil
 	}
 
-	// Save the MerkleTree Dataframe message
-	_ = fenixTestDataSyncServerObject.saveCurrentMerkleTreeForClient(callingClientUuid, merkleTreeAsDataFrame)
-
-	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
-		"id": "cd30f2ae-6f79-4a0a-a8d8-a78d32dd6c71",
-	}).Debug("Saved MerkleTree for Client: " + callingClientUuid)
-
 	// Compare current server- and client merklehash
 	currentServerMerkleHash := fenixTestDataSyncServerObject.getCurrentMerkleHashForServer(callingClientUuid)
 
 	//  if different in MerkleHash(MerkleTree was different) then ask client for TestData-rows that the Server hasn't got
 	if currentServerMerkleHash != recalculatedMerkleRootHash {
+
+		// Save the MerkleTree Dataframe message
+		_ = fenixTestDataSyncServerObject.saveCurrentMerkleTreeForClient(callingClientUuid, merkleTreeAsDataFrame)
+
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"id": "cd30f2ae-6f79-4a0a-a8d8-a78d32dd6c71",
+		}).Debug("Saved MerkleTree for Client: " + callingClientUuid)
 
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 			"id": "e011e854-7854-425f-9592-dcfc785203cf",
@@ -169,7 +173,7 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataHeaderHash(ctx context.Con
 
 	defer fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"id": "b3576bdc-ac11-44cd-9fa2-cd7065f1253d",
-	}).Debug("Outgoing gRPC 'SendTestDataHeaders'")
+	}).Debug("Outgoing gRPC 'SendTestDataHeaderHash'")
 
 	// Get calling client
 	callingClientUuid := testDataHeaderHashMessageMessage.TestDataClientUuid
@@ -199,16 +203,16 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataHeaderHash(ctx context.Con
 		return &fenixTestDataSyncServerGrpcApi.AckNackResponse{AckNack: true, Comments: ""}, nil
 	}
 
-	// Save the message
-	_ = fenixTestDataSyncServerObject.saveCurrentHeaderHashForClient(callingClientUuid, clientHeaderHash)
-
-	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
-		"id": "2cdb17e4-95c8-4d56-b2cd-7f4c8829c735",
-	}).Debug("Saved Header hash to DB for client: " + callingClientUuid)
-
 	// Check if Server Header Hash is the same as received Client HeaderHash
 	serverHeaderHash := fenixTestDataSyncServerObject.getCurrentHeaderHashForServer(callingClientUuid)
 	if serverHeaderHash != clientHeaderHash {
+
+		// Save the message
+		_ = fenixTestDataSyncServerObject.saveCurrentHeaderHashForClient(callingClientUuid, clientHeaderHash)
+
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"id": "2cdb17e4-95c8-4d56-b2cd-7f4c8829c735",
+		}).Debug("Saved Header hash to DB for Client: " + callingClientUuid)
 
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 			"id": "e4efabb7-eec6-4bb6-bbc2-f3447e14c15f",
@@ -252,29 +256,59 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataHeaders(ctx context.Contex
 		return returnMessage, nil
 	}
 
+	// Verify that HeaderItemHash is correct calculated
+	returnMessage = fenixTestDataSyncServerObject.verifyThatHeaderItemsHashIsCorrectCalculated(*testDataHeaderMessage)
+	if returnMessage != nil {
+		// HeaderItemsHash not correct calculated
+		return returnMessage, nil
+	}
+
 	// Convert gRPC-message into other 'format'
 	headerHash, headerItems := fenixTestDataSyncServerObject.convertgRpcHeaderMessageToStringArray(*testDataHeaderMessage)
 
-	// Validate HeaderHash
-	computedHeaderHash := common_config.HashValues(headerItems, true)
-	if computedHeaderHash != headerHash {
+	// Get current HeaderHash for the Client
+	currentClientHeaderHash := fenixTestDataSyncServerObject.getCurrentHeaderHashForClient(callingClientUuid)
+
+	// Check if HeaderData already is saved
+	if currentClientHeaderHash != headerHash {
+
+		// Save the message
+		_ = fenixTestDataSyncServerObject.saveCurrentHeaderHashForClient(callingClientUuid, headerHash)
+		//_ = fenixTestDataSyncServerObject.saveCurrentHeadersForClient(callingClientUuid, headerItems)
 
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
-			"id": "e4efabb7-eec6-4bb6-bbc2-f3447e14c15f",
-		}).Info("Header hash is not correct computed from Client. Expected '" + computedHeaderHash + "' as HeaderHash but got " + headerHash)
+			"id": "302ecd09-68a1-42df-ae63-7e4483ea62e1",
+		}).Debug("Saved Header hash to DB for client: " + callingClientUuid)
 
-		return &fenixTestDataSyncServerGrpcApi.AckNackResponse{AckNack: false, Comments: "Header hash is not correct computed. Expected '" + computedHeaderHash + "' as HeaderHash"}, nil
+		// Replace Server version of Headers with Client version of Headers
+		_ = fenixTestDataSyncServerObject.moveCurrentHeaderDataFromClientToServer(callingClientUuid)
+
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"id": "6c90bc16-890a-402e-91b1-68fc060986c6",
+		}).Debug("Moved HeaderHash from Client to Server, for client: " + callingClientUuid)
+
+		// The Headers are change, so we must ask client to send the MerkleHash
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"id": "ab857f2e-95dc-46d3-b065-71cdd38ea97b",
+		}).Debug("The Headers are change, so we must ask client to send the MerkleHash; Client: " + callingClientUuid)
+
+		fenixTestDataSyncServerObject.AskClientToSendMerkleHash(callingClientUuid)
+
 	}
 
-	// Save the message
-	_ = fenixTestDataSyncServerObject.saveCurrentHeaderHashForClient(callingClientUuid, headerHash)
+	// Save the Headers message --**** Not the solution I want because it saves it evan if nothing is changed ***
 	_ = fenixTestDataSyncServerObject.saveCurrentHeadersForClient(callingClientUuid, headerItems)
 
+	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"id": "1c99aec3-48b0-4ad2-be98-ec3dda32c4bd",
+	}).Debug("Saved Headers data to DB for client: " + callingClientUuid)
+
 	// Replace Server version of Headers with Client version of Headers
-	_ = fenixTestDataSyncServerObject.moveCurrentHeaderHashFromClientToServer(callingClientUuid)
+	_ = fenixTestDataSyncServerObject.moveCurrentHeaderDataFromClientToServer(callingClientUuid)
+
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"id": "6c90bc16-890a-402e-91b1-68fc060986c6",
-	}).Debug("Saved Header hash and Headers to DB for client: " + callingClientUuid)
+	}).Debug("Moved Headers data from Client to Server, for client: " + callingClientUuid)
 
 	return &fenixTestDataSyncServerGrpcApi.AckNackResponse{AckNack: true, Comments: ""}, nil
 
@@ -352,8 +386,28 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataRows(ctx context.Context, 
 			ErrorCodes: errorCodes,
 		}
 
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"id": "e9b43ac4-ed89-41ef-9762-bc7406633906",
+		}).Info("MerklRoot hash is not the same as sent to server. Got " + clientMerkleHash + ", but recalculated to " + computedMerkleHash + " from testdata  Client: " + callingClientUuid)
+
 		// respond back to client when it used wrong proto-file
 		return returnMessage, nil
+
+	} else {
+
+		// Save TestDataRows to MemoryDB
+		_ = fenixTestDataSyncServerObject.saveCurrentTestDataRowsForClient(callingClientUuid, allRowsAsDataFrame)
+
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"id": "9aa8379e-5d5c-4eb4-9b18-d52da4291795",
+		}).Debug("The TestDataRows were saved for Client: " + callingClientUuid)
+
+		// Move Client-data to Server-data in MemoryDB for client
+		_ = fenixTestDataSyncServerObject.moveCurrentTestDataAndMerkleTreeFromClientToServer(callingClientUuid)
+
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"id": "e9b43ac4-ed89-41ef-9762-bc7406633906",
+		}).Debug("The TestDataRows were copied from Client to Server for Client: " + callingClientUuid)
 
 	}
 
