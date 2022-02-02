@@ -135,9 +135,23 @@ func (s *FenixTestDataGrpcServicesServer) SendMerkleTree(ctx context.Context, me
 
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 			"id": "cd30f2ae-6f79-4a0a-a8d8-a78d32dd6c71",
-		}).Debug("There is something wrong with Hash computation. Expected: '" + recalculatedMerkleRootHash + "' as MerkleRoot based on MerkleTree-nodes")
+		}).Info("There is something wrong with Hash computation. Expected: '" + recalculatedMerkleRootHash + "' as MerkleRoot based on MerkleTree-nodes")
 
 		return &fenixTestDataSyncServerGrpcApi.AckNackResponse{AckNack: false, Comments: "There is something wrong with Hash computation. Expected: '" + recalculatedMerkleRootHash + "' as MerkleRoot based on MerkleTree-nodes"}, nil
+	}
+
+	currentClientMerkleHash := fenixTestDataSyncServerObject.getCurrentMerkleHashForClient(callingClientUuid)
+
+	// Verify that Client Sent MerkleHash, in a previous message, that matches the MerkleHash from MerkleTable
+	if currentClientMerkleHash != recalculatedMerkleRootHash {
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"id": "a86f766a-c9ae-4698-abf2-b10a0f5ec475",
+		}).Info("Client hasn't sent a MerkleHash message previous to MerkleTree message, Client: " + callingClientUuid)
+
+		// Ask Client to send over the MerkleHash
+		fenixTestDataSyncServerObject.AskClientToSendMerkleHash(callingClientUuid)
+
+		return &fenixTestDataSyncServerGrpcApi.AckNackResponse{AckNack: false, Comments: "Client hasn't sent a MerkleHash message previous to MerkleTree message"}, nil
 	}
 
 	// Compare current server- and client merklehash
@@ -146,7 +160,7 @@ func (s *FenixTestDataGrpcServicesServer) SendMerkleTree(ctx context.Context, me
 	//  if different in MerkleHash(MerkleTree was different) then ask client for TestData-rows that the Server hasn't got
 	if currentServerMerkleHash != recalculatedMerkleRootHash {
 
-		// Save the MerkleTree Dataframe message
+		// Save the MerkleHash and MerkleTree Dataframe message
 		_ = fenixTestDataSyncServerObject.saveCurrentMerkleTreeForClient(callingClientUuid, merkleTreeAsDataFrame)
 
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
