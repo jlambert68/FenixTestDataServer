@@ -1,19 +1,42 @@
 package main
 
 import (
+	"FenixTestDataServer/common_config"
+	"crypto/tls"
 	fenixClientTestDataSyncServerGrpcApi "github.com/jlambert68/FenixGrpcApi/Client/fenixClientTestDataSyncServerGrpcApi/go_grpc_api"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 )
 
 // Set upp connection and Dial to FenixTestDataSyncServer
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) SetConnectionToFenixClientTestDataSyncServer() {
 
 	var err error
+	var opts []grpc.DialOption
+
+	//When running on GCP then use credential otherwise not
+	if common_config.ExecutionLocationForFenixTestDataServer == common_config.GCP {
+		creds := credentials.NewTLS(&tls.Config{
+			InsecureSkipVerify: true,
+		})
+
+		opts = []grpc.DialOption{
+			grpc.WithTransportCredentials(creds),
+		}
+	}
 
 	// Set up connection to FenixTestDataSyncServer
-	remoteFenixClientTestDataSyncServerConnection, err = grpc.Dial(fenixClientTestDataSyncServer_address_to_dial, grpc.WithInsecure())
+	// When run on GCP, use credentials
+	if common_config.ExecutionLocationForFenixTestDataServer == common_config.GCP {
+		// Run on GCP
+		remoteFenixClientTestDataSyncServerConnection, err = grpc.Dial(fenixClientTestDataSyncServer_address_to_dial, opts...)
+	} else {
+		// Run Local
+		remoteFenixClientTestDataSyncServerConnection, err = grpc.Dial(fenixClientTestDataSyncServer_address_to_dial, grpc.WithInsecure())
+	}
+
 	if err != nil {
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 			"fenixClientTestDataSyncServer_address_to_dial": fenixClientTestDataSyncServer_address_to_dial,
