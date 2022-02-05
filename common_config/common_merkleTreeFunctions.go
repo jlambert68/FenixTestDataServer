@@ -371,3 +371,56 @@ func ExtractMerkleRootHashFromMerkleTree(merkleTree dataframe.DataFrame) (merkle
 
 	return merkleRootHash
 }
+
+func MissedPathsToRetreiveFromCLient(serverCopyMerkleTree dataframe.DataFrame, newClientMerkleTree dataframe.DataFrame) (merklePathsToRetreive []string) {
+
+	merkleDataToKeep := serverCopyMerkleTree.InnerJoin(newClientMerkleTree, "MerkleLevel", "MerklePath", "MerklePath", "MerkleHash", "MerkleChildHash")
+
+	//Filter out rows that is missing and is not on 'highest' MerkleLevel (leaves)
+	leaveNodeLevel := merkleDataToKeep.Col("MerkleLevel").Max()
+	isNotInListFkn := IsNotInListFilter(merkleDataToKeep.Col("MerkleChildHash").Records())
+
+	merkleTreeToRetrieve_temp := newClientMerkleTree.Filter(
+		dataframe.F{
+			Colname:    "MerkleLevel",
+			Comparator: series.Eq,
+			Comparando: leaveNodeLevel})
+
+	merkleTreeToRetrieve := merkleTreeToRetrieve_temp.Filter(
+		dataframe.F{
+			Colname:    "MerkleChildHash",
+			Comparator: series.CompFunc,
+			Comparando: isNotInListFkn()})
+
+	merklePathsToRetreive = merkleTreeToRetrieve.Col("MerklePath").Records()
+
+	//Clean up MerklePaths to be sent
+	for arrayPosition, merklePath := range merklePathsToRetreive {
+		numberOfInstances := strings.Count(merklePath, "MerkleRoot/")
+		if numberOfInstances != 1 {
+			log.Println("'MerkleRoot/' was not found: ", merklePath)
+		}
+		cleanedValue := merklePath[11:]
+		merklePathsToRetreive[arrayPosition] = cleanedValue
+	}
+	return merklePathsToRetreive
+
+}
+
+func IsNotInListFilter(arrayToCompareWith []string) func() func(el series.Element) bool {
+	isNaNFunction := func() func(el series.Element) bool {
+		return func(el series.Element) bool {
+			var notFoundInArray bool = true
+
+			for _, value := range arrayToCompareWith {
+				if value == el.String() {
+					notFoundInArray = false
+					break
+				}
+			}
+
+			return notFoundInArray
+		}
+	}
+	return isNaNFunction
+}

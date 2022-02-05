@@ -167,11 +167,21 @@ func (s *FenixTestDataGrpcServicesServer) SendMerkleTree(ctx context.Context, me
 			"id": "cd30f2ae-6f79-4a0a-a8d8-a78d32dd6c71",
 		}).Debug("Saved MerkleTree for Client: " + callingClientUuid)
 
-		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
-			"id": "e011e854-7854-425f-9592-dcfc785203cf",
-		}).Debug("Different in MerkleHash(MerkleTree was different) then ask client for TestData-rows that the Server hasn't got. Client: " + callingClientUuid)
+		// If Server don't have any previous MerkleHash(and then no rows) then ask for all TestDataRows
+		if currentServerMerkleHash == "" {
+			fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+				"id": "e011e854-7854-425f-9592-dcfc785203cf",
+			}).Debug("No previous MerkleHash in DB then ask for all TestDataRow (MerkleTree was different) Client: " + callingClientUuid)
 
-		defer fenixTestDataSyncServerObject.AskClientToSendAllTestDataRows(callingClientUuid)
+			defer fenixTestDataSyncServerObject.AskClientToSendAllTestDataRows(callingClientUuid)
+		} else {
+			// Ask for the rows that is missing
+			fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+				"id": "f0aa86c1-0179-4cb4-a891-60d55fdce84c",
+			}).Debug("Different in MerkleHash(MerkleTree was different) then ask client for TestData-rows that the Server hasn't got. Client: " + callingClientUuid)
+
+			defer fenixTestDataSyncServerObject.AskClientToSendTestDataRows(callingClientUuid)
+		}
 	}
 
 	return &fenixTestDataSyncServerGrpcApi.AckNackResponse{AckNack: true, Comments: ""}, nil

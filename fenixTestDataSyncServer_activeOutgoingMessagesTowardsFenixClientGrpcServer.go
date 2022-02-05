@@ -214,13 +214,47 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) AskCli
 }
 
 // Fenix Server asks Fenix client to  send TestData rows, based on list of MerklePaths, to Fenix Testdata sync server with this service
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) AskClientToSendTestDataRows(TestDataClientGuid string) {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) AskClientToSendTestDataRows(testDataClientGuid string) {
 
 	// Check if TestData server should process outgoing messages
 	returnMessageStop := fenixTestDataSyncServerObject.isThereATemporaryStopInProcessingInOrOutgoingMessages()
 	if returnMessageStop != nil {
 		// Temporary stop in processing messages
 		return
+	}
+
+	serverCopyMerkleTree := fenixTestDataSyncServerObject.getCurrentMerkleTreeForServer(testDataClientGuid)
+	clientsNewMerkleTree := fenixTestDataSyncServerObject.getCurrentMerkleTreeForClient(testDataClientGuid)
+
+	// Extract all paths to retrieve from client
+	merklePathsToRetreive := common_config.MissedPathsToRetreiveFromCLient(serverCopyMerkleTree, clientsNewMerkleTree)
+
+	// Set up connection to Client-server
+	fenixTestDataSyncServerObject.SetConnectionToFenixClientTestDataSyncServer()
+
+	merklePathsMessage := &fenixClientTestDataSyncServerGrpcApi.MerklePathsMessage{
+		MerklePath:                   merklePathsToRetreive,
+		ProtoFileVersionUsedByCaller: fenixClientTestDataSyncServerGrpcApi.CurrentFenixClientTestDataProtoFileVersionEnum(fenixTestDataSyncServerObject.getHighestClientTestDataProtoFileVersion()),
+	}
+
+	// Do gRPC-call
+	ctx := context.Background()
+	returnMessage, err := fenixClientTestDataSyncServerClient.SendTestDataRows(ctx, merklePathsMessage)
+
+	// Shouldn't happen
+	if err != nil {
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"ID":    "383be247-e9b8-4b12-bb22-58e8b69d3ab4",
+			"error": err,
+		}).Fatal("Problem to do gRPC-call to FenixClientTestDataSyncServer for 'SendTestDataRows'")
+
+		// FenixTestDataSyncServer couldn't handle gPRC call
+		if returnMessage.AckNack == false {
+			fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+				"ID": "3cbc84af-c2d5-4302-a92a-d11bfd53bdba",
+				"Message from FenixClientTestDataSyncServerObject": returnMessage.Comments,
+			}).Error("Problem to do gRPC-call to FenixClientTestDataSyncServer for 'SendTestDataRows'")
+		}
 	}
 
 }
