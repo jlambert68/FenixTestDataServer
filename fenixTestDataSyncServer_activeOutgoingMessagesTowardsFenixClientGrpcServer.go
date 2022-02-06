@@ -122,7 +122,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) AskCli
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 			"ID":    "23ed314f-f7d6-41da-8489-07dfc970ab31",
 			"error": err,
-		}).Fatal("Problem to do gRPC-call to FenixClientTestDataSyncServer for 'AskClientToSendMerkleTree'")
+		}).Error("Problem to do gRPC-call to FenixClientTestDataSyncServer for 'AskClientToSendMerkleTree'")
 
 		// FenixTestDataSyncServer couldn't handle gPRC call
 		if returnMessage.AckNack == false {
