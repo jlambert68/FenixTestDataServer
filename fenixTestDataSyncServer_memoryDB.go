@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"github.com/go-gota/gota/dataframe"
+	"github.com/go-gota/gota/series"
 	fenixTestDataSyncServerGrpcApi "github.com/jlambert68/FenixGrpcApi/Fenix/fenixTestDataSyncServerGrpcApi/go_grpc_api"
 	"github.com/sirupsen/logrus"
 )
@@ -418,6 +419,14 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveCu
 // Transfer TestDataHeader from Client to Server
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) moveCurrentHeaderDataFromClientToServer(testDataClientGuid string) bool {
 
+	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"id": "082dff5e-33ac-4edd-94a4-37a7d0aaf8f7",
+	}).Debug("Incoming gRPC 'moveCurrentHeaderDataFromClientToServer'")
+
+	defer fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"id": "437fb222-757a-4771-a7d7-d7eefdd81951",
+	}).Debug("Outgoing gRPC 'moveCurrentHeaderDataFromClientToServer'")
+
 	// Get pointer to data for Client_UUID
 	tempdbData := dbDataMap[memDBClientUuidType(testDataClientGuid)]
 
@@ -430,6 +439,14 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) moveCu
 
 // Transfer MerkleTree and TestDataRows from Client to Server
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) moveCurrentTestDataAndMerkleTreeFromClientToServer(testDataClientGuid string) bool {
+
+	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"id": "067df05e-19e8-4ac6-9c8d-ab3ef70f79d3",
+	}).Debug("Incoming gRPC 'moveCurrentTestDataAndMerkleTreeFromClientToServer'")
+
+	defer fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"id": "b31a193e-548d-459a-ba62-0af4982a1122",
+	}).Debug("Outgoing gRPC 'moveCurrentTestDataAndMerkleTreeFromClientToServer'")
 
 	// Get pointer to data for Client_UUID
 	tempdbData := dbDataMap[memDBClientUuidType(testDataClientGuid)]
@@ -489,7 +506,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveCu
 	return true
 }
 
-// Veriy if Client exists in Memory-copy of CloudDB
+// Verify if Client exists in Memory-copy of CloudDB
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) existsClientInDB(testDataClientUUID string) (bool, error) {
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
@@ -516,4 +533,43 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) exists
 
 	}
 
+}
+
+// Remove the rows that don't is represented in the Clients MerkleTree
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) removeTestDataRowsInMemoryDBThatIsNotRepresentedInClientsMerkleTree(callingClientUuid string) bool {
+
+	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"Id": "2712573d-354a-4fb9-a510-39b3844fe95d",
+	}).Debug("Entering: 'removeTestDataRowsInMemoryDBThatIsNotRepresentedInClientsMerkleTree'")
+
+	defer func() {
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"Id": "0fcc0362-263a-4945-a400-6e22baf53240",
+		}).Debug("Exiting: 'removeTestDataRowsInMemoryDBThatIsNotRepresentedInClientsMerkleTree'")
+	}()
+
+	// Get pointer to data for Client_UUID
+	tempdbData := dbDataMap[memDBClientUuidType(callingClientUuid)]
+
+	// Get pointer to client data
+	clientData := tempdbData.clientData
+
+	// Extract the hashes for all leaf nodes from MerkleTree
+	leafNodesHashes := clientData.merkleTree.Col(("MerkleChildHash")).Records()
+
+	// Get the TestData to process
+	clientTestData := clientData.testDataRows
+
+	// Filter
+	//isNotInListFkn := common_config.IsNotInListFilter(leafNodesHashes)
+	clientTestData = clientTestData.Filter(
+		dataframe.F{
+			Colname:    "LeafNodeHash",
+			Comparator: series.In,       // series.CompFunc,
+			Comparando: leafNodesHashes, //isNotInListFkn(),
+		})
+
+	clientData.testDataRows = clientTestData
+
+	return true
 }

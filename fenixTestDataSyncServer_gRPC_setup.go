@@ -11,6 +11,14 @@ import (
 // Set up and start Backend gRPC-server
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) InitGrpcServer() {
 
+	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"id": "b184b9c8-e9ec-4149-a28a-c34f50c0e105",
+	}).Debug("Incoming gRPC 'InitGrpcServer'")
+
+	defer fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"id": "8aa2cf80-d8b2-49f7-a9f0-abcf14c57744",
+	}).Debug("Outgoing gRPC 'InitGrpcServer'")
+
 	var err error
 
 	// Find first non allocated port from defined start port
@@ -55,6 +63,14 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) InitGr
 
 // Stop Backend gRPC-server
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) StopGrpcServer() {
+
+	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"id": "4281e3d0-453d-4fe7-b57f-543a42d0f986",
+	}).Debug("Incoming gRPC 'StopGrpcServer'")
+
+	defer fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"id": "9a33fce7-8e35-4fbd-a8c9-d7f3f6c72582",
+	}).Debug("Outgoing gRPC 'StopGrpcServer'")
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{}).Info("Gracefully stop for: 'Fenix TestData Sync gRPC Server'")
 	registerfenixTestDataSyncServerServer.GracefulStop()

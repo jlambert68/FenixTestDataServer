@@ -12,6 +12,14 @@ import (
 // Load TestData from CloudDB into memDB
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadTestDataFromCloudDB() (err error) {
 
+	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"id": "fec5c67e-4679-4e42-bcc4-fa64f46d3b59",
+	}).Debug("Incoming gRPC 'loadTestDataFromCloudDB'")
+
+	defer fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"id": "b5410c3f-ba1b-4d77-b85a-050985ee26fd",
+	}).Debug("Outgoing gRPC 'loadTestDataFromCloudDB'")
+
 	// Will not process anything while 'stateProcessIncomingAndOutgoingMessage' == false
 	if fenixTestDataSyncServerObject.stateProcessIncomingAndOutgoingMessage == false {
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{

@@ -61,6 +61,14 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) SetCon
 // Fenix Server asks Fenix client to send TestData MerkleHash to Fenix Testdata sync server with this service
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) AskClientToSendMerkleHash(TestDataClientGuid string) {
 
+	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"id": "684cea55-6e04-4bee-952f-ffce3c362fcb",
+	}).Debug("Incoming gRPC 'AskClientToSendMerkleHash'")
+
+	defer fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"id": "28020281-ae9d-439c-bc80-d6c227323f7b",
+	}).Debug("Outgoing gRPC 'AskClientToSendMerkleHash'")
+
 	// Check if TestData server should process outgoing messages
 	returnMessageStop := fenixTestDataSyncServerObject.isThereATemporaryStopInProcessingInOrOutgoingMessages()
 	if returnMessageStop != nil {
@@ -98,6 +106,14 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) AskCli
 
 // Fenix Server asks Fenix client to send TestData MerkleTree to Fenix Testdata sync server with this service
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) AskClientToSendMerkleTree(TestDataClientGuid string) {
+
+	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"id": "be6f045a-f212-4cb6-8f5a-f874a1f79c05",
+	}).Debug("Incoming gRPC 'AskClientToSendMerkleTree'")
+
+	defer fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"id": "7a806598-e60d-492f-8a0b-2afd555707b3",
+	}).Debug("Outgoing gRPC 'AskClientToSendMerkleTree'")
 
 	// Check if TestData server should process outgoing messages
 	returnMessageStop := fenixTestDataSyncServerObject.isThereATemporaryStopInProcessingInOrOutgoingMessages()
@@ -138,6 +154,14 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) AskCli
 // Fenix Server asks Fenix client to send TestDataHeaderHash to Fenix Testdata sync server with this service
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) AskClientToSendTestDataHeaderHash(TestDataClientGuid string) {
 
+	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"id": "238ece45-409b-41bd-88d6-1ef9edb77edc",
+	}).Debug("Incoming gRPC 'AskClientToSendTestDataHeaderHash'")
+
+	defer fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"id": "d3ad936d-6239-4024-8005-e4e198e70026",
+	}).Debug("Outgoing gRPC 'AskClientToSendTestDataHeaderHash'")
+
 	// Check if TestData server should process outgoing messages
 	returnMessageStop := fenixTestDataSyncServerObject.isThereATemporaryStopInProcessingInOrOutgoingMessages()
 	if returnMessageStop != nil {
@@ -176,6 +200,14 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) AskCli
 
 // Fenix Server asks Fenix client to send TestDataHeaders to Fenix Testdata sync server with this service
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) AskClientToSendTestDataHeaders(TestDataClientGuid string) {
+
+	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"id": "efc0c455-fb09-467d-8263-d64254a16c79",
+	}).Debug("Incoming gRPC 'AskClientToSendTestDataHeaders'")
+
+	defer fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"id": "c7685518-f8f5-4478-9c72-424181cde74e",
+	}).Debug("Outgoing gRPC 'AskClientToSendTestDataHeaders'")
 
 	// Check if TestData server should process outgoing messages
 	returnMessageStop := fenixTestDataSyncServerObject.isThereATemporaryStopInProcessingInOrOutgoingMessages()
@@ -216,6 +248,14 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) AskCli
 // Fenix Server asks Fenix client to  send TestData rows, based on list of MerklePaths, to Fenix Testdata sync server with this service
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) AskClientToSendTestDataRows(testDataClientGuid string) {
 
+	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"id": "12c788ea-29a2-40d0-9807-8cf4685e67b8",
+	}).Debug("Incoming gRPC 'AskClientToSendTestDataRows'")
+
+	defer fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"id": "4d25404b-41b2-46e2-b0e9-ab948a675c65",
+	}).Debug("Outgoing gRPC 'AskClientToSendTestDataRows'")
+
 	// Check if TestData server should process outgoing messages
 	returnMessageStop := fenixTestDataSyncServerObject.isThereATemporaryStopInProcessingInOrOutgoingMessages()
 	if returnMessageStop != nil {
@@ -227,7 +267,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) AskCli
 	clientsNewMerkleTree := fenixTestDataSyncServerObject.getCurrentMerkleTreeForClient(testDataClientGuid)
 
 	// Extract all paths to retrieve from client
-	merklePathsToRetreive := common_config.MissedPathsToRetreiveFromCLient(serverCopyMerkleTree, clientsNewMerkleTree)
+	merklePathsToRetreive := common_config.MissedPathsToRetreiveFromClient(serverCopyMerkleTree, clientsNewMerkleTree)
 
 	// Set up connection to Client-server
 	fenixTestDataSyncServerObject.SetConnectionToFenixClientTestDataSyncServer()
@@ -261,6 +301,14 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) AskCli
 
 // Fenix Server asks Fenix client to  send All TestData rows to Fenix Testdata sync server with this service
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) AskClientToSendAllTestDataRows(TestDataClientGuid string) {
+
+	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"id": "489f78ed-2ab3-4c4c-9436-63e968e1ef8b",
+	}).Debug("Incoming gRPC 'AskClientToSendAllTestDataRows'")
+
+	defer fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"id": "001fb9fa-2577-49e2-806f-f8d64f05a3d3",
+	}).Debug("Outgoing gRPC 'AskClientToSendAllTestDataRows'")
 
 	// Check if TestData server should process outgoing messages
 	returnMessageStop := fenixTestDataSyncServerObject.isThereATemporaryStopInProcessingInOrOutgoingMessages()

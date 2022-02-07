@@ -118,7 +118,7 @@ func hashChildrenAndWriteToDataStore(level int, currentMerklePath string, values
 
 }
 
-func recursiveTreeCreator(level int, currentMerkleFilterPath string, dataFrameToWorkOn dataframe.DataFrame, currentMerklePath string) string {
+func recursiveTreeCreator(level int, currentMerkleFilterPath string, dataFrameToWorkOn dataframe.DataFrame, currentMerklePath string, dataFrameToAddLeafNodeHashTo *dataframe.DataFrame) string {
 	level = level + 1
 	startPosition := 0
 	endPosition := strings.Index(currentMerkleFilterPath, "/")
@@ -135,6 +135,19 @@ func recursiveTreeCreator(level int, currentMerkleFilterPath string, dataFrameTo
 
 		// Hash and store
 		MerkleHash := hashChildrenAndWriteToDataStore(level, currentMerklePath, valuesToHash, true)
+
+		// Loop over rows and set LeafNodeHash
+		numberOfRows := dataFrameToWorkOn.Nrow()
+		testDataLeafNodeHashColumn := dataFrameToWorkOn.Ncol() - 1
+
+		for rowCounter := 0; rowCounter < numberOfRows; rowCounter++ {
+			dataFrameToWorkOn.Elem(rowCounter, testDataLeafNodeHashColumn).Set(MerkleHash)
+
+		}
+
+		// Concartenate testdatarows to Orginal TestData dataframe
+		headerKeys := dataFrameToWorkOn.Names()
+		*dataFrameToAddLeafNodeHashTo = dataFrameToAddLeafNodeHashTo.OuterJoin(dataFrameToWorkOn, headerKeys...)
 
 		return MerkleHash
 
@@ -159,7 +172,7 @@ func recursiveTreeCreator(level int, currentMerkleFilterPath string, dataFrameTo
 				})
 
 			// Recursive call to get next level, if there is one
-			localMerkleHash := recursiveTreeCreator(level, currentMerkleFilterPath, newFilteredDataFrame, currentMerklePath+uniqueValue+"/")
+			localMerkleHash := recursiveTreeCreator(level, currentMerkleFilterPath, newFilteredDataFrame, currentMerklePath+uniqueValue+"/", dataFrameToAddLeafNodeHashTo)
 
 			if len(localMerkleHash) != 0 {
 				valuesToHash = append(valuesToHash, localMerkleHash)
@@ -195,31 +208,40 @@ func LoadAndProcessFile(fileToprocess string) (string, dataframe.DataFrame, data
 		dataframe.WithDelimiter(';'),
 		dataframe.HasHeader(true))
 
-	merkleHash, merkleTreeDataFrame := CreateMerkleTreeFromDataFrame(df)
+	merkleHash, merkleTreeDataFrame, _ := CreateMerkleTreeFromDataFrame(df)
 
 	return merkleHash, merkleTreeDataFrame, df
 }
 
 // Create MerkleRootHash and MerkleTree
-func CreateMerkleTreeFromDataFrame(df dataframe.DataFrame) (merkleHash string, merkleTreeDataFrame dataframe.DataFrame) {
+func CreateMerkleTreeFromDataFrame(df dataframe.DataFrame) (merkleHash string, merkleTreeDataFrame dataframe.DataFrame, testDataRowsWithLeafNodeHashAdded dataframe.DataFrame) {
 	df = df.Arrange(dataframe.Sort("TestDataId"))
 
 	numberOfRows := df.Nrow()
+
+	// Add column to hold RowHash
 	df = df.Mutate(
 		series.New(make([]string, numberOfRows), series.String, "TestDataHash"))
 
-	number_of_columns_to_process := df.Ncol() - 1 // Don't process Hash column
+	// Add column to hold LeafNodeHash
+	df = df.Mutate(
+		series.New(make([]string, numberOfRows), series.String, "LeafNodeHash"))
 
+	// Don't process 'TestDataHash' and 'LeafNodeHash'
+	numberOfColumnsToProcess := df.Ncol() - 2
+	testDataHashColumn := numberOfColumnsToProcess
+
+	// Loop columns and add RowHash for each row
 	for rowCounter := 0; rowCounter < numberOfRows; rowCounter++ {
 		var valuesToHash []string
-		for columnCounter := 0; columnCounter < number_of_columns_to_process; columnCounter++ {
+		for columnCounter := 0; columnCounter < numberOfColumnsToProcess; columnCounter++ {
 			valueToHash := df.Elem(rowCounter, columnCounter).String()
 			valuesToHash = append(valuesToHash, valueToHash)
 		}
 
 		// Hash all values for row
 		hashedRow := HashValues(valuesToHash, true)
-		df.Elem(rowCounter, number_of_columns_to_process).Set(hashedRow)
+		df.Elem(rowCounter, testDataHashColumn).Set(hashedRow)
 
 	}
 
@@ -233,9 +255,17 @@ func CreateMerkleTreeFromDataFrame(df dataframe.DataFrame) (merkleHash string, m
 
 	merkleFilterPath := "AccountEnvironment/ClientJuristictionCountryCode/MarketSubType/MarketName/" //SecurityType/"
 
-	merkleHash = recursiveTreeCreator(0, merkleFilterPath, df, "MerkleRoot/")
+	testDataRowsWithLeafNodeHashAdded = df.Copy()
+	testDataRowsWithLeafNodeHashAdded = testDataRowsWithLeafNodeHashAdded.Filter(
+		dataframe.F{
+			Colname:    "LeafNodeHash",
+			Comparator: series.Eq,
+			Comparando: "There is no spoon",
+		})
 
-	return merkleHash, merkleTreeDataFrame
+	merkleHash = recursiveTreeCreator(0, merkleFilterPath, df.Copy(), "MerkleRoot/", &testDataRowsWithLeafNodeHashAdded)
+
+	return merkleHash, merkleTreeDataFrame, testDataRowsWithLeafNodeHashAdded
 }
 
 // Calculate MerkleHash from leaf nodes in MerkleTree
@@ -372,7 +402,7 @@ func ExtractMerkleRootHashFromMerkleTree(merkleTree dataframe.DataFrame) (merkle
 	return merkleRootHash
 }
 
-func MissedPathsToRetreiveFromCLient(serverCopyMerkleTree dataframe.DataFrame, newClientMerkleTree dataframe.DataFrame) (merklePathsToRetreive []string) {
+func MissedPathsToRetreiveFromClient(serverCopyMerkleTree dataframe.DataFrame, newClientMerkleTree dataframe.DataFrame) (merklePathsToRetreive []string) {
 
 	merkleDataToKeep := serverCopyMerkleTree.InnerJoin(newClientMerkleTree, "MerkleLevel", "MerklePath", "MerklePath", "MerkleHash", "MerkleChildHash")
 

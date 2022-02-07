@@ -6,6 +6,7 @@ import (
 	"github.com/go-gota/gota/series"
 	fenixTestDataSyncServerGrpcApi "github.com/jlambert68/FenixGrpcApi/Fenix/fenixTestDataSyncServerGrpcApi/go_grpc_api"
 	"github.com/sirupsen/logrus"
+	"strconv"
 )
 
 /*
@@ -32,6 +33,14 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) Initia
 // Convert gRPC-MerkleTree message into a DataFrame object
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) convertgRpcMerkleTreeMessageToDataframe(merkleTreeMessage fenixTestDataSyncServerGrpcApi.MerkleTreeMessage) dataframe.DataFrame {
 
+	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"id": "3f08ad8e-97d0-4762-b2a4-073f5eea113a",
+	}).Debug("Incoming gRPC 'convertgRpcMerkleTreeMessageToDataframe'")
+
+	defer fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"id": "17be0c7e-cfb9-4505-a7a0-d44542485f59",
+	}).Debug("Outgoing gRPC 'convertgRpcMerkleTreeMessageToDataframe'")
+
 	var myMerkleTree []MerkleTree_struct
 
 	//dbCurrentMerkleTreeForClient = merkleTreeMessage.MerkleTreeNodes
@@ -56,6 +65,14 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) conver
 
 // Verify that HeaderHash is correct calculated
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) verifyThatHeaderItemsHashIsCorrectCalculated(testDataHeadersMessage fenixTestDataSyncServerGrpcApi.TestDataHeadersMessage) (returnMessage *fenixTestDataSyncServerGrpcApi.AckNackResponse) {
+
+	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"id": "2d11c2bb-83cc-4a01-be55-c291105fa98f",
+	}).Debug("Incoming gRPC 'verifyThatHeaderItemsHashIsCorrectCalculated'")
+
+	defer fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"id": "19bca393-92e4-40ea-958f-ab97f8a1fcd1",
+	}).Debug("Outgoing gRPC 'verifyThatHeaderItemsHashIsCorrectCalculated'")
 
 	// Extract  HeaderHash
 	headerHash := testDataHeadersMessage.TestDataHeaderItemsHash
@@ -103,6 +120,14 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) verify
 // Convert gRPC-Header message into string and string array objects
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) convertgRpcHeaderMessageToStringArray(testDataHeadersMessage fenixTestDataSyncServerGrpcApi.TestDataHeadersMessage) (headerHash string, headersItems []string) {
 
+	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"id": "aa1d5eb1-7503-467f-9336-1927fa5529f2",
+	}).Debug("Incoming gRPC 'convertgRpcHeaderMessageToStringArray'")
+
+	defer fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"id": "72779d91-4b28-44ad-b3b7-4beeed915cc9",
+	}).Debug("Outgoing gRPC 'convertgRpcHeaderMessageToStringArray'")
+
 	// Extract  HeaderHash
 	headerHash = testDataHeadersMessage.TestDataHeaderItemsHash
 
@@ -120,6 +145,14 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) conver
 
 // Convert TestDataRow message into TestData dataframe object
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) convertgRpcTestDataRowsMessageToDataFrame(testdataRowsMessages *fenixTestDataSyncServerGrpcApi.TestdataRowsMessages) (testdataAsDataFrame dataframe.DataFrame, returnMessage *fenixTestDataSyncServerGrpcApi.AckNackResponse) {
+
+	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"id": "585ed48f-dc60-4d93-9628-fb77db8057fb",
+	}).Debug("Incoming gRPC 'convertgRpcTestDataRowsMessageToDataFrame'")
+
+	defer fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"id": "8afb8c12-7dcc-431f-9255-f0866555bd62",
+	}).Debug("Outgoing gRPC 'convertgRpcTestDataRowsMessageToDataFrame'")
 
 	testdataAsDataFrame = dataframe.New()
 
@@ -241,13 +274,40 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) conver
 // Concartenate TestDataRows as a DataFrame with the current Server TestDataRows-DataFrame
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) concartenateWithCurrentServerTestData(testDataClientGuid string, testdataDataframe dataframe.DataFrame) (allTestdataAsDataFrame dataframe.DataFrame) {
 
-	allTestdataAsDataFrame = fenixTestDataSyncServerObject.getCurrentTestDataRowsForServer(testDataClientGuid)
+	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"id": "75e3cea1-d459-4f4f-9289-b728feee7ec0",
+	}).Debug("Incoming gRPC 'concartenateWithCurrentServerTestData'")
+
+	defer fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"id": "f77a358e-50ad-4f1c-a540-6559688e173f",
+	}).Debug("Outgoing gRPC 'concartenateWithCurrentServerTestData'")
+
+	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"id": "5716a1e8-11dc-4c70-9579-94d7d177689b",
+	}).Debug("New rows to add to existing rows are '"+strconv.Itoa(testdataDataframe.Nrow())+"' for Client: ", testDataClientGuid)
+
+	allTestdataAsDataFrame = fenixTestDataSyncServerObject.getCurrentTestDataRowsForClient(testDataClientGuid)
 
 	if allTestdataAsDataFrame.Nrow() == 0 {
+
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"id": "a98bf92e-ec7d-4968-b8fa-b72e47fef830",
+		}).Debug("There are no TestDataRows in memDB for so returning new Rows to work with, Client: ", testDataClientGuid)
+
 		return testdataDataframe
 	} else {
-		headerKeys := testdataDataframe.Names()
-		allTestdataAsDataFrame = allTestdataAsDataFrame.OuterJoin(testdataDataframe, headerKeys...)
+
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"id": "c8385ebf-53e1-4449-8171-f0c5bc2bdd68",
+		}).Debug("Existing number of rows are '"+strconv.Itoa(allTestdataAsDataFrame.Nrow())+"' for Client: ", testDataClientGuid)
+
+		//headerKeys := testdataDataframe.Names()
+		allTestdataAsDataFrame = allTestdataAsDataFrame.Concat(testdataDataframe) //, headerKeys...)
+
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"id": "c8385ebf-53e1-4449-8171-f0c5bc2bdd68",
+		}).Debug("Concatenated number of rows are '"+strconv.Itoa(allTestdataAsDataFrame.Nrow())+"' for Client: ", testDataClientGuid)
+
 	}
 
 	return allTestdataAsDataFrame

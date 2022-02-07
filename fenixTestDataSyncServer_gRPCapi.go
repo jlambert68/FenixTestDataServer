@@ -175,6 +175,9 @@ func (s *FenixTestDataGrpcServicesServer) SendMerkleTree(ctx context.Context, me
 
 			defer fenixTestDataSyncServerObject.AskClientToSendAllTestDataRows(callingClientUuid)
 		} else {
+			// Remove TestDataRows that is not represented in current client MerkleTree
+			fenixTestDataSyncServerObject.removeTestDataRowsInMemoryDBThatIsNotRepresentedInClientsMerkleTree(callingClientUuid)
+
 			// Ask for the rows that is missing
 			fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 				"id": "f0aa86c1-0179-4cb4-a891-60d55fdce84c",
@@ -388,7 +391,7 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataRows(ctx context.Context, 
 	allRowsAsDataFrame := fenixTestDataSyncServerObject.concartenateWithCurrentServerTestData(callingClientUuid, newRowsAsDataFrame)
 
 	// Recreate MerkleHash from All testdata rows, both existing rows for Server and new from Client
-	computedMerkleHash, _ := common_config.CreateMerkleTreeFromDataFrame(allRowsAsDataFrame)
+	computedMerkleHash, _, testdataWithLeafNodeHash := common_config.CreateMerkleTreeFromDataFrame(allRowsAsDataFrame)
 
 	//Compare 'computedMerkleHash' with MerkleHash from Client
 	clientMerkleHash := fenixTestDataSyncServerObject.getCurrentMerkleHashForClient(callingClientUuid)
@@ -406,13 +409,13 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataRows(ctx context.Context, 
 		// Create Return message
 		returnMessage := &fenixTestDataSyncServerGrpcApi.AckNackResponse{
 			AckNack:    false,
-			Comments:   "MerklRoot hash is not the same as sent to server. Got " + clientMerkleHash + ", but recalculated to " + computedMerkleHash + " from testdata",
+			Comments:   "MerkleRoot hash is not the same as sent to server. Got " + clientMerkleHash + ", but recalculated to " + computedMerkleHash + " from testdata",
 			ErrorCodes: errorCodes,
 		}
 
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 			"id": "e9b43ac4-ed89-41ef-9762-bc7406633906",
-		}).Info("MerklRoot hash is not the same as sent to server. Got " + clientMerkleHash + ", but recalculated to " + computedMerkleHash + " from testdata  Client: " + callingClientUuid)
+		}).Info("MerkleRoot hash is not the same as sent to server. Got " + clientMerkleHash + ", but recalculated to " + computedMerkleHash + " from testdata  Client: " + callingClientUuid)
 
 		// respond back to client when it used wrong proto-file
 		return returnMessage, nil
@@ -420,7 +423,7 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataRows(ctx context.Context, 
 	} else {
 
 		// Save TestDataRows to MemoryDB
-		_ = fenixTestDataSyncServerObject.saveCurrentTestDataRowsForClient(callingClientUuid, allRowsAsDataFrame)
+		_ = fenixTestDataSyncServerObject.saveCurrentTestDataRowsForClient(callingClientUuid, testdataWithLeafNodeHash)
 
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 			"id": "9aa8379e-5d5c-4eb4-9b18-d52da4291795",
@@ -430,7 +433,7 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataRows(ctx context.Context, 
 		_ = fenixTestDataSyncServerObject.moveCurrentTestDataAndMerkleTreeFromClientToServer(callingClientUuid)
 
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
-			"id": "e9b43ac4-ed89-41ef-9762-bc7406633906",
+			"id": "c7728251-ec36-4cca-a529-1f8db67acc96",
 		}).Debug("The TestDataRows were copied from Client to Server for Client: " + callingClientUuid)
 
 	}
