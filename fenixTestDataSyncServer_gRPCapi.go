@@ -58,22 +58,44 @@ func (s *FenixTestDataGrpcServicesServer) SendMerkleHash(ctx context.Context, me
 		return returnMessage, nil
 	}
 
-	// Compare current server- and client MerkleHash
+	// Verify that MerkleFilterPath is hashed correctly
+	returnMessage = fenixTestDataSyncServerObject.isClientsMerklePathCorrectlyHashed(callingClientUuid, merkleHashMessage.MerkleFilter, merkleHashMessage.MerkleFilterHash)
+	if returnMessage != nil {
+		// Wrongly hashed MerklePathNo processing of incoming messages
+		return returnMessage, nil
+	}
+
+	// Compare current server- and client MerkleHash and MerklePathFilter
 	currentServerMerkleHash := fenixTestDataSyncServerObject.getCurrentMerkleHashForServer(callingClientUuid)
+	currentServerMerkleFilterHash := fenixTestDataSyncServerObject.getCurrentMerkleFilterHashForServer(callingClientUuid)
 
-	//  if different in MerkleHash then ask client for MerkleTree
-	if currentServerMerkleHash != merkleHashMessage.MerkleHash {
+	//  if differents in MerkleHash or MerkleFilterHash, then ask client for MerkleTree
+	if currentServerMerkleHash != merkleHashMessage.MerkleHash || currentServerMerkleFilterHash != merkleHashMessage.MerkleFilterHash {
 
-		// Save the message
+		// Save the MerkleHash
 		_ = fenixTestDataSyncServerObject.saveCurrentMerkleHashForClient(*merkleHashMessage)
 
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 			"id": "d9c676ca-11a1-4007-8182-2f54834013a5",
-		}).Debug("Saved the MerkleHash Client: " + callingClientUuid)
+		}).Debug("Saved the MerkleHash for Client: " + callingClientUuid)
+
+		// Save the MerklePath
+		_ = fenixTestDataSyncServerObject.saveCurrentMerkleFilterForClient(*merkleHashMessage)
+
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"id": "d296a28c-4ad4-4dc5-9d2e-90230e55b4e2",
+		}).Debug("Saved the MerkleFilter for Client: " + callingClientUuid)
+
+		// Save the MerkleFilterHash
+		_ = fenixTestDataSyncServerObject.saveCurrentMerkleFilterHashForClient(*merkleHashMessage)
+
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"id": "2ac5988d-28f0-4e39-aa59-729608bdfb0c",
+		}).Debug("Saved the MerkleFilterHash for Client: " + callingClientUuid)
 
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 			"id": "cd30f2ae-6f79-4a0a-a8d8-a78d32dd6c71",
-		}).Debug("There is different in MerkleHash so ask client for MerkleTree for Client: " + callingClientUuid)
+		}).Debug("There is different in MerkleHash or MerkleFilterHash, so ask client for MerkleTree for Client: " + callingClientUuid)
 
 		defer fenixTestDataSyncServerObject.AskClientToSendMerkleTree(callingClientUuid)
 	}

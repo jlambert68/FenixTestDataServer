@@ -1,6 +1,7 @@
 package main
 
 import (
+	"FenixTestDataServer/common_config"
 	fenixClientTestDataSyncServerGrpcApi "github.com/jlambert68/FenixGrpcApi/Client/fenixClientTestDataSyncServerGrpcApi/go_grpc_api"
 	fenixTestDataSyncServerGrpcApi "github.com/jlambert68/FenixGrpcApi/Fenix/fenixTestDataSyncServerGrpcApi/go_grpc_api"
 	"github.com/sirupsen/logrus"
@@ -77,6 +78,51 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) isClie
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 			"id": "513dd8fb-a0bb-4738-9a0b-b7eaf7bb8adb",
 		}).Debug("Wrong proto file used. Expected: '" + protoFileExpected.String() + "', but got: '" + protoFileUsed.String() + "' for Client: " + callingClientUuid)
+
+		return returnMessage
+
+	} else {
+		return nil
+	}
+
+}
+
+// ********************************************************************************************************************
+// Check if Calling Client has Hashed the MerklePath correctly
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) isClientsMerklePathCorrectlyHashed(callingClientUuid string, merklePath string, merklePathHash string) (returnMessage *fenixTestDataSyncServerGrpcApi.AckNackResponse) {
+
+	var hashIsCorrectlyHashed bool
+
+	// Verify that MerkleFilterPath is hashed correctly
+	tempHashedMerkleFilter := common_config.HashSingleValue(merklePath)
+
+	// Check if MerklePath is correctly hashed
+	if tempHashedMerkleFilter == merklePathHash {
+		hashIsCorrectlyHashed = true
+	} else {
+		hashIsCorrectlyHashed = false
+	}
+
+	// Generate returnMessage if wrongly hashed
+	if hashIsCorrectlyHashed == false {
+
+		// Set Error codes to return message
+		var errorCodes []fenixTestDataSyncServerGrpcApi.ErrorCodesEnum
+		var errorCode fenixTestDataSyncServerGrpcApi.ErrorCodesEnum
+
+		errorCode = fenixTestDataSyncServerGrpcApi.ErrorCodesEnum_ERROR_MERKLEPATHHASH_IS_NOT_CORRECT_CALCULATED
+		errorCodes = append(errorCodes, errorCode)
+
+		// Create Return message
+		returnMessage = &fenixTestDataSyncServerGrpcApi.AckNackResponse{
+			AckNack:    false,
+			Comments:   "MerklePathHash is not correct calculated for MerklePath='" + merklePath + "' . Expected: '" + tempHashedMerkleFilter + "', but got: '" + merklePathHash + "'",
+			ErrorCodes: errorCodes,
+		}
+
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"id": "57f3ef6b-ae39-40b3-904b-6f3e28ac2d32",
+		}).Debug("MerklePathHash is not correct calculated for MerklePath='" + merklePath + "' . Expected: '" + tempHashedMerkleFilter + "', but got: '" + merklePathHash + "' for Client: " + callingClientUuid)
 
 		return returnMessage
 

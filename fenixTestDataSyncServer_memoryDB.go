@@ -28,11 +28,13 @@ type tempTestDataRowStruct struct {
 }
 
 type tempDBDataStruct struct {
-	merkleHash   string
-	merkleTree   dataframe.DataFrame
-	headerHash   string
-	headers      []string
-	testDataRows dataframe.DataFrame //[]tempTestDataRowStruct
+	merkleHash       string
+	merkleTree       dataframe.DataFrame
+	merkleFilter     string
+	merkleFilterHash string
+	headerHash       string
+	headers          []string
+	testDataRows     dataframe.DataFrame //[]tempTestDataRowStruct
 }
 type tempDBStruct struct {
 	serverData *tempDBDataStruct
@@ -199,6 +201,86 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveCu
 	return true
 }
 
+// Retrieve current TestData-MerkleFilterHash for Client
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCurrentMerkleFilterHashForClient(testDataClientGuid string) (currentMerkleFilterHashForClient string) {
+
+	// Get pointer to data for Client_UUID
+	tempdbData, valueExits := dbDataMap[memDBClientUuidType(testDataClientGuid)]
+
+	// Get the data
+	if valueExits == true {
+		currentMerkleFilterHashForClient = tempdbData.clientData.merkleFilterHash
+	} else {
+		currentMerkleFilterHashForClient = "#VALUE IS MISSING#"
+	}
+
+	return currentMerkleFilterHashForClient
+}
+
+// Save current TestData-MerkleFilterHash for Client
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveCurrentMerkleFilterHashForClient(merkleHashMessage fenixTestDataSyncServerGrpcApi.MerkleHashMessage) bool {
+
+	// Get pointer to data for Client_UUID
+	tempdbData, valueExits := dbDataMap[memDBClientUuidType(merkleHashMessage.TestDataClientUuid)]
+
+	if valueExits == true {
+		// Get pointer to client data
+		clientData := tempdbData.clientData
+
+		// MerkleFilterHash
+		clientData.merkleFilterHash = merkleHashMessage.MerkleFilterHash
+
+	} else {
+
+		tempDBStructInitiated := fenixTestDataSyncServerObject.initiateTempDBStruct()
+		tempDBStructInitiated.clientData.merkleFilterHash = merkleHashMessage.MerkleFilterHash
+
+		dbDataMap[memDBClientUuidType(merkleHashMessage.TestDataClientUuid)] = &tempDBStructInitiated
+	}
+
+	return true
+}
+
+// Retrieve current TestData-MerkleFilter for Client
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCurrentMerkleFilterForClient(testDataClientGuid string) (currentMerkleFilterForClient string) {
+
+	// Get pointer to data for Client_UUID
+	tempdbData, valueExits := dbDataMap[memDBClientUuidType(testDataClientGuid)]
+
+	// Get the data
+	if valueExits == true {
+		currentMerkleFilterForClient = tempdbData.clientData.merkleFilter
+	} else {
+		currentMerkleFilterForClient = "#VALUE IS MISSING#"
+	}
+
+	return currentMerkleFilterForClient
+}
+
+// Save current TestData-MerkleFilter for Client
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveCurrentMerkleFilterForClient(merkleHashMessage fenixTestDataSyncServerGrpcApi.MerkleHashMessage) bool {
+
+	// Get pointer to data for Client_UUID
+	tempdbData, valueExits := dbDataMap[memDBClientUuidType(merkleHashMessage.TestDataClientUuid)]
+
+	if valueExits == true {
+		// Get pointer to client data
+		clientData := tempdbData.clientData
+
+		// MerkleFilter
+		clientData.merkleFilter = merkleHashMessage.MerkleFilter
+
+	} else {
+
+		tempDBStructInitiated := fenixTestDataSyncServerObject.initiateTempDBStruct()
+		tempDBStructInitiated.clientData.merkleFilter = merkleHashMessage.MerkleFilter
+
+		dbDataMap[memDBClientUuidType(merkleHashMessage.TestDataClientUuid)] = &tempDBStructInitiated
+	}
+
+	return true
+}
+
 // Retrieve current TestData-MerkleHash for Server
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCurrentMerkleHashForServer(testDataClientGuid string) (currentMerkleHashForServer string) {
 
@@ -226,6 +308,68 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveCu
 
 	// MerkleHash
 	serverData.merkleHash = merkleHashMessage.MerkleHash
+
+	return true
+}
+
+// Retrieve current TestData-MerkleFilterHash for Server
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCurrentMerkleFilterHashForServer(testDataClientGuid string) (currentMerkleFilterHashForServer string) {
+
+	// Get pointer to data for Client_UUID
+	tempdbData, valueExits := dbDataMap[memDBClientUuidType(testDataClientGuid)]
+
+	// Get the data
+	if valueExits == true {
+		currentMerkleFilterHashForServer = tempdbData.serverData.merkleFilterHash
+	} else {
+		currentMerkleFilterHashForServer = "#VALUE IS MISSING#"
+	}
+
+	return currentMerkleFilterHashForServer
+}
+
+// Save current TestData-MerkleFilterHash for Server
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveCurrentMerkleFilterHashForServer(merkleHashMessage fenixTestDataSyncServerGrpcApi.MerkleHashMessage) bool {
+
+	// Get pointer to data for Client_UUID
+	tempdbData := dbDataMap[memDBClientUuidType(merkleHashMessage.TestDataClientUuid)]
+
+	// Get pointer to server data
+	serverData := tempdbData.serverData
+
+	// MerkleHash
+	serverData.merkleFilterHash = merkleHashMessage.MerkleFilterHash
+
+	return true
+}
+
+// Retrieve current TestData-MerkleFilter for Server
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCurrentMerkleFilterForServer(testDataClientGuid string) (currentMerkleFilterForServer string) {
+
+	// Get pointer to data for Client_UUID
+	tempdbData, valueExits := dbDataMap[memDBClientUuidType(testDataClientGuid)]
+
+	// Get the data
+	if valueExits == true {
+		currentMerkleFilterForServer = tempdbData.serverData.merkleFilter
+	} else {
+		currentMerkleFilterForServer = "#VALUE IS MISSING#"
+	}
+
+	return currentMerkleFilterForServer
+}
+
+// Save current TestData-MerkleFilter for Server
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveCurrentMerkleFilterForServer(merkleHashMessage fenixTestDataSyncServerGrpcApi.MerkleHashMessage) bool {
+
+	// Get pointer to data for Client_UUID
+	tempdbData := dbDataMap[memDBClientUuidType(merkleHashMessage.TestDataClientUuid)]
+
+	// Get pointer to server data
+	serverData := tempdbData.serverData
+
+	// MerkleHashFilter
+	serverData.merkleFilter = merkleHashMessage.MerkleFilter
 
 	return true
 }
@@ -453,6 +597,8 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) moveCu
 
 	// Move the data
 	tempdbData.serverData.merkleHash = tempdbData.clientData.merkleHash
+	tempdbData.serverData.merkleFilter = tempdbData.clientData.merkleFilter
+	tempdbData.serverData.merkleFilterHash = tempdbData.clientData.merkleFilterHash
 	tempdbData.serverData.merkleTree = tempdbData.clientData.merkleTree
 	tempdbData.serverData.testDataRows = tempdbData.clientData.testDataRows
 

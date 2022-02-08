@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/go-gota/gota v0.12.0
 	github.com/jackc/pgx/v4 v4.14.1
-	github.com/jlambert68/FenixGrpcApi v0.0.0-20220205095015-c93c9ccefd1e
+	github.com/jlambert68/FenixGrpcApi v0.0.0-20220208092620-11a8673158ac
 	github.com/sirupsen/logrus v1.8.1
 	golang.org/x/net v0.0.0-20220114011407-0dd24b26b47d
 	google.golang.org/grpc v1.43.0
