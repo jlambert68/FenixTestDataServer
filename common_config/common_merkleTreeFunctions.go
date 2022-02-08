@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"github.com/go-gota/gota/series"
 	"log"
-	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -15,8 +14,8 @@ import (
 
 func HashValues(valuesToHash []string, isNonHashValue bool) string {
 
-	hash_string := ""
-	sha256_hash := ""
+	hashString := ""
+	sha256Hash := ""
 
 	// Concatenate array position to its content if it is a 'NonHashValue'
 	if isNonHashValue == true {
@@ -30,16 +29,16 @@ func HashValues(valuesToHash []string, isNonHashValue bool) string {
 
 	//Hash all values
 	for _, valueToHash := range valuesToHash {
-		hash_string = hash_string + valueToHash
+		hashString = hashString + valueToHash
 
 		hash := sha256.New()
-		hash.Write([]byte(hash_string))
-		sha256_hash = hex.EncodeToString(hash.Sum(nil))
-		hash_string = sha256_hash
+		hash.Write([]byte(hashString))
+		sha256Hash = hex.EncodeToString(hash.Sum(nil))
+		hashString = sha256Hash
 
 	}
 
-	return sha256_hash
+	return sha256Hash
 
 }
 
@@ -65,26 +64,26 @@ func uniqueGotaSeriesAsStringArray(s series.Series) []string {
 
 func hashChildrenAndWriteToDataStore(level int, currentMerklePath string, valuesToHash []string, isEndLeafNode bool) string {
 
-	hash_string := ""
-	sha256_hash := ""
+	hashString := ""
+	sha256Hash := ""
 
 	// Sort Array before hashing
 	sort.Strings(valuesToHash)
 
 	// Hash all leaves for rowHashValue in valuesToHash
 	for _, valueToHash := range valuesToHash {
-		hash_string = hash_string + valueToHash
+		hashString = hashString + valueToHash
 
 		hash := sha256.New()
-		hash.Write([]byte(hash_string))
-		sha256_hash = hex.EncodeToString(hash.Sum(nil))
-		hash_string = sha256_hash
+		hash.Write([]byte(hashString))
+		sha256Hash = hex.EncodeToString(hash.Sum(nil))
+		hashString = sha256Hash
 
 	}
 
-	MerkleHash := sha256_hash
+	MerkleHash := sha256Hash
 
-	// # Add MerkleHash and sub leaf nodes to table if not end node. If End node then only save ref to it self
+	// # Add MerkleHash and sub leaf nodes to table if not end node. If End node then only save ref to itself
 	if isEndLeafNode == true {
 		// Add row
 		//merkleTreeToUse.loc[merkleTreeToUse.shape[0]] = [level, currentMerklePath, MerkleHash, MerkleHash]
@@ -145,21 +144,21 @@ func recursiveTreeCreator(level int, currentMerkleFilterPath string, dataFrameTo
 
 		}
 
-		// Concartenate testdatarows to Orginal TestData dataframe
+		// Concatenate testdatarows to Orginal TestData dataframe
 		headerKeys := dataFrameToWorkOn.Names()
 		*dataFrameToAddLeafNodeHashTo = dataFrameToAddLeafNodeHashTo.OuterJoin(dataFrameToWorkOn, headerKeys...)
 
 		return MerkleHash
 
 	} else {
-		// Get merklePathlabel
+		// Get merklePathLabel
 		merklePathLabel := currentMerkleFilterPath[startPosition:endPosition]
 		currentMerkleFilterPath := currentMerkleFilterPath[endPosition+1:]
 
 		// Get Unique values
 		uniqueValuesForSpecifiedColumn := uniqueGotaSeriesAsStringArray(dataFrameToWorkOn.Col(merklePathLabel))
 
-		valuesToHash := []string{}
+		var valuesToHash []string
 
 		// Loop over all unique values in column
 		for _, uniqueValue := range uniqueValuesForSpecifiedColumn {
@@ -193,7 +192,10 @@ func recursiveTreeCreator(level int, currentMerkleFilterPath string, dataFrameTo
 var merkleTreeDataFrame dataframe.DataFrame
 
 // Dataframe holding changed File's MerkleTree
-var changedFilesMerkleTreeDataFrame dataframe.DataFrame
+//var changedFilesMerkleTreeDataFrame dataframe.DataFrame
+
+/*
+NOT USED
 
 // Process incoming csv file and create MerkleRootHash and MerkleTree
 func LoadAndProcessFile(fileToprocess string) (string, dataframe.DataFrame, dataframe.DataFrame) {
@@ -212,6 +214,8 @@ func LoadAndProcessFile(fileToprocess string) (string, dataframe.DataFrame, data
 
 	return merkleHash, merkleTreeDataFrame, df
 }
+
+*/
 
 // Create MerkleRootHash and MerkleTree
 func CreateMerkleTreeFromDataFrame(df dataframe.DataFrame, merkleFilterPath string) (merkleHash string, merkleTreeDataFrame dataframe.DataFrame, testDataRowsWithLeafNodeHashAdded dataframe.DataFrame) {
@@ -307,7 +311,7 @@ func calculateMerkleHashFromMerkleTreeLeafNodes(merkleLevel int, merkleTreeLeafN
 	// Get Unique values for merklePathLabel
 	uniqueValuesForSpecifiedColumn := uniqueGotaSeriesAsStringArray(merkleTreeLeafNodes.Col("CurrentMerklePathNode"))
 
-	valuesToHash := []string{}
+	var valuesToHash []string
 
 	var localMerkleHash string
 	// Loop over all unique values in column 'CurrentMerklePathNode'
@@ -410,13 +414,13 @@ func MissedPathsToRetreiveFromClient(serverCopyMerkleTree dataframe.DataFrame, n
 	leaveNodeLevel := merkleDataToKeep.Col("MerkleLevel").Max()
 	isNotInListFkn := IsNotInListFilter(merkleDataToKeep.Col("MerkleChildHash").Records())
 
-	merkleTreeToRetrieve_temp := newClientMerkleTree.Filter(
+	merkleTreeToRetrieveTemp := newClientMerkleTree.Filter(
 		dataframe.F{
 			Colname:    "MerkleLevel",
 			Comparator: series.Eq,
 			Comparando: leaveNodeLevel})
 
-	merkleTreeToRetrieve := merkleTreeToRetrieve_temp.Filter(
+	merkleTreeToRetrieve := merkleTreeToRetrieveTemp.Filter(
 		dataframe.F{
 			Colname:    "MerkleChildHash",
 			Comparator: series.CompFunc,
@@ -440,7 +444,7 @@ func MissedPathsToRetreiveFromClient(serverCopyMerkleTree dataframe.DataFrame, n
 func IsNotInListFilter(arrayToCompareWith []string) func() func(el series.Element) bool {
 	isNaNFunction := func() func(el series.Element) bool {
 		return func(el series.Element) bool {
-			var notFoundInArray bool = true
+			var notFoundInArray = true
 
 			for _, value := range arrayToCompareWith {
 				if value == el.String() {
