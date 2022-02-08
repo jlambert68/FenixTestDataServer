@@ -602,6 +602,8 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) moveCu
 	tempdbData.serverData.merkleTree = tempdbData.clientData.merkleTree
 	tempdbData.serverData.testDataRows = tempdbData.clientData.testDataRows
 
+	fenixTestDataSyncServerObject.testSQL(testDataClientGuid)
+
 	return true
 }
 
@@ -635,6 +637,27 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCur
 	}
 
 	return testDataRows
+}
+
+// Get the Domain for the Client
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getDomainUuidForClient(testDataClientGuid string) (domainUuid memDBDomainUuidType) {
+
+	// Get pointer to data for Client_UUID
+	tempdbData, valueExits := memCloudDBAllClientsMap[memDBClientUuidType(testDataClientGuid)]
+
+	// Get the data
+	if valueExits == true {
+		domainUuid = tempdbData.domainUuid
+	} else {
+		domainUuid = "666"
+
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"id": "5617e51e-36ce-4c71-a10d-836c2eb604ee",
+		}).Fatalln("Should not happen. Existing Client in memoryDB for Domain-Client is missing")
+
+	}
+
+	return domainUuid
 }
 
 // Save current Client TestDataRows

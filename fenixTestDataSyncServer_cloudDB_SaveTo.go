@@ -1,8 +1,13 @@
 package main
 
 import (
+	"FenixTestDataServer/common_config"
 	"context"
+	"fmt"
+	"github.com/jackc/pgx/v4"
 	"github.com/sirupsen/logrus"
+	"strconv"
+	"strings"
 )
 
 // ****************************************************************************************************************
@@ -144,39 +149,56 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveAl
 // Save data to CloudDB
 //
 // All TestDataMerkleHashes
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveAllmemDBAllTestDataMerkleHashesToCloudDB(testDataMerkleHashs *[]memCloudDBAllTestDataMerkleHashStruct) (err error) {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveTestDataMerkleHasheDataFromMemDBToCloudDB(dbTransaction pgx.Tx, currentUserUuid string) (err error) {
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"Id": "539d7f8e-4a69-4fe1-b4dd-5d5148d1a8b6",
-	}).Debug("Entering: saveAllmemDBAllTestDataMerkleHashesToCloudDB()")
+	}).Debug("Entering: saveTestDataMerkleHasheDataFromMemDBToCloudDB()")
 
 	defer func() {
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 			"Id": "66ce8020-aec6-49ef-875e-f16bd36e7667",
-		}).Debug("Exiting: saveAllmemDBAllTestDataMerkleHashesToCloudDB()")
+		}).Debug("Exiting: saveTestDataMerkleHasheDataFromMemDBToCloudDB()")
 	}()
 
+	// Data to be inserted in the DB-table
+	var dataToBeInserted = [][]string{
+		{currentUserUuid,
+			string(fenixTestDataSyncServerObject.getDomainUuidForClient(currentUserUuid)),
+			common_config.GenerateDatetimeTimeStampForDB(),
+			fenixTestDataSyncServerObject.getCurrentMerkleHashForServer(currentUserUuid),
+			fenixTestDataSyncServerObject.getCurrentMerkleFilterForServer(currentUserUuid),
+			fenixTestDataSyncServerObject.getCurrentMerkleFilterHashForServer(currentUserUuid)},
+	}
+
 	sqlToExecute := ""
-	sqlToExecute = sqlToExecute + "SELECT testdata.merklehashes.\"client_uuid\", testdata.merklehashes.\"domain_uuid\", "
-	sqlToExecute = sqlToExecute + "testdata.merklehashes.\"merklehash\", testdata.merklehashes.\"merkle_path\" "
-	sqlToExecute = sqlToExecute + "FROM testdata.merklehashes "
+
+	// Create Delete Statement for removing current MerkleHash-data for Client
+	sqlToExecute = sqlToExecute + "DELETE FROM public.testdata_merklehashes "
+	sqlToExecute = sqlToExecute + "WHERE client_uuid = '" + currentUserUuid + "'; "
+
+	// Create Insert Statement for current MerkleHash-data for Client
+	sqlToExecute = sqlToExecute + "INSERT INTO public.testdata_merklehashes "
+	sqlToExecute = sqlToExecute + "(client_uuid, domain_uuid, updated_timestamp, merklehash, merkle_filterpath, merkle_filterpath_hash) "
+	sqlToExecute = sqlToExecute + fenixTestDataSyncServerObject.generateSQLInsertValues(dataToBeInserted)
+	sqlToExecute = sqlToExecute + ";"
 
 	// Query DB
-	rows, _ := DbPool.Query(context.Background(), sqlToExecute)
+	comandTag, err := dbTransaction.Exec(context.Background(), sqlToExecute)
 
-	// Variables to used when extract data from result set
-	var testDataMerkleHash memCloudDBAllTestDataMerkleHashStruct
-
-	// Extract data from DB result set
-	for rows.Next() {
-		err := rows.Scan(&testDataMerkleHash.clientUuid, &testDataMerkleHash.domainUuid,
-			&testDataMerkleHash.merkleHash, &testDataMerkleHash.merklePath)
-		if err != nil {
-			return err
-		}
-		*testDataMerkleHashs = append(*testDataMerkleHashs, testDataMerkleHash)
-
+	if err != nil {
+		return err
 	}
+
+	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"Id":                       "539d7f8e-4a69-4fe1-b4dd-5d5148d1a8b6",
+		"comandTag.Insert()":       comandTag.Insert(),
+		"comandTag.Delete()":       comandTag.Delete(),
+		"comandTag.Select()":       comandTag.Select(),
+		"comandTag.Update()":       comandTag.Update(),
+		"comandTag.RowsAffected()": comandTag.RowsAffected(),
+		"comandTag.String()":       comandTag.String(),
+	}).Debug("Return data for SQL executed in database")
 
 	// No errors occurred
 	return nil
@@ -276,49 +298,74 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveAl
 
 }
 
-func testSQL() {
-	/*
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) testSQL(currentClientUuid string) (err error) {
 
-	   	data := make(map[string]string)
+	// Begin SQL Transaction
+	txn, err := DbPool.Begin(context.Background())
+	if err != nil {
+		fmt.Println("err: ", err)
+		return
+	}
+	defer txn.Commit(context.Background())
 
-	   	// Begin SQL Transaction
-	   	txn, err := DbPool.Begin(context.Background())
-	   	if err != nil {
-	   		fmt.Println("err: ", err)
-	   		return
-	   	}
-	   	defer txn.Commit(context.Background())
+	// Save MerkleHash-data
+	err = fenixTestDataSyncServerObject.saveTestDataMerkleHasheDataFromMemDBToCloudDB(txn, currentClientUuid)
+	if err != nil {
 
-	   	sqlStr := "INSERT INTO test(n1, n2, n3) VALUES "
-	   	vals := []interface{}{}
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"id":    "07b91f77-db17-484f-8448-e53375df94ce",
+			"error": err,
+		}).Error("Couldn't Save MerkleHash-data in database for Client: ", currentClientUuid)
 
-	   	for _, row := range data {
-	   		sqlStr += "(?, ?, ?)," // Put "?" symbol equal to number of columns
-	   		vals = append(vals, row["v1"], row["v2"], row["v3"]) // Put row["v{n}"] blocks equal to number of columns
-	   	}
+		// Stop process in and outgoing messages
+		fenixTestDataSyncServerObject.stateProcessIncomingAndOutgoingMessage = true
 
-	   	//trim the last ,
-	   	sqlStr = strings.TrimSuffix(sqlStr, ",")
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"id": "673271e5-5b12-43fa-a576-057b492419e6",
+		}).Error("Stop processing messages")
 
-	   	//Replacing ? with $n for postgres
-	   	sqlStr = ReplaceSQL(sqlStr, "?")
+		// Rollback any SQL transactions
+		txn.Rollback(context.Background())
 
+		return err
 
+	}
 
-	   	//prepare the statement
-	   	stmt, _ := DbPool.SendBatch() Prepare(sqlStr)
+	return nil
+}
 
-	   	//format all vals at once
-	   	res, _ := stmt.Exec(vals...)
-	   }
+// ReplaceSQL replaces the instance occurrence of any string pattern with an increasing $n based sequence
+func ReplaceSQL(old, searchPattern string) string {
+	tmpCount := strings.Count(old, searchPattern)
+	for m := 1; m <= tmpCount; m++ {
+		old = strings.Replace(old, searchPattern, "$"+strconv.Itoa(m), 1)
+	}
+	return old
+}
 
-	   // ReplaceSQL replaces the instance occurrence of any string pattern with an increasing $n based sequence
-	   func ReplaceSQL(old, searchPattern string) string {
-	   	tmpCount := strings.Count(old, searchPattern)
-	   	for m := 1; m <= tmpCount; m++ {
-	   		old = strings.Replace(old, searchPattern, "$"+strconv.Itoa(m), 1)
-	   	}
-	   	return old
+// Generates all "VALUES('xxx', 'yyy')..." for insert statements
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) generateSQLInsertValues(testdata [][]string) (sqlInsertValuesString string) {
 
-	*/
+	sqlInsertValuesString = ""
+
+	// Loop over both rows and values
+	for _, rowValues := range testdata {
+		sqlInsertValuesString = sqlInsertValuesString + "VALUES("
+
+		for valueCounter, value := range rowValues {
+			sqlInsertValuesString = sqlInsertValuesString + "'" + value + "'"
+
+			// After the last value then add ')'
+			if valueCounter == len(rowValues)-1 {
+				sqlInsertValuesString = sqlInsertValuesString + ") "
+			} else {
+				// Not last value, so Add ','
+				sqlInsertValuesString = sqlInsertValuesString + ", "
+			}
+
+		}
+
+	}
+
+	return sqlInsertValuesString
 }

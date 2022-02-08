@@ -194,7 +194,8 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 
 	sqlToExecute := ""
 	sqlToExecute = sqlToExecute + "SELECT testdata_merklehashes.\"client_uuid\", testdata_merklehashes.\"domain_uuid\", "
-	sqlToExecute = sqlToExecute + "testdata_merklehashes.\"merklehash\", testdata_merklehashes.\"merkle_path\" "
+	sqlToExecute = sqlToExecute + "testdata_merklehashes.\"merklehash\", testdata_merklehashes.\"merkle_filterpath\", "
+	sqlToExecute = sqlToExecute + "testdata_merklehashes.\"merkle_filterpath_hash\" "
 	sqlToExecute = sqlToExecute + "FROM testdata_merklehashes "
 
 	// Query DB
