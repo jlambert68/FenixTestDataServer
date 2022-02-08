@@ -398,7 +398,9 @@ func ExtractMerkleRootHashFromMerkleTree(merkleTree dataframe.DataFrame) (merkle
 
 	// The result should be just one line
 	if len(merkleRootHashArray) != 1 {
+		log.Fatalln(" The result should be just one line for MerkleRootHash. Ending this misery! ")
 		merkleRootHash = "666"
+
 	} else {
 		merkleRootHash = merkleRootHashArray[0]
 	}
