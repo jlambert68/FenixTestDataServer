@@ -208,13 +208,13 @@ func LoadAndProcessFile(fileToprocess string) (string, dataframe.DataFrame, data
 		dataframe.WithDelimiter(';'),
 		dataframe.HasHeader(true))
 
-	merkleHash, merkleTreeDataFrame, _ := CreateMerkleTreeFromDataFrame(df)
+	merkleHash, merkleTreeDataFrame, _ := CreateMerkleTreeFromDataFrame(df, "not used")
 
 	return merkleHash, merkleTreeDataFrame, df
 }
 
 // Create MerkleRootHash and MerkleTree
-func CreateMerkleTreeFromDataFrame(df dataframe.DataFrame) (merkleHash string, merkleTreeDataFrame dataframe.DataFrame, testDataRowsWithLeafNodeHashAdded dataframe.DataFrame) {
+func CreateMerkleTreeFromDataFrame(df dataframe.DataFrame, merkleFilterPath string) (merkleHash string, merkleTreeDataFrame dataframe.DataFrame, testDataRowsWithLeafNodeHashAdded dataframe.DataFrame) {
 	df = df.Arrange(dataframe.Sort("TestDataId"))
 
 	numberOfRows := df.Nrow()
@@ -253,7 +253,7 @@ func CreateMerkleTreeFromDataFrame(df dataframe.DataFrame) (merkleHash string, m
 		series.New([]string{}, series.String, "MerkleChildHash"),
 	)
 
-	merkleFilterPath := "AccountEnvironment/ClientJuristictionCountryCode/MarketSubType/MarketName/" //SecurityType/"
+	//merkleFilterPath :=  //"AccountEnvironment/ClientJuristictionCountryCode/MarketSubType/MarketName/" //SecurityType/"
 
 	testDataRowsWithLeafNodeHashAdded = df.Copy()
 	testDataRowsWithLeafNodeHashAdded = testDataRowsWithLeafNodeHashAdded.Filter(

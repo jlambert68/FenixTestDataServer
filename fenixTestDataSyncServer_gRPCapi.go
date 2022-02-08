@@ -412,8 +412,11 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataRows(ctx context.Context, 
 	// Concatenate with current Server data
 	allRowsAsDataFrame := fenixTestDataSyncServerObject.concartenateWithCurrentServerTestData(callingClientUuid, newRowsAsDataFrame)
 
+	// Get calling Client's MerkleFilterPath
+	merkleFilterPath := fenixTestDataSyncServerObject.getCurrentMerkleFilterForClient(callingClientUuid)
+
 	// Recreate MerkleHash from All testdata rows, both existing rows for Server and new from Client
-	computedMerkleHash, _, testdataWithLeafNodeHash := common_config.CreateMerkleTreeFromDataFrame(allRowsAsDataFrame)
+	computedMerkleHash, _, testdataWithLeafNodeHash := common_config.CreateMerkleTreeFromDataFrame(allRowsAsDataFrame, merkleFilterPath)
 
 	//Compare 'computedMerkleHash' with MerkleHash from Client
 	clientMerkleHash := fenixTestDataSyncServerObject.getCurrentMerkleHashForClient(callingClientUuid)
