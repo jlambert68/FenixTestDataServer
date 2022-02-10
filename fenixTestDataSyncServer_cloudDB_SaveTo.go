@@ -14,7 +14,7 @@ import (
 // Save data to CloudDB
 //
 // All TestTDataClients
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveAllmemDBAllClientsToCloudDB(testDataClients *[]memCloudDBAllTestDataClientStruct) (err error) {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveAllmemDBAllClientsToCloudDB(testDataClients *[]cloudDBTestDataClientStruct) (err error) {
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"Id": "60b8ec33-b847-4904-a2a2-705d89455ce3",
@@ -41,7 +41,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveAl
 	rows, _ := DbPool.Query(context.Background(), sqlToExecute)
 
 	// Variables to used when extract data from result set
-	var testDataClient memCloudDBAllTestDataClientStruct
+	var testDataClient cloudDBTestDataClientStruct
 
 	// Extract data from DB result set
 	for rows.Next() {
@@ -62,7 +62,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveAl
 // Save data to CloudDB
 //
 // All TestDataHeaderFilterValues
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveAllmemDBAllTestDataHeaderFilterValuesToCloudDB(testDataHeaderFilterValues *[]memCloudDBAllTestDataHeaderFilterValueStruct) (err error) {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveAllmemDBAllTestDataHeaderFilterValuesToCloudDB(testDataHeaderFilterValues *[]cloudDBTestDataHeaderFilterValuesStruct) (err error) {
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"Id": "a015ff6a-7a76-47a4-b61a-dec2b3ea3f7f",
@@ -82,7 +82,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveAl
 	rows, _ := DbPool.Query(context.Background(), sqlToExecute)
 
 	// Variables to used when extract data from result set
-	var testDataHeaderFilterValue memCloudDBAllTestDataHeaderFilterValueStruct
+	var testDataHeaderFilterValue cloudDBTestDataHeaderFilterValuesStruct
 
 	// Extract data from DB result set
 	for rows.Next() {
@@ -103,7 +103,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveAl
 // Save data to CloudDB
 //
 // All TestDataHeaderItems
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveAllmemDBAllTestDataHeaderItemsToCloudDB(testDataHeaderItems *[]memCloudDBAllTestDataHeaderItemStruct) (err error) {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveAllmemDBAllTestDataHeaderItemsToCloudDB(testDataHeaderItems *[]cloudDBTestDataHeaderItemStruct) (err error) {
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"Id": "575cbf13-51d8-4f35-9edf-b36385927f1d",
@@ -126,13 +126,13 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveAl
 	rows, _ := DbPool.Query(context.Background(), sqlToExecute)
 
 	// Variables to used when extract data from result set
-	var testDataHeaderItem memCloudDBAllTestDataHeaderItemStruct
+	var testDataHeaderItem cloudDBTestDataHeaderItemStruct
 
 	// Extract data from DB result set
 	for rows.Next() {
 		err := rows.Scan(&testDataHeaderItem.clientUuid, &testDataHeaderItem.domainUuid, &testDataHeaderItem.headerItemHash,
 			&testDataHeaderItem.headerLabel, &testDataHeaderItem.shouldBeUsedInFilter, &testDataHeaderItem.isMandatoryInFilter,
-			&testDataHeaderItem.filterSelection_type, &testDataHeaderItem.filterValuesHash)
+			&testDataHeaderItem.filterSelectionType, &testDataHeaderItem.filterValuesHash)
 		if err != nil {
 			return err
 		}
@@ -209,7 +209,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveTe
 // Save data to CloudDB
 //
 // All TestDataMerkleTrees
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveAllmemDBAllTestDataMerkleTreesToCloudDB(testDataMerkleTrees *[]memCloudDBAllTestDataMerkleTreeStruct) (err error) {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveAllmemDBAllTestDataMerkleTreesToCloudDB(testDataMerkleTrees *[]cloudDBTestDataMerkleTreeStruct) (err error) {
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"Id": "2c764bc6-4bf2-420a-8164-229866365c8c",
@@ -232,7 +232,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveAl
 	rows, _ := DbPool.Query(context.Background(), sqlToExecute)
 
 	// Variables to used when extract data from result set
-	var testDataMerkleTree memCloudDBAllTestDataMerkleTreeStruct
+	var testDataMerkleTree cloudDBTestDataMerkleTreeStruct
 
 	// Extract data from DB result set
 	for rows.Next() {
@@ -256,7 +256,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveAl
 // Save data to CloudDB
 //
 // All TestDataRowItems
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveAllmemDBAllTestDataRowItemsToCloudDB(testDataRowItems *[]memCloudDBAllTestDataRowItemStruct) (err error) {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveAllmemDBAllTestDataRowItemsToCloudDB(testDataRowItems *[]cloudDBTestDataRowItemStruct) (err error) {
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"Id": "28f028a7-79d8-449d-a2c0-0fe2119c1586",
@@ -278,7 +278,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveAl
 	rows, _ := DbPool.Query(context.Background(), sqlToExecute)
 
 	// Variables to used when extract data from result set
-	var testDataRowItem memCloudDBAllTestDataRowItemStruct
+	var testDataRowItem cloudDBTestDataRowItemStruct
 
 	// Extract data from DB result set
 	for rows.Next() {

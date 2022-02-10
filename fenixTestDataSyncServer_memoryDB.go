@@ -85,8 +85,17 @@ type memDBDataStructureStruct struct {
 	headerItems         []memDBHeaderItemsStruct
 	testDataRows        []memDBTestDataItemsStruct
 	testDataAsDataFrame dataframe.DataFrame
-}
 
+	// New Structure that will overtake the above
+	memCloudDBStructureForTestDataMerkleHash cloudDBTestDataMerkleHashStruct
+	memCloudDBStructureForTestDataMerkleTree cloudDBTestDataMerkleTreeStruct
+
+	memCloudDBStructureForTestDataHeaderItemsHashesStruct cloudDBTestDataHeaderItemsHashesStruct
+	memCloudDBStructureForTestDataHeaderItem              []cloudDBTestDataHeaderItemStruct
+	memCloudDBAllTestDataHeaderFilterValueStruct cloudDBTestDataHeaderFilterValuesStruct
+	lägg                                         order för värden som det finns fler av, typ header, rowdata, filter
+}
+används verkligen FilterValueHash???
 type memDBMerkleTreeRowsStruct struct {
 	merkleTreeRows []memDBMerkleTreeRowStruct
 }
@@ -124,6 +133,7 @@ type memDBTestDataItemsStruct struct {
 	testDataRowHash        string
 	leafNodeName           string
 	leafNodePath           string
+	leafNodeHash           string
 	testDataValuesAsString []string
 }
 
@@ -643,7 +653,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCur
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getDomainUuidForClient(testDataClientGuid string) (domainUuid memDBDomainUuidType) {
 
 	// Get pointer to data for Client_UUID
-	tempdbData, valueExits := memCloudDBAllClientsMap[memDBClientUuidType(testDataClientGuid)]
+	tempdbData, valueExits := cloudDBClientsMap[memDBClientUuidType(testDataClientGuid)]
 
 	// Get the data
 	if valueExits == true {
@@ -688,7 +698,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) exists
 		}).Debug("Exiting: ListTestInstructionsInDB()")
 	}()
 
-	_, clientExits := memCloudDBAllClientsMap[memDBClientUuidType(testDataClientUUID)]
+	_, clientExits := cloudDBClientsMap[memDBClientUuidType(testDataClientUUID)]
 
 	//Only OK if client exists in memoryDBMap
 	if clientExits != true {

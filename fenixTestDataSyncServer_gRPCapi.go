@@ -146,8 +146,6 @@ func (s *FenixTestDataGrpcServicesServer) SendMerkleTree(ctx context.Context, me
 	// Convert the merkleTree into a DataFrame object
 	merkleTreeAsDataFrame := fenixTestDataSyncServerObject.convertgRpcMerkleTreeMessageToDataframe(*merkleTreeMessage)
 
-	//_ = fenixTestDataSyncServerObject.convertDataFramIntoJSON(merkleTreeAsDataFrame)
-
 	// Verify MerkleTree
 	clientsMerkleRootHash := common_config.ExtractMerkleRootHashFromMerkleTree(merkleTreeAsDataFrame)
 	recalculatedMerkleRootHash := common_config.CalculateMerkleHashFromMerkleTree(merkleTreeAsDataFrame)
@@ -164,7 +162,7 @@ func (s *FenixTestDataGrpcServicesServer) SendMerkleTree(ctx context.Context, me
 
 	currentClientMerkleHash := fenixTestDataSyncServerObject.getCurrentMerkleHashForClient(callingClientUuid)
 
-	// Verify that Client Sent MerkleHash, in a previous message, that matches the MerkleHash from MerkleTable
+	// Verify that Client Sent MerkleHash, in a previous message, matches the MerkleHash from MerkleTable
 	if currentClientMerkleHash != recalculatedMerkleRootHash {
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 			"id": "a86f766a-c9ae-4698-abf2-b10a0f5ec475",
@@ -410,7 +408,7 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataRows(ctx context.Context, 
 	}
 
 	// Concatenate with current Server data
-	allRowsAsDataFrame := fenixTestDataSyncServerObject.concartenateWithCurrentServerTestData(callingClientUuid, newRowsAsDataFrame)
+	allRowsAsDataFrame := fenixTestDataSyncServerObject.concatenateWithCurrentServerTestData(callingClientUuid, newRowsAsDataFrame)
 
 	// Get calling Client's MerkleFilterPath
 	merkleFilterPath := fenixTestDataSyncServerObject.getCurrentMerkleFilterForClient(callingClientUuid)

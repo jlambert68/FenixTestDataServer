@@ -272,15 +272,15 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) conver
 }
 
 // Concartenate TestDataRows as a DataFrame with the current Server TestDataRows-DataFrame
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) concartenateWithCurrentServerTestData(testDataClientGuid string, testdataDataframe dataframe.DataFrame) (allTestdataAsDataFrame dataframe.DataFrame) {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) concatenateWithCurrentServerTestData(testDataClientGuid string, testdataDataframe dataframe.DataFrame) (allTestdataAsDataFrame dataframe.DataFrame) {
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"id": "75e3cea1-d459-4f4f-9289-b728feee7ec0",
-	}).Debug("Incoming gRPC 'concartenateWithCurrentServerTestData'")
+	}).Debug("Incoming gRPC 'concatenateWithCurrentServerTestData'")
 
 	defer fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"id": "f77a358e-50ad-4f1c-a540-6559688e173f",
-	}).Debug("Outgoing gRPC 'concartenateWithCurrentServerTestData'")
+	}).Debug("Outgoing gRPC 'concatenateWithCurrentServerTestData'")
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"id": "5716a1e8-11dc-4c70-9579-94d7d177689b",

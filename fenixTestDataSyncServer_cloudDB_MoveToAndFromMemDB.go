@@ -41,7 +41,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadCl
 	// Load Servers TestData content, that was previously sent by the clients
 
 	// Loop over all Client&Domain combinations and retrieve Data from CloudDB
-	for _, allowedClient := range memCloudDBAllClients {
+	for _, allowedClient := range cloudDBClients {
 		fmt.Println(allowedClient.clientUuid, allowedClient.domainUuid)
 
 		// Add all HeaderItems
@@ -69,7 +69,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadCl
 		// Build TestData object
 		memDBTestDataStruct := memDBTestDataStruct{memDBDataStructureStruct{
 			merkleHash: "",
-			merklePath: "",
+			merkleFilterPath: "",
 			merkleTree: memDBMerkleTreeRowsStruct{
 				merkleTreeRows: merkleTreeRows,
 			},
@@ -90,7 +90,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadCl
 
 		// Add all testdata rows
 		var testDataRows []memDBTestDataItemsStruct
-		for _, memCloudDBAllTestDataRowItem := range memCloudDBAllTestDataRowItems {
+		for _, memCloudDBAllTestDataRowItem := range cloudDBTestDataRowItems {
 				tempTestDataItems:= *tempMemoryDB.server.memDBTestDataDomain[memCloudDBAllTestDataRowItem.domainUuid][memCloudDBAllTestDataRowItem.clientUuid].
 				memDBDataStructure.testDataRows
 				if len(tempTestDataRows) == 0 {
@@ -150,7 +150,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadCl
 		// Build TestData object
 		memDBTestDataStruct := memDBTestDataStruct{memDBDataStructureStruct{
 			merkleHash: "",
-			merklePath: "",
+			merkleFilterPath: "",
 			merkleTree: memDBMerkleTreeRowsStruct{
 				merkleTreeRows: merkleTreeRows,
 			},

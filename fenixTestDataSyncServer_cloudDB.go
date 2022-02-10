@@ -29,7 +29,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadTe
 	}
 
 	// All TestTDataClients in CloudDB
-	var tempMemDBAllClients []memCloudDBAllTestDataClientStruct
+	var tempMemDBAllClients []cloudDBTestDataClientStruct
 
 	err, tempMemCloudDBAllClientsMap := fenixTestDataSyncServerObject.loadAllmemDBAllClientsFromCloudDB(&tempMemDBAllClients)
 	if err != nil {
@@ -43,7 +43,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadTe
 	}
 
 	// All TestDataHeaderFilterValues in CloudDB
-	var tempMemDBAllTestDataHeaderFilterValues []memCloudDBAllTestDataHeaderFilterValueStruct
+	var tempMemDBAllTestDataHeaderFilterValues []cloudDBTestDataHeaderFilterValuesStruct
 	err = fenixTestDataSyncServerObject.loadAllmemDBAllTestDataHeaderFilterValuesFromCloudDB(&tempMemDBAllTestDataHeaderFilterValues)
 	if err != nil {
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
@@ -56,7 +56,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadTe
 	}
 
 	// All TestDataHeaderItems in CloudDB
-	var tempMemDBAllTestDataHeaderItems []memCloudDBAllTestDataHeaderItemStruct
+	var tempMemDBAllTestDataHeaderItems []cloudDBTestDataHeaderItemStruct
 	err = fenixTestDataSyncServerObject.loadAllmemDBAllTestDataHeaderItemsFromCloudDB(&tempMemDBAllTestDataHeaderItems)
 	if err != nil {
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
@@ -69,7 +69,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadTe
 	}
 
 	// All TestDataMerkleHashes in CloudDB
-	var tempMemDBAllTestDataMerkleHashes []memCloudDBAllTestDataMerkleHashStruct
+	var tempMemDBAllTestDataMerkleHashes []cloudDBTestDataMerkleHashStruct
 	err = fenixTestDataSyncServerObject.loadAllmemDBAllTestDataMerkleHashesFromCloudDB(&tempMemDBAllTestDataMerkleHashes)
 	if err != nil {
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
@@ -82,7 +82,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadTe
 	}
 
 	// All TestDataMerkleTrees in CloudDB
-	var tempMemDBAllTestDataMerkleTrees []memCloudDBAllTestDataMerkleTreeStruct
+	var tempMemDBAllTestDataMerkleTrees []cloudDBTestDataMerkleTreeStruct
 	err = fenixTestDataSyncServerObject.loadAllmemDBAllTestDataMerkleTreesFromCloudDB(&tempMemDBAllTestDataMerkleTrees)
 	if err != nil {
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
@@ -95,7 +95,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadTe
 	}
 
 	// All TestDataRowItems in CloudDB
-	var tempMemDBAllTestDataRowItems []memCloudDBAllTestDataRowItemStruct
+	var tempMemDBAllTestDataRowItems []cloudDBTestDataRowItemStruct
 	err = fenixTestDataSyncServerObject.loadAllmemDBAllTestDataRowItemsFromCloudDB(&tempMemDBAllTestDataRowItems)
 	if err != nil {
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
@@ -108,13 +108,23 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadTe
 	}
 
 	// Could get all data from CloudDB, so now we can move the tempObjects into memDB
-	memCloudDBAllClients = tempMemDBAllClients
-	memCloudDBAllClientsMap = tempMemCloudDBAllClientsMap
-	memCloudDBAllTestDataHeaderFilterValues = tempMemDBAllTestDataHeaderFilterValues
-	memCloudDBAllTestDataHeaderItems = tempMemDBAllTestDataHeaderItems
-	memCloudDBAllTestDataMerkleHashes = tempMemDBAllTestDataMerkleHashes
-	memCloudDBAllTestDataMerkleTrees = tempMemDBAllTestDataMerkleTrees
-	memCloudDBAllTestDataRowItems = tempMemDBAllTestDataRowItems
+	cloudDBClients = tempMemDBAllClients
+	cloudDBClientsMap = tempMemCloudDBAllClientsMap
+	cloudDBTestDataHeadersFilterValues = tempMemDBAllTestDataHeaderFilterValues
+	cloudDBTestDataHeaderItems = tempMemDBAllTestDataHeaderItems
+	cloudDBTestDataMerkleHashes = tempMemDBAllTestDataMerkleHashes
+	cloudDBTestDataMerkleTrees = tempMemDBAllTestDataMerkleTrees
+	cloudDBTestDataRowItems = tempMemDBAllTestDataRowItems
+
+	// Create the working copies in 'dbDataMap-structure'  for each Client
+	//TODO - FIXA DESSA IDEER
+	/*
+		fixa detta
+		Samt bestämma hur denna struktur ska användas
+		1) Som mellanlagring vid laddning frpn DB
+		2) Håller det data som ska sparas tillbaka
+		3) Håller fullständing kopia som är speglad mot CloudDB, men varför ha både dennna och dataframe.DataFrame-strukturen?
+	*/
 
 	// Everything was loaded, now allow in- and outgoing messages
 	fenixTestDataSyncServerObject.stateProcessIncomingAndOutgoingMessage = true

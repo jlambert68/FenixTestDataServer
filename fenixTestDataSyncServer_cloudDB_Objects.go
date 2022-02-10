@@ -6,78 +6,96 @@ package main
 */
 
 // All TestTDataClients in CloudDB
-var memCloudDBAllClients []memCloudDBAllTestDataClientStruct
-var memCloudDBAllClientsMap memCloudDBAllClientsMapType
+var cloudDBClients []cloudDBTestDataClientStruct
+var cloudDBClientsMap cloudDBClientsMapType
 
-type memCloudDBAllTestDataClientStruct struct {
-	clientUuid  memDBClientUuidType
+type cloudDBTestDataClientStruct struct {
+	clientUuid  string
 	clientName  string
-	domainUuid  memDBDomainUuidType
+	domainUuid  string
 	description string
 }
 
-type memCloudDBAllClientsMapType map[memDBClientUuidType]memCloudDBAllTestDataClientMapStruct
-type memCloudDBAllTestDataClientMapStruct struct {
+type cloudDBClientsMapType map[memDBClientUuidType]cloudDBTestDataClientMapStruct
+type cloudDBTestDataClientMapStruct struct {
 	clientName  string
-	domainUuid  memDBDomainUuidType
+	domainUuid  string
 	description string
 }
 
 // All TestDataHeaderFilterValues in CloudDB
-var memCloudDBAllTestDataHeaderFilterValues []memCloudDBAllTestDataHeaderFilterValueStruct
+var cloudDBTestDataHeaderItemsHashes []cloudDBTestDataHeaderItemsHashesStruct
 
-type memCloudDBAllTestDataHeaderFilterValueStruct struct {
-	headerItemHash    string
-	headerFilterValue string
-	clientUuid        memDBClientUuidType
-	domainUuid        memDBDomainUuidType
+type cloudDBTestDataHeaderItemsHashesStruct struct {
+	headerItemsHash  string
+	clientUuid       string
+	headerLabelsHash string
+	updatedTimeStamp string
+}
+
+// All TestDataHeaderFilterValues in CloudDB
+var cloudDBTestDataHeadersFilterValues []cloudDBTestDataHeaderFilterValuesStruct
+
+type cloudDBTestDataHeaderFilterValuesStruct struct {
+	headerItemHash         string
+	headerFilterValueOrder int
+	headerFilterValue      string
+	clientUuid             string
+	headerFilterValuesHash string
+	updatedTimeStamp       string
 }
 
 // All TestDataHeaderItems in CloudDB
-var memCloudDBAllTestDataHeaderItems []memCloudDBAllTestDataHeaderItemStruct
+var cloudDBTestDataHeaderItems []cloudDBTestDataHeaderItemStruct
 
-type memCloudDBAllTestDataHeaderItemStruct struct {
-	clientUuid           memDBClientUuidType
-	domainUuid           memDBDomainUuidType
+type cloudDBTestDataHeaderItemStruct struct {
+	headerItemsHash      string
 	headerItemHash       string
+	clientUuid           string
 	headerLabel          string
 	shouldBeUsedInFilter bool
 	isMandatoryInFilter  bool
-	filterSelection_type int
-	filterValuesHash     string
+	filterSelectionType  int
+	headerColumnOrder    int
+	updatedTimeStamp     string
 }
 
 // All TestDataMerkleHashes in CloudDB
-var memCloudDBAllTestDataMerkleHashes []memCloudDBAllTestDataMerkleHashStruct
+var cloudDBTestDataMerkleHashes []cloudDBTestDataMerkleHashStruct
 
-type memCloudDBAllTestDataMerkleHashStruct struct {
-	clientUuid memDBClientUuidType
-	domainUuid memDBDomainUuidType
-	merkleHash string
-	merklePath string
+type cloudDBTestDataMerkleHashStruct struct {
+	clientUuid           string
+	merkleHash           string
+	merkleFilterPath     string
+	merkleFilterPathHash string
+	updatedTimeStamp     string
 }
 
 // All TestDataMerkleTrees in CloudDB
-var memCloudDBAllTestDataMerkleTrees []memCloudDBAllTestDataMerkleTreeStruct
+var cloudDBTestDataMerkleTrees []cloudDBTestDataMerkleTreeStruct
 
-type memCloudDBAllTestDataMerkleTreeStruct struct {
-	clientUuid    memDBClientUuidType
-	domainUuid    memDBDomainUuidType
-	nodeLevel     int
-	nodeName      string
-	nodePath      string
-	nodeHash      string
-	nodeChildHash string
+type cloudDBTestDataMerkleTreeStruct struct {
+	clientUuid       string
+	merkleHash       string
+	nodeLevel        int
+	nodeName         string
+	nodePath         string
+	nodeHash         string
+	nodeChildHash    string
+	updatedTimeStamp string
 }
 
 // All TestDataRowItems in CloudDB
-var memCloudDBAllTestDataRowItems []memCloudDBAllTestDataRowItemStruct
+var cloudDBTestDataRowItems []cloudDBTestDataRowItemStruct
 
-type memCloudDBAllTestDataRowItemStruct struct {
-	clientUuid            memDBClientUuidType
-	domainUuid            memDBDomainUuidType
+type cloudDBTestDataRowItemStruct struct {
+	clientUuid            string
 	rowHash               string
 	testdataValueAsString string
 	leafNodeName          string
 	leafNodePath          string
+	leafNodeHash          string
+	valueColumnOrder      int
+	valueRowOrder         int
+	updatedTimeStamp      string
 }
