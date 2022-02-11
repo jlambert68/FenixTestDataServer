@@ -21,7 +21,6 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) InitGr
 
 	var err error
 
-	// Find first non allocated port from defined start port
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"Id": "054bc0ef-93bb-4b75-8630-74e3823f71da",
 	}).Info("Fenix TestData Sync Server tries to start")
@@ -31,7 +30,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) InitGr
 		"Id":                           "ca3593b1-466b-4536-be91-5e038de178f4",
 		"localServerEngineLocalPort: ": localServerEngineLocalPort,
 	}).Info("Start listening on:")
-	lis, err = net.Listen("tcp", ":"+strconv.Itoa(localServerEngineLocalPort))
+	gRPClis, err = net.Listen("tcp", ":"+strconv.Itoa(localServerEngineLocalPort))
 
 	if err != nil {
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
@@ -57,7 +56,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) InitGr
 		"Id":                           "e843ece9-b707-4c60-b1d8-14464305e68f",
 		"localServerEngineLocalPort: ": localServerEngineLocalPort,
 	}).Info("Fenix TestData Sync gRPC Server - started")
-	registerfenixTestDataSyncServerServer.Serve(lis)
+	registerfenixTestDataSyncServerServer.Serve(gRPClis)
 
 }
 
@@ -78,6 +77,6 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) StopGr
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"localServerEngineLocalPort: ": localServerEngineLocalPort,
 	}).Info("Close net.Listing")
-	_ = lis.Close()
+	_ = gRPClis.Close()
 
 }

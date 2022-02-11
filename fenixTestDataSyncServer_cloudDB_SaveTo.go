@@ -256,7 +256,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveAl
 // Save data to CloudDB
 //
 // All TestDataRowItems
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveAllmemDBAllTestDataRowItemsToCloudDB(testDataRowItems *[]cloudDBTestDataRowItemStruct) (err error) {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveAllmemDBAllTestDataRowItemsToCloudDB(testDataRowItems *[]cloudDBTestDataRowItemCurrentStruct) (err error) {
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"Id": "28f028a7-79d8-449d-a2c0-0fe2119c1586",
@@ -278,7 +278,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveAl
 	rows, _ := DbPool.Query(context.Background(), sqlToExecute)
 
 	// Variables to used when extract data from result set
-	var testDataRowItem cloudDBTestDataRowItemStruct
+	var testDataRowItem cloudDBTestDataRowItemCurrentStruct
 
 	// Extract data from DB result set
 	for rows.Next() {

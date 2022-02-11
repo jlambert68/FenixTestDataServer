@@ -86,15 +86,29 @@ type cloudDBTestDataMerkleTreeStruct struct {
 }
 
 // All TestDataRowItems in CloudDB
-var cloudDBTestDataRowItems []cloudDBTestDataRowItemStruct
+var cloudDBTestDataRowItems []cloudDBTestDataRowItemCurrentStruct
 
-type cloudDBTestDataRowItemStruct struct {
+type cloudDBTestDataRowItemCurrentStruct struct {
 	clientUuid            string
 	rowHash               string
 	testdataValueAsString string
 	leafNodeName          string
 	leafNodePath          string
 	leafNodeHash          string
+	valueColumnOrder      int
+	valueRowOrder         int
+	updatedTimeStamp      string
+}
+
+// All TestDataRowItems in CloudDB
+var cloudDBTestDataRowItemsHistoryCurrent []cloudDBTestDataRowItemHistoryStruct
+
+type cloudDBTestDataRowItemHistoryStruct struct {
+	clientUuid            string
+	rowHash               string
+	testdataValueAsString string
+	leafNodeName          string
+	leafNodePath          string
 	valueColumnOrder      int
 	valueRowOrder         int
 	updatedTimeStamp      string

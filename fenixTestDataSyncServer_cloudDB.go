@@ -95,7 +95,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadTe
 	}
 
 	// All TestDataRowItems in CloudDB
-	var tempMemDBAllTestDataRowItems []cloudDBTestDataRowItemStruct
+	var tempMemDBAllTestDataRowItems []cloudDBTestDataRowItemCurrentStruct
 	err = fenixTestDataSyncServerObject.loadAllTestDataRowItemsForClientFromCloudDB(&tempMemDBAllTestDataRowItems)
 	if err != nil {
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{

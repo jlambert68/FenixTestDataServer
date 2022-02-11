@@ -20,6 +20,9 @@ func cleanup() {
 		// Stop Backend gRPC Server
 		fenixTestDataSyncServerObject.StopGrpcServer()
 
+		// Stop backend Admin gRPC Server
+		fenixTestDataSyncServerObject.StopGrpcAdminServer()
+
 		//log.Println("Close DB_session: %v", DB_session)
 		//DB_session.Close()
 	}
@@ -55,7 +58,8 @@ func FenixServerMain() {
 	// Load Data from cloudDB into memoryDB
 	_ = fenixTestDataSyncServerObject.loadTestDataFromCloudDB()
 
-	// Start Backend gRPC-server
-	fenixTestDataSyncServerObject.InitGrpcServer()
+	// Start Backend gRPC-server and Admin-gRPC-server
+	go fenixTestDataSyncServerObject.InitGrpcServer()
+	fenixTestDataSyncServerObject.InitGrpcAdminServer()
 
 }

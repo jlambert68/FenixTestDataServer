@@ -19,10 +19,13 @@ var fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct
 
 // Global connection constants
 var localServerEngineLocalPort = common_config.FenixTestDataSyncServer_port
+var localServerEngineLocalAdminPort = common_config.FenixTestDataSyncServer_Adminport
 
 var (
-	registerfenixTestDataSyncServerServer *grpc.Server
-	lis                                   net.Listener
+	registerfenixTestDataSyncServerServer      *grpc.Server
+	registerfenixTestDataSyncAdminServerServer *grpc.Server
+	gRPClis                                    net.Listener
+	gRPCAdminLis                               net.Listener
 )
 
 var (
@@ -38,6 +41,11 @@ var (
 // Server used for register clients Name, Ip and Por and Clients Test Enviroments and Clients Test Commandst
 type FenixTestDataGrpcServicesServer struct {
 	fenixTestDataSyncServerGrpcApi.UnimplementedFenixTestDataGrpcServicesServer
+}
+
+// Server used for register clients Name, Ip and Por and Clients Test Enviroments and Clients Test Commandst
+type FenixTestDataGrpcServicesAdminServer struct {
+	fenixTestDataSyncServerGrpcApi.UnimplementedFenixTestDataGrpcAdminServicesServer
 }
 
 // Channels which takes incoming gRPC-messages and pass them to 'message process engine'

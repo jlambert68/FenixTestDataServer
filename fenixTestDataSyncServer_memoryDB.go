@@ -656,7 +656,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getDom
 
 	// Get the data
 	if valueExits == true {
-		domainUuid = tempdbData.domainUuid
+		domainUuid = memDBDomainUuidType(tempdbData.domainUuid)
 	} else {
 		domainUuid = "666"
 

@@ -403,7 +403,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 // Load data from CloudDB into memory structures, to speed up stuff
 //
 // All TestDataRowItems in CloudDB
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAllTestDataRowItemsForClientFromCloudDB(clientUuid string, testDataRowItems *[]cloudDBTestDataRowItemStruct) (err error) {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAllTestDataRowItemsForClientFromCloudDB(clientUuid string, testDataRowItems *[]cloudDBTestDataRowItemCurrentStruct) (err error) {
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"Id": "61b8b021-9568-463e-b867-ac1ddb10584d",
@@ -451,7 +451,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 	}
 
 	// Variables to used when extract data from result set
-	var testDataRowItem cloudDBTestDataRowItemStruct
+	var testDataRowItem cloudDBTestDataRowItemCurrentStruct
 
 	// Extract data from DB result set
 	for rows.Next() {

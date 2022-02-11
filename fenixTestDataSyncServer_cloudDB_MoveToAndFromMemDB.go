@@ -90,7 +90,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadCl
 
 		// Add all testdata rows
 		var testDataRows []memDBTestDataItemsStruct
-		for _, memCloudDBAllTestDataRowItem := range cloudDBTestDataRowItems {
+		for _, memCloudDBAllTestDataRowItem := range cloudDBTestDataRowItemsCurrent {
 				tempTestDataItems:= *tempMemoryDB.server.memDBTestDataDomain[memCloudDBAllTestDataRowItem.domainUuid][memCloudDBAllTestDataRowItem.clientUuid].
 				memDBDataStructure.testDataRows
 				if len(tempTestDataRows) == 0 {
