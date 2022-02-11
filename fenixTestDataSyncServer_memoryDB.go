@@ -92,10 +92,9 @@ type memDBDataStructureStruct struct {
 
 	memCloudDBStructureForTestDataHeaderItemsHashesStruct cloudDBTestDataHeaderItemsHashesStruct
 	memCloudDBStructureForTestDataHeaderItem              []cloudDBTestDataHeaderItemStruct
-	memCloudDBAllTestDataHeaderFilterValueStruct cloudDBTestDataHeaderFilterValuesStruct
-	lägg                                         order för värden som det finns fler av, typ header, rowdata, filter
+	memCloudDBAllTestDataHeaderFilterValueStruct          cloudDBTestDataHeaderFilterValuesStruct
 }
-används verkligen FilterValueHash???
+
 type memDBMerkleTreeRowsStruct struct {
 	merkleTreeRows []memDBMerkleTreeRowStruct
 }

@@ -9,28 +9,51 @@ import (
 // Load data from CloudDB into memory structures, to speed up stuff
 //
 // All TestTDataClients in CloudDB
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAllmemDBAllClientsFromCloudDB(testDataClients *[]cloudDBTestDataClientStruct) (err error, memCloudDBAllClientsMap cloudDBClientsMapType) {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAllClientsFromCloudDB(testDataClients *[]cloudDBTestDataClientStruct) (err error, memCloudDBAllClientsMap cloudDBClientsMapType) {
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"Id": "16af90a4-aa07-4d8b-921a-a47c04811a9b",
-	}).Debug("Entering: loadAllmemDBAllClientsFromCloudDB()")
+	}).Debug("Entering: loadAllClientsFromCloudDB()")
 
 	defer func() {
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 			"Id": "e9659490-9ba7-437b-a235-88d8369ebf36",
-		}).Debug("Exiting: loadAllmemDBAllClientsFromCloudDB()")
+		}).Debug("Exiting: loadAllClientsFromCloudDB()")
 	}()
 
+	/* Example
+	SELECT c.*
+	FROM public.clients c
+	WHERE c.activated = true
+	AND
+	      c.replaced_by_new_version = false
+	AND
+	      c.client_areatyp_id = 1; // Clients used for 'TestData'
+
+	client_uuid             uuid      not null
+	client_name             varchar   not null,
+	domain_uuid             uuid      not null
+	description             varchar,
+	activated               boolean   not null,
+	deleted                 boolean   not null,
+	update_timestamp        timestamp not null,
+	replaced_by_new_version boolean   not null,
+	client_id               integer   not null,
+	client_version          integer   not null,
+	client_areatyp_id       integer   not null
+
+	*/
+
 	sqlToExecute := ""
-	sqlToExecute = sqlToExecute + "SELECT clients.\"client_uuid\", clients.\"client_name\" , clients.\"domain_uuid\", clients.\"description\"  "
-	sqlToExecute = sqlToExecute + "FROM clients "
-	sqlToExecute = sqlToExecute + "WHERE clients.activated = true "
+	sqlToExecute = sqlToExecute + "SELECT c.client_uuid, c.client_name, c.domain_uuid, c.description "
+	sqlToExecute = sqlToExecute + "FROM clients c"
+	sqlToExecute = sqlToExecute + "WHERE c.activated = true "
 	sqlToExecute = sqlToExecute + "AND "
-	sqlToExecute = sqlToExecute + "clients.deleted = false "
+	sqlToExecute = sqlToExecute + "c.deleted = false "
 	sqlToExecute = sqlToExecute + "AND "
-	sqlToExecute = sqlToExecute + "clients.replaced_by_new_version = false "
+	sqlToExecute = sqlToExecute + "c.replaced_by_new_version = false "
 	sqlToExecute = sqlToExecute + "AND "
-	sqlToExecute = sqlToExecute + "clients.client_areatyp_id = 1 " // Clients used for 'TestData'
+	sqlToExecute = sqlToExecute + "c.client_areatyp_id = 1 " // Clients used for 'TestData'
 
 	// Query DB
 	rows, err := DbPool.Query(context.Background(), sqlToExecute)
@@ -51,17 +74,22 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 
 	// Extract data from DB result set
 	for rows.Next() {
-		err := rows.Scan(&testDataClient.clientUuid, &testDataClient.clientName, &testDataClient.domainUuid, &testDataClient.description)
+		err := rows.Scan(
+			&testDataClient.clientUuid,
+			&testDataClient.clientName,
+			&testDataClient.domainUuid,
+			&testDataClient.description)
+
 		if err != nil {
 			return err, nil
 		}
+
 		*testDataClients = append(*testDataClients, testDataClient)
-		memCloudDBAllClientsMap[testDataClient.clientUuid] = cloudDBTestDataClientMapStruct{
+		memCloudDBAllClientsMap[memDBClientUuidType(testDataClient.clientUuid)] = cloudDBTestDataClientMapStruct{
 			clientName:  testDataClient.clientName,
 			domainUuid:  testDataClient.domainUuid,
 			description: testDataClient.description,
 		}
-
 	}
 
 	// No errors occurred
@@ -73,21 +101,36 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 // Load data from CloudDB into memory structures, to speed up stuff
 //
 // All TestDataHeaderFilterValues in CloudDB
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAllmemDBAllTestDataHeaderFilterValuesFromCloudDB(testDataHeaderFilterValues *[]cloudDBTestDataHeaderFilterValuesStruct) (err error) {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAllTestDataHeaderFilterValuesForClientFromCloudDB(clientUuid string, testDataHeaderFilterValues *[]cloudDBTestDataHeaderFilterValuesStruct) (err error) {
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"Id": "097f9f31-f29b-4c4a-aadb-0d4120429cf5",
-	}).Debug("Entering: loadAllmemDBAllTestDataHeaderFilterValuesFromCloudDB()")
+	}).Debug("Entering: loadAllTestDataHeaderFilterValuesForClientFromCloudDB()")
 
 	defer func() {
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 			"Id": "cfb2f17f-579d-4d98-b91b-ba3c01a32771",
-		}).Debug("Exiting: loadAllmemDBAllTestDataHeaderFilterValuesFromCloudDB()")
+		}).Debug("Exiting: loadAllTestDataHeaderFilterValuesForClientFromCloudDB()")
 	}()
 
+	/* Example
+
+	SELECT tdhfv.*
+	FROM public.testdata_header_filtervalues tdhfv
+	WHERE tdhfv.client_uuid::text = '45a217d1-55ed-4531-a801-779e566d75cb';
+
+	header_item_hash          varchar   not null
+	header_filter_value       varchar   not null,
+	client_uuid               uuid      not null
+	header_filter_value_order integer   not null,
+	header_filter_values_hash varchar   not null,
+	updated_timestamp         timestamp not null,
+	*/
+
 	sqlToExecute := ""
-	sqlToExecute = sqlToExecute + "SELECT testdata_header_filtervalues.\"header_item_hash\", testdata_header_filtervalues.\"header_filter_value\" , testdata_header_filtervalues.\"client_uuid\", testdata_header_filtervalues.\"domain_uuid\"  "
-	sqlToExecute = sqlToExecute + "FROM testdata_header_filtervalues "
+	sqlToExecute = sqlToExecute + "SELECT tdhfv.* "
+	sqlToExecute = sqlToExecute + "FROM public.testdata_header_filtervalues tdhfv "
+	sqlToExecute = sqlToExecute + "WHERE tdhfv.client_uuid::text = '" + clientUuid + "';"
 
 	// Query DB
 	rows, err := DbPool.Query(context.Background(), sqlToExecute)
@@ -107,7 +150,14 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 
 	// Extract data from DB result set
 	for rows.Next() {
-		err := rows.Scan(&testDataHeaderFilterValue.headerItemHash, &testDataHeaderFilterValue.headerFilterValue, &testDataHeaderFilterValue.clientUuid, &testDataHeaderFilterValue.domainUuid)
+		err := rows.Scan(
+			&testDataHeaderFilterValue.headerItemHash,
+			&testDataHeaderFilterValue.headerFilterValue,
+			&testDataHeaderFilterValue.clientUuid,
+			&testDataHeaderFilterValue.headerFilterValueOrder,
+			&testDataHeaderFilterValue.headerFilterValuesHash,
+			&testDataHeaderFilterValue.updatedTimeStamp)
+
 		if err != nil {
 			return err
 		}
@@ -124,24 +174,40 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 // Load data from CloudDB into memory structures, to speed up stuff
 //
 // All TestDataHeaderItems in CloudDB
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAllmemDBAllTestDataHeaderItemsFromCloudDB(testDataHeaderItems *[]cloudDBTestDataHeaderItemStruct) (err error) {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAllTestDataHeaderItemsForClientFromCloudDB(clientUuid string, testDataHeaderItems *[]cloudDBTestDataHeaderItemStruct) (err error) {
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"Id": "a2951e5e-d7d0-4240-88a9-5dc570f2bbe9",
-	}).Debug("Entering: loadAllmemDBAllTestDataHeaderItemsFromCloudDB()")
+	}).Debug("Entering: loadAllTestDataHeaderItemsForClientFromCloudDB()")
 
 	defer func() {
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 			"Id": "70e1c4da-5001-4199-adf4-bbc2576ccdab",
-		}).Debug("Exiting: loadAllmemDBAllTestDataHeaderItemsFromCloudDB()")
+		}).Debug("Exiting: loadAllTestDataHeaderItemsForClientFromCloudDB()")
 	}()
 
+	/* Example
+
+	SELECT tdhi.*
+	FROM public.testdata_header_items tdhi
+	WHERE tdhi.client_uuid::text = '45a217d1-55ed-4531-a801-779e566d75cb';
+
+	client_uuid              uuid      not null
+	updated_timestamp        timestamp not null,
+	header_item_hash         varchar   not null
+	header_label             varchar   not null,
+	should_be_used_in_filter boolean   not null,
+	is_mandatory_in_filter   boolean   not null,
+	filter_selection_type    integer   not null
+	header_column_order      integer   not null,
+	header_items_hash        varchar   not null
+
+	*/
+
 	sqlToExecute := ""
-	sqlToExecute = sqlToExecute + "SELECT testdata_header_items.\"client_uuid\", testdata_header_items.\"domain_uuid\", "
-	sqlToExecute = sqlToExecute + "testdata_header_items.\"header_item_hash\", testdata_header_items.\"header_label\", "
-	sqlToExecute = sqlToExecute + "testdata_header_items.\"should_be_used_in_filter\", testdata_header_items.\"is_mandatory_in_filter\", "
-	sqlToExecute = sqlToExecute + "testdata_header_items.\"filter_selection_type\", testdata_header_items.\"filter_values_hash\" "
-	sqlToExecute = sqlToExecute + "FROM testdata_header_items "
+	sqlToExecute = sqlToExecute + "SELECT tdhi.* "
+	sqlToExecute = sqlToExecute + "FROM public.testdata_header_items tdhi "
+	sqlToExecute = sqlToExecute + "WHERE tdhi.client_uuid::text = '" + clientUuid + "';"
 
 	// Query DB
 	rows, err := DbPool.Query(context.Background(), sqlToExecute)
@@ -161,9 +227,17 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 
 	// Extract data from DB result set
 	for rows.Next() {
-		err := rows.Scan(&testDataHeaderItem.clientUuid, &testDataHeaderItem.domainUuid, &testDataHeaderItem.headerItemHash,
-			&testDataHeaderItem.headerLabel, &testDataHeaderItem.shouldBeUsedInFilter, &testDataHeaderItem.isMandatoryInFilter,
-			&testDataHeaderItem.filterSelectionType, &testDataHeaderItem.filterValuesHash)
+		err := rows.Scan(
+			&testDataHeaderItem.clientUuid,
+			&testDataHeaderItem.updatedTimeStamp,
+			&testDataHeaderItem.headerItemHash,
+			&testDataHeaderItem.headerLabel,
+			&testDataHeaderItem.shouldBeUsedInFilter,
+			&testDataHeaderItem.isMandatoryInFilter,
+			&testDataHeaderItem.filterSelectionType,
+			&testDataHeaderItem.headerColumnOrder,
+			&testDataHeaderItem.headerItemsHash)
+
 		if err != nil {
 			return err
 		}
@@ -180,23 +254,36 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 // Load data from CloudDB into memory structures, to speed up stuff
 //
 // All TestDataMerkleHashes in CloudDB
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAllmemDBAllTestDataMerkleHashesFromCloudDB(testDataMerkleHashs *[]cloudDBTestDataMerkleHashStruct) (err error) {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAllTestDataMerkleHashesForClientFromCloudDB(clientUuid string, testDataMerkleHashs *[]cloudDBTestDataMerkleHashStruct) (err error) {
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"Id": "53461f88-c773-477e-b459-cfb93a1c3eaa",
-	}).Debug("Entering: loadAllmemDBAllTestDataMerkleHashesFromCloudDB()")
+	}).Debug("Entering: loadAllTestDataMerkleHashesForClientFromCloudDB()")
 
 	defer func() {
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 			"Id": "851cbecf-4084-4e38-b922-eab2a4b526d1",
-		}).Debug("Exiting: loadAllmemDBAllTestDataMerkleHashesFromCloudDB()")
+		}).Debug("Exiting: loadAllTestDataMerkleHashesForClientFromCloudDB()")
 	}()
 
+	/* Example
+
+		SELECT tdmh.*
+		FROM public.testdata_merklehashes tdmh
+		WHERE tdmh.client_uuid::text = '45a217d1-55ed-4531-a801-779e566d75cb';
+
+	   client_uuid            uuid      not null
+	   updated_timestamp      timestamp not null,
+	   merklehash             varchar   not null
+	   merkle_filterpath      varchar   not null,
+	   merkle_filterpath_hash varchar   not null
+
+	*/
+
 	sqlToExecute := ""
-	sqlToExecute = sqlToExecute + "SELECT testdata_merklehashes.\"client_uuid\", testdata_merklehashes.\"domain_uuid\", "
-	sqlToExecute = sqlToExecute + "testdata_merklehashes.\"merklehash\", testdata_merklehashes.\"merkle_filterpath\", "
-	sqlToExecute = sqlToExecute + "testdata_merklehashes.\"merkle_filterpath_hash\" "
-	sqlToExecute = sqlToExecute + "FROM testdata_merklehashes "
+	sqlToExecute = sqlToExecute + "SELECT tdmh.* "
+	sqlToExecute = sqlToExecute + "FROM public.testdata_merklehashes tdmh "
+	sqlToExecute = sqlToExecute + "WHERE tdmh.client_uuid::text = '" + clientUuid + "';"
 
 	// Query DB
 	rows, err := DbPool.Query(context.Background(), sqlToExecute)
@@ -216,8 +303,13 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 
 	// Extract data from DB result set
 	for rows.Next() {
-		err := rows.Scan(&testDataMerkleHash.clientUuid, &testDataMerkleHash.domainUuid,
-			&testDataMerkleHash.merkleHash, &testDataMerkleHash.merkleFilterPath, &testDataMerkleHash.merkleFilterPathHash)
+		err := rows.Scan(
+			&testDataMerkleHash.clientUuid,
+			&testDataMerkleHash.updatedTimeStamp,
+			&testDataMerkleHash.merkleHash,
+			&testDataMerkleHash.merkleFilterPath,
+			&testDataMerkleHash.merkleFilterPathHash)
+
 		if err != nil {
 			return err
 		}
@@ -234,24 +326,38 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 // Load data from CloudDB into memory structures, to speed up stuff
 //
 // All TestDataMerkleTrees in CloudDB
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAllmemDBAllTestDataMerkleTreesFromCloudDB(testDataMerkleTrees *[]cloudDBTestDataMerkleTreeStruct) (err error) {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAllTestDataMerkleTreesForClientFromCloudDB(clientUuid string, testDataMerkleTrees *[]cloudDBTestDataMerkleTreeStruct) (err error) {
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"Id": "6e0a6f4c-cc54-4aff-94f1-243aee6141ae",
-	}).Debug("Entering: loadAllmemDBAllTestDataMerkleTreesFromCloudDB()")
+	}).Debug("Entering: loadAllTestDataMerkleTreesForClientFromCloudDB()")
 
 	defer func() {
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 			"Id": "a6d6b40f-c30f-4ec1-b5d2-f94b0234471c",
-		}).Debug("Exiting: loadAllmemDBAllTestDataMerkleTreesFromCloudDB()")
+		}).Debug("Exiting: loadAllTestDataMerkleTreesForClientFromCloudDB()")
 	}()
 
+	/* Example
+
+	SELECT tdmt.*
+	FROM public.testdata_merkletrees tdmt
+	WHERE tdmt.client_uuid::text = '45a217d1-55ed-4531-a801-779e566d75cb';
+
+	    client_uuid       uuid      not null
+	    node_level        integer   not null,
+	    node_name         varchar   not null,
+	    node_path         varchar   not null,
+	    node_hash         varchar   not null,
+	    node_child_hash   varchar   not null
+	    updated_timestamp timestamp not null,
+	    merkleHash      varchar   not null
+	*/
+
 	sqlToExecute := ""
-	sqlToExecute = sqlToExecute + "SELECT testdata_merkletrees.\"client_uuid\", testdata_merkletrees.\"domain_uuid\", "
-	sqlToExecute = sqlToExecute + "testdata_merkletrees.\"node_level\", testdata_merkletrees.\"node_name\", "
-	sqlToExecute = sqlToExecute + "testdata_merkletrees.\"node_path\", testdata_merkletrees.\"node_hash\", "
-	sqlToExecute = sqlToExecute + "testdata_merkletrees.\"node_child_hash\" "
-	sqlToExecute = sqlToExecute + "FROM testdata_merkletrees "
+	sqlToExecute = sqlToExecute + "SELECT tdmt.* "
+	sqlToExecute = sqlToExecute + "public.testdata_merkletrees tdmt "
+	sqlToExecute = sqlToExecute + "WHERE tdmt.client_uuid::text = '" + clientUuid + "';"
 
 	// Query DB
 	rows, err := DbPool.Query(context.Background(), sqlToExecute)
@@ -271,10 +377,16 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 
 	// Extract data from DB result set
 	for rows.Next() {
-		err := rows.Scan(&testDataMerkleTree.clientUuid, &testDataMerkleTree.domainUuid,
-			&testDataMerkleTree.nodeLevel, &testDataMerkleTree.nodeName,
-			&testDataMerkleTree.nodePath, &testDataMerkleTree.nodeHash,
-			&testDataMerkleTree.nodeChildHash)
+		err := rows.Scan(
+			&testDataMerkleTree.clientUuid,
+			&testDataMerkleTree.nodeLevel,
+			&testDataMerkleTree.nodeName,
+			&testDataMerkleTree.nodePath,
+			&testDataMerkleTree.nodeHash,
+			&testDataMerkleTree.nodeChildHash,
+			&testDataMerkleTree.updatedTimeStamp,
+			&testDataMerkleTree.merkleHash)
+
 		if err != nil {
 			return err
 		}
@@ -291,23 +403,39 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 // Load data from CloudDB into memory structures, to speed up stuff
 //
 // All TestDataRowItems in CloudDB
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAllmemDBAllTestDataRowItemsFromCloudDB(testDataRowItems *[]cloudDBTestDataRowItemStruct) (err error) {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAllTestDataRowItemsForClientFromCloudDB(clientUuid string, testDataRowItems *[]cloudDBTestDataRowItemStruct) (err error) {
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"Id": "61b8b021-9568-463e-b867-ac1ddb10584d",
-	}).Debug("Entering: loadAllmemDBAllTestDataRowItemsFromCloudDB()")
+	}).Debug("Entering: loadAllTestDataRowItemsForClientFromCloudDB()")
 
 	defer func() {
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 			"Id": "78a97c41-a098-4122-88d2-01ed4b6c4844",
-		}).Debug("Exiting: loadAllmemDBAllTestDataRowItemsFromCloudDB()")
+		}).Debug("Exiting: loadAllTestDataRowItemsForClientFromCloudDB()")
 	}()
 
+	/* Example
+	SELECT tdri.*
+	FROM public.testdata_row_items_current tdri
+	WHERE tdri.client_uuid::text = '45a217d1-55ed-4531-a801-779e566d75cb';
+
+	client_uuid              uuid      not null
+	row_hash                 varchar   not null,
+	testdata_value_as_string varchar   not null,
+	updated_timestamp        timestamp not null,
+	leaf_node_name           varchar   not null,
+	leaf_node_path           varchar   not null,
+	leaf_node_hash           varchar   not null
+	value_column_order       integer   not null,
+	value_row_order          integer   not null,
+
+	*/
+
 	sqlToExecute := ""
-	sqlToExecute = sqlToExecute + "SELECT testdata_row_items_current.\"client_uuid\", testdata_row_items_current.\"domain_uuid\", "
-	sqlToExecute = sqlToExecute + "testdata_row_items_current.\"row_hash\", testdata_row_items_current.\"testdata_value_as_string\", "
-	sqlToExecute = sqlToExecute + "testdata_row_items_current.\"leaf_node_name\", testdata_row_items_current.\"leaf_node_path\" "
-	sqlToExecute = sqlToExecute + "FROM testdata_row_items_current "
+	sqlToExecute = sqlToExecute + "SELECT tdri.* "
+	sqlToExecute = sqlToExecute + "public.testdata_row_items_current tdri "
+	sqlToExecute = sqlToExecute + "WHERE tdri.client_uuid::text = '" + clientUuid + "';"
 
 	// Query DB
 	rows, err := DbPool.Query(context.Background(), sqlToExecute)
@@ -327,9 +455,17 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 
 	// Extract data from DB result set
 	for rows.Next() {
-		err := rows.Scan(&testDataRowItem.clientUuid, &testDataRowItem.domainUuid,
-			&testDataRowItem.rowHash, &testDataRowItem.testdataValueAsString,
-			&testDataRowItem.leafNodeName, &testDataRowItem.leafNodePath)
+		err := rows.Scan(
+			&testDataRowItem.clientUuid,
+			&testDataRowItem.rowHash,
+			&testDataRowItem.testdataValueAsString,
+			&testDataRowItem.updatedTimeStamp,
+			&testDataRowItem.leafNodeName,
+			&testDataRowItem.leafNodePath,
+			&testDataRowItem.leafNodeHash,
+			&testDataRowItem.valueColumnOrder,
+			&testDataRowItem.valueRowOrder)
+
 		if err != nil {
 			return err
 		}
