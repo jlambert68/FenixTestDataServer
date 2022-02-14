@@ -1,15 +1,15 @@
 package main
 
 import (
-	"FenixTestDataServer/common_config"
 	fenixTestDataSyncServerGrpcApi "github.com/jlambert68/FenixGrpcApi/Fenix/fenixTestDataSyncServerGrpcApi/go_grpc_api"
+	fenixSyncShared "github.com/jlambert68/FenixSyncShared"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 )
 
 // *********************************************************************
 //Fenix client can check if Fenix Testdata sync server is alive with this service
-func (s *FenixTestDataGrpcServicesServer) AreYouAlive(ctx context.Context, emptyParameter *fenixTestDataSyncServerGrpcApi.EmptyParameter) (*fenixTestDataSyncServerGrpcApi.AckNackResponse, error) {
+func (s *FenixTestDataGrpcServicesServer) AreYouAlive(_ context.Context, emptyParameter *fenixTestDataSyncServerGrpcApi.EmptyParameter) (*fenixTestDataSyncServerGrpcApi.AckNackResponse, error) {
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"id": "1ff67695-9a8b-4821-811d-0ab8d33c4d8b",
@@ -26,12 +26,12 @@ func (s *FenixTestDataGrpcServicesServer) AreYouAlive(ctx context.Context, empty
 		return returnMessage, nil
 	}
 
-	return &fenixTestDataSyncServerGrpcApi.AckNackResponse{AckNack: true, Comments: "I'am Fenix TestDataSyncServer and I'm alive, and my time is " + common_config.GenerateDatetimeTimeStampForDB()}, nil
+	return &fenixTestDataSyncServerGrpcApi.AckNackResponse{AckNack: true, Comments: "I'am Fenix TestDataSyncServer and I'm alive, and my time is " + fenixSyncShared.GenerateDatetimeTimeStampForDB()}, nil
 }
 
 // *********************************************************************
 // Fenix client can send TestData MerkleHash to Fenix Testdata sync server with this service
-func (s *FenixTestDataGrpcServicesServer) SendMerkleHash(ctx context.Context, merkleHashMessage *fenixTestDataSyncServerGrpcApi.MerkleHashMessage) (*fenixTestDataSyncServerGrpcApi.AckNackResponse, error) {
+func (s *FenixTestDataGrpcServicesServer) SendMerkleHash(_ context.Context, merkleHashMessage *fenixTestDataSyncServerGrpcApi.MerkleHashMessage) (*fenixTestDataSyncServerGrpcApi.AckNackResponse, error) {
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"id": "a55f9c82-1d74-44a5-8662-058b8bc9e48f",
@@ -48,6 +48,13 @@ func (s *FenixTestDataGrpcServicesServer) SendMerkleHash(ctx context.Context, me
 	returnMessage := fenixTestDataSyncServerObject.isClientUsingCorrectTestDataProtoFileVersion(merkleHashMessage.GetTestDataClientUuid(), merkleHashMessage.ProtoFileVersionUsedByClient)
 	if returnMessage != nil {
 		// Not the correct proto-file version is used
+		return returnMessage, nil
+	}
+
+	// Verify that Client is known to Server
+	returnMessage = fenixTestDataSyncServerObject.isClientKnownToServer(merkleHashMessage.GetTestDataClientUuid())
+	if returnMessage != nil {
+		// Client in unknown
 		return returnMessage, nil
 	}
 
@@ -105,7 +112,7 @@ func (s *FenixTestDataGrpcServicesServer) SendMerkleHash(ctx context.Context, me
 
 // *********************************************************************
 // Fenix client can send TestData MerkleTree to Fenix Testdata sync server with this service
-func (s *FenixTestDataGrpcServicesServer) SendMerkleTree(ctx context.Context, merkleTreeMessage *fenixTestDataSyncServerGrpcApi.MerkleTreeMessage) (*fenixTestDataSyncServerGrpcApi.AckNackResponse, error) {
+func (s *FenixTestDataGrpcServicesServer) SendMerkleTree(_ context.Context, merkleTreeMessage *fenixTestDataSyncServerGrpcApi.MerkleTreeMessage) (*fenixTestDataSyncServerGrpcApi.AckNackResponse, error) {
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"id": "cffc25f0-b0e6-407a-942a-71fc74f831ac",
@@ -118,21 +125,17 @@ func (s *FenixTestDataGrpcServicesServer) SendMerkleTree(ctx context.Context, me
 	// Get calling client
 	callingClientUuid := merkleTreeMessage.TestDataClientUuid
 
-	// Verify that Client Exists in DB
-	verfied, err := fenixTestDataSyncServerObject.existsClientInDB(callingClientUuid)
-	if err != nil || verfied == false {
-
-		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
-			"id": "f5eb251c-8639-496f-9101-bac8fc9300f7",
-		}).Info(err.Error())
-
-		return &fenixTestDataSyncServerGrpcApi.AckNackResponse{AckNack: false, Comments: err.Error()}, nil
-	}
-
 	// Check if Client is using correct proto files version
 	returnMessage := fenixTestDataSyncServerObject.isClientUsingCorrectTestDataProtoFileVersion(merkleTreeMessage.GetTestDataClientUuid(), merkleTreeMessage.ProtoFileVersionUsedByClient)
 	if returnMessage != nil {
 		// Not correct proto-file version is used
+		return returnMessage, nil
+	}
+
+	// Verify that Client is known to Server
+	returnMessage = fenixTestDataSyncServerObject.isClientKnownToServer(callingClientUuid)
+	if returnMessage != nil {
+		// Client in unknown
 		return returnMessage, nil
 	}
 
@@ -147,8 +150,8 @@ func (s *FenixTestDataGrpcServicesServer) SendMerkleTree(ctx context.Context, me
 	merkleTreeAsDataFrame := fenixTestDataSyncServerObject.convertgRpcMerkleTreeMessageToDataframe(*merkleTreeMessage)
 
 	// Verify MerkleTree
-	clientsMerkleRootHash := common_config.ExtractMerkleRootHashFromMerkleTree(merkleTreeAsDataFrame)
-	recalculatedMerkleRootHash := common_config.CalculateMerkleHashFromMerkleTree(merkleTreeAsDataFrame)
+	clientsMerkleRootHash := fenixSyncShared.ExtractMerkleRootHashFromMerkleTree(merkleTreeAsDataFrame)
+	recalculatedMerkleRootHash := fenixSyncShared.CalculateMerkleHashFromMerkleTree(merkleTreeAsDataFrame)
 
 	// Something is wrong with clients hash computation
 	if clientsMerkleRootHash != recalculatedMerkleRootHash {
@@ -212,7 +215,7 @@ func (s *FenixTestDataGrpcServicesServer) SendMerkleTree(ctx context.Context, me
 
 // *********************************************************************
 // Fenix client can send TestDataHeaders to Fenix Testdata sync server with this service
-func (s *FenixTestDataGrpcServicesServer) SendTestDataHeaderHash(ctx context.Context, testDataHeaderHashMessageMessage *fenixTestDataSyncServerGrpcApi.TestDataHeaderHashMessage) (*fenixTestDataSyncServerGrpcApi.AckNackResponse, error) {
+func (s *FenixTestDataGrpcServicesServer) SendTestDataHeaderHash(_ context.Context, testDataHeaderHashMessageMessage *fenixTestDataSyncServerGrpcApi.TestDataHeaderHashMessage) (*fenixTestDataSyncServerGrpcApi.AckNackResponse, error) {
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"id": "c8e72834-338c-48be-885c-f083fe7951a6",
@@ -229,6 +232,13 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataHeaderHash(ctx context.Con
 	returnMessage := fenixTestDataSyncServerObject.isClientUsingCorrectTestDataProtoFileVersion(testDataHeaderHashMessageMessage.GetTestDataClientUuid(), testDataHeaderHashMessageMessage.ProtoFileVersionUsedByClient)
 	if returnMessage != nil {
 		// Not correct proto-file version is used
+		return returnMessage, nil
+	}
+
+	// Verify that Client is known to Server
+	returnMessage = fenixTestDataSyncServerObject.isClientKnownToServer(callingClientUuid)
+	if returnMessage != nil {
+		// Client in unknown
 		return returnMessage, nil
 	}
 
@@ -276,7 +286,7 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataHeaderHash(ctx context.Con
 
 // *********************************************************************
 // Fenix client can send TestDataHeaders to Fenix Testdata sync server with this service
-func (s *FenixTestDataGrpcServicesServer) SendTestDataHeaders(ctx context.Context, testDataHeaderMessage *fenixTestDataSyncServerGrpcApi.TestDataHeadersMessage) (*fenixTestDataSyncServerGrpcApi.AckNackResponse, error) {
+func (s *FenixTestDataGrpcServicesServer) SendTestDataHeaders(_ context.Context, testDataHeaderMessage *fenixTestDataSyncServerGrpcApi.TestDataHeadersMessage) (*fenixTestDataSyncServerGrpcApi.AckNackResponse, error) {
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"id": "aee48999-12ad-4bb7-bc8a-96b62a8eeedf",
@@ -293,6 +303,13 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataHeaders(ctx context.Contex
 	returnMessage := fenixTestDataSyncServerObject.isClientUsingCorrectTestDataProtoFileVersion(testDataHeaderMessage.GetTestDataClientUuid(), testDataHeaderMessage.ProtoFileVersionUsedByClient)
 	if returnMessage != nil {
 		// Not correct proto-file version is used
+		return returnMessage, nil
+	}
+
+	// Verify that Client is known to Server
+	returnMessage = fenixTestDataSyncServerObject.isClientKnownToServer(callingClientUuid)
+	if returnMessage != nil {
+		// Client in unknown
 		return returnMessage, nil
 	}
 
@@ -363,7 +380,7 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataHeaders(ctx context.Contex
 
 // *********************************************************************
 // Fenix client can send TestData rows to Fenix Testdata sync server with this service
-func (s *FenixTestDataGrpcServicesServer) SendTestDataRows(ctx context.Context, testdataRowsMessages *fenixTestDataSyncServerGrpcApi.TestdataRowsMessages) (*fenixTestDataSyncServerGrpcApi.AckNackResponse, error) {
+func (s *FenixTestDataGrpcServicesServer) SendTestDataRows(_ context.Context, testdataRowsMessages *fenixTestDataSyncServerGrpcApi.TestdataRowsMessages) (*fenixTestDataSyncServerGrpcApi.AckNackResponse, error) {
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"id": "2b1c8752-eb84-4c15-b8a7-22e2464e5168",
@@ -380,6 +397,13 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataRows(ctx context.Context, 
 	returnMessage := fenixTestDataSyncServerObject.isClientUsingCorrectTestDataProtoFileVersion(testdataRowsMessages.TestDataClientUuid, testdataRowsMessages.ProtoFileVersionUsedByClient)
 	if returnMessage != nil {
 		// Not correct proto-file version is used
+		return returnMessage, nil
+	}
+
+	// Verify that Client is known to Server
+	returnMessage = fenixTestDataSyncServerObject.isClientKnownToServer(callingClientUuid)
+	if returnMessage != nil {
+		// Client in unknown
 		return returnMessage, nil
 	}
 
@@ -414,7 +438,7 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataRows(ctx context.Context, 
 	merkleFilterPath := fenixTestDataSyncServerObject.getCurrentMerkleFilterForClient(callingClientUuid)
 
 	// Recreate MerkleHash from All testdata rows, both existing rows for Server and new from Client
-	computedMerkleHash, _, testdataWithLeafNodeHash := common_config.CreateMerkleTreeFromDataFrame(allRowsAsDataFrame, merkleFilterPath)
+	computedMerkleHash, _, testdataWithLeafNodeHash := fenixSyncShared.CreateMerkleTreeFromDataFrame(allRowsAsDataFrame, merkleFilterPath)
 
 	//Compare 'computedMerkleHash' with MerkleHash from Client
 	clientMerkleHash := fenixTestDataSyncServerObject.getCurrentMerkleHashForClient(callingClientUuid)
@@ -465,7 +489,7 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataRows(ctx context.Context, 
 }
 
 // RegisterTestDataClient Fenix client can register itself with the Fenix Testdata sync server
-func (s *FenixTestDataGrpcServicesServer) RegisterTestDataClient(ctx context.Context, testDataClientInformationMessage *fenixTestDataSyncServerGrpcApi.TestDataClientInformationMessage) (*fenixTestDataSyncServerGrpcApi.AckNackResponse, error) {
+func (s *FenixTestDataGrpcServicesServer) RegisterTestDataClient(_ context.Context, testDataClientInformationMessage *fenixTestDataSyncServerGrpcApi.TestDataClientInformationMessage) (*fenixTestDataSyncServerGrpcApi.AckNackResponse, error) {
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"id": "5133b80b-6f3a-4562-9e62-1b3ceb169cc1",
@@ -479,6 +503,13 @@ func (s *FenixTestDataGrpcServicesServer) RegisterTestDataClient(ctx context.Con
 	returnMessage := fenixTestDataSyncServerObject.isClientUsingCorrectTestDataProtoFileVersion(testDataClientInformationMessage.TestDataClientUuid, testDataClientInformationMessage.ProtoFileVersionUsedByClient)
 	if returnMessage != nil {
 		// Not correct proto-file version is used
+		return returnMessage, nil
+	}
+
+	// Verify that Client is known to Server
+	returnMessage = fenixTestDataSyncServerObject.isClientKnownToServer(testDataClientInformationMessage.TestDataClientUuid)
+	if returnMessage != nil {
+		// Client in unknown
 		return returnMessage, nil
 	}
 

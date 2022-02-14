@@ -1,9 +1,9 @@
 package main
 
 import (
-	"FenixTestDataServer/common_config"
 	"crypto/tls"
 	fenixClientTestDataSyncServerGrpcApi "github.com/jlambert68/FenixGrpcApi/Client/fenixClientTestDataSyncServerGrpcApi/go_grpc_api"
+	fenixSyncShared "github.com/jlambert68/FenixSyncShared"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -17,7 +17,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) SetCon
 	var opts []grpc.DialOption
 
 	//When running on GCP then use credential otherwise not
-	if common_config.ExecutionLocationForFenixTestDataServer == common_config.GCP {
+	if fenixSyncShared.ExecutionLocationForFenixTestDataServer == fenixSyncShared.GCP {
 		creds := credentials.NewTLS(&tls.Config{
 			InsecureSkipVerify: true,
 		})
@@ -29,23 +29,23 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) SetCon
 
 	// Set up connection to FenixTestDataSyncServer
 	// When run on GCP, use credentials
-	if common_config.ExecutionLocationForFenixTestDataServer == common_config.GCP {
+	if fenixSyncShared.ExecutionLocationForFenixTestDataServer == fenixSyncShared.GCP {
 		// Run on GCP
-		remoteFenixClientTestDataSyncServerConnection, err = grpc.Dial(fenixClientTestDataSyncServer_address_to_dial, opts...)
+		remoteFenixClientTestDataSyncServerConnection, err = grpc.Dial(fenixclienttestdatasyncserverAddressToDial, opts...)
 	} else {
 		// Run Local
-		remoteFenixClientTestDataSyncServerConnection, err = grpc.Dial(fenixClientTestDataSyncServer_address_to_dial, grpc.WithInsecure())
+		remoteFenixClientTestDataSyncServerConnection, err = grpc.Dial(fenixclienttestdatasyncserverAddressToDial, grpc.WithInsecure())
 	}
 
 	if err != nil {
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
-			"fenixClientTestDataSyncServer_address_to_dial": fenixClientTestDataSyncServer_address_to_dial,
+			"fenixClientTestDataSyncServer_address_to_dial": fenixclienttestdatasyncserverAddressToDial,
 			"error message": err,
 		}).Error("Did not connect to FenixClientTestDataSyncServer via gRPC")
 		//os.Exit(0)
 	} else {
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
-			"fenixClientTestDataSyncServer_address_to_dial": fenixClientTestDataSyncServer_address_to_dial,
+			"fenixClientTestDataSyncServer_address_to_dial": fenixclienttestdatasyncserverAddressToDial,
 		}).Info("gRPC connection OK to FenixClientTestDataSyncServer")
 
 		// Creates a new Clients
@@ -267,7 +267,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) AskCli
 	clientsNewMerkleTree := fenixTestDataSyncServerObject.getCurrentMerkleTreeForClient(testDataClientGuid)
 
 	// Extract all paths to retrieve from client
-	merklePathsToRetreive := common_config.MissedPathsToRetreiveFromClient(serverCopyMerkleTree, clientsNewMerkleTree)
+	merklePathsToRetreive := fenixSyncShared.MissedPathsToRetreiveFromClient(serverCopyMerkleTree, clientsNewMerkleTree)
 
 	// Set up connection to Client-server
 	fenixTestDataSyncServerObject.SetConnectionToFenixClientTestDataSyncServer()

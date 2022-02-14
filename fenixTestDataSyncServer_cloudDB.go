@@ -10,28 +10,29 @@ import (
 )
 
 // Load TestData from CloudDB into memDB
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadTestDataFromCloudDB() (err error) {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadNecessaryTestDataFromCloudDB() (err error) {
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"id": "fec5c67e-4679-4e42-bcc4-fa64f46d3b59",
-	}).Debug("Incoming gRPC 'loadTestDataFromCloudDB'")
+	}).Debug("Incoming gRPC 'loadNecessaryTestDataFromCloudDB'")
 
 	defer fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"id": "b5410c3f-ba1b-4d77-b85a-050985ee26fd",
-	}).Debug("Outgoing gRPC 'loadTestDataFromCloudDB'")
+	}).Debug("Outgoing gRPC 'loadNecessaryTestDataFromCloudDB'")
 
 	// Will not process anything while 'stateProcessIncomingAndOutgoingMessage' == false
 	if fenixTestDataSyncServerObject.stateProcessIncomingAndOutgoingMessage == false {
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 			"Id": "36fa4890-69d1-4e68-940a-915fdadd7968",
-		}).Info("Will not process 'loadTestDataFromCloudDB()' while stateProcessIncomingAndOutgoingMessage == false")
+		}).Info("Will not process 'loadNecessaryTestDataFromCloudDB()' while stateProcessIncomingAndOutgoingMessage == false")
 		return nil
 	}
 
 	// All TestTDataClients in CloudDB
-	var tempMemDBAllClients []cloudDBTestDataClientStruct
+	var tempCloudDBClients []cloudDBTestDataClientStruct
+	var tempCloudDBClientsMap cloudDBClientsMapType
 
-	err, tempMemCloudDBAllClientsMap := fenixTestDataSyncServerObject.loadAllClientsFromCloudDB(&tempMemDBAllClients)
+	tempCloudDBClientsMap, err = fenixTestDataSyncServerObject.loadAllClientsFromCloudDB(&tempCloudDBClients)
 	if err != nil {
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 			"Id":    "06e04586-c8ce-4172-8391-8fdd235b15ab",
@@ -42,9 +43,17 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadTe
 		return err
 	}
 
+	// Move to from temp-variables
+	cloudDBClients = tempCloudDBClients
+	cloudDBClientsMap = tempCloudDBClientsMap
+
+	return nil
+}
+
+/*
 	// All TestDataHeaderFilterValues in CloudDB
 	var tempMemDBAllTestDataHeaderFilterValues []cloudDBTestDataHeaderFilterValuesStruct
-	err = fenixTestDataSyncServerObject.loadAllTestDataHeaderFilterValuesForClientFromCloudDB(&tempMemDBAllTestDataHeaderFilterValues)
+	err = fenixTestDataSyncServerObject.loadAllTestDataHeaderFilterValuesForClientFromCloudDB(clientUuid, &tempMemDBAllTestDataHeaderFilterValues)
 	if err != nil {
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 			"Id":    "3457adf0-ac33-4fdb-a23e-ce0b000bb64e",
@@ -70,10 +79,10 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadTe
 
 	// All TestDataMerkleHashes in CloudDB
 	var tempMemDBAllTestDataMerkleHashes []cloudDBTestDataMerkleHashStruct
-	err = fenixTestDataSyncServerObject.loadAllTestDataMerkleHashesForClientFromCloudDB(&tempMemDBAllTestDataMerkleHashes)
+	err = fenixTestDataSyncServerObject.loadAllTestDataMerkleHashesForClientFromCloudDB(&tempMemDBAllTestDataMerkleTrees)
 	if err != nil {
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
-			"Id":    "202bbd5b-19a1-4ebd-923d-0114161e6c2b",
+			"Id":    "40d40c74-f1b5-4dca-87f7-2f12eb545183",
 			"error": err,
 		}).Error("Problem when executing: 'loadAllTestDataMerkleHashesForClientFromCloudDB()'")
 
@@ -117,18 +126,12 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadTe
 	cloudDBTestDataRowItems = tempMemDBAllTestDataRowItems
 
 	// Create the working copies in 'dbDataMap-structure'  for each Client
-	//TODO - FIXA DESSA IDEER
-	/*
-		fixa detta
-		Samt bestämma hur denna struktur ska användas
-		1) Som mellanlagring vid laddning frpn DB
-		2) Håller det data som ska sparas tillbaka
-		3) Håller fullständing kopia som är speglad mot CloudDB, men varför ha både dennna och dataframe.DataFrame-strukturen?
-	*/
+
 
 	// Everything was loaded, now allow in- and outgoing messages
-	fenixTestDataSyncServerObject.stateProcessIncomingAndOutgoingMessage = true
+
 
 	return err
 
 }
+*/

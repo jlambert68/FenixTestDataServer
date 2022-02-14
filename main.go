@@ -1,8 +1,8 @@
 package main
 
 import (
-	"FenixTestDataServer/common_config"
 	"fmt"
+	fenixSyncShared "github.com/jlambert68/FenixSyncShared"
 	"os"
 	"strconv"
 )
@@ -18,17 +18,17 @@ func init() {
 	var err error
 
 	// Get Environment variable to tell how this program was started
-	var executionLocationForClient = mustGetenv("ExecutionLocationForClient")
+	var executionLocationForClient = fenixSyncShared.MustGetEnvironmentVariable("ExecutionLocationForClient")
 
 	switch executionLocationForClient {
 	case "LOCALHOST_NODOCKER":
-		common_config.ExecutionLocationForClient = common_config.LocalhostNoDocker
+		fenixSyncShared.ExecutionLocationForClient = fenixSyncShared.LocalhostNoDocker
 
 	case "LOCALHOST_DOCKER":
-		common_config.ExecutionLocationForClient = common_config.LocalhostDocker
+		fenixSyncShared.ExecutionLocationForClient = fenixSyncShared.LocalhostDocker
 
 	case "GCP":
-		common_config.ExecutionLocationForClient = common_config.GCP
+		fenixSyncShared.ExecutionLocationForClient = fenixSyncShared.GCP
 
 	default:
 		fmt.Println("Unknown Execution location for Client: " + executionLocationForClient + ". Expected one of the following: LOCALHOST_NODOCKER, LOCALHOST_DOCKER, GCP")
@@ -37,17 +37,17 @@ func init() {
 	}
 
 	// Get Environment variable to tell where Fenix TestData Sync Server is started
-	var executionLocationForFenixTestDataServer = mustGetenv("ExecutionLocationForFenixTestDataServer")
+	var executionLocationForFenixTestDataServer = fenixSyncShared.MustGetEnvironmentVariable("ExecutionLocationForFenixTestDataServer")
 
 	switch executionLocationForFenixTestDataServer {
 	case "LOCALHOST_NODOCKER":
-		common_config.ExecutionLocationForFenixTestDataServer = common_config.LocalhostNoDocker
+		fenixSyncShared.ExecutionLocationForFenixTestDataServer = fenixSyncShared.LocalhostNoDocker
 
 	case "LOCALHOST_DOCKER":
-		common_config.ExecutionLocationForFenixTestDataServer = common_config.LocalhostDocker
+		fenixSyncShared.ExecutionLocationForFenixTestDataServer = fenixSyncShared.LocalhostDocker
 
 	case "GCP":
-		common_config.ExecutionLocationForFenixTestDataServer = common_config.GCP
+		fenixSyncShared.ExecutionLocationForFenixTestDataServer = fenixSyncShared.GCP
 
 	default:
 		fmt.Println("Unknown Execution location for Fenix TestData Syn Server: " + executionLocationForFenixTestDataServer + ". Expected one of the following: LOCALHOST_NODOCKER, LOCALHOST_DOCKER, GCP")
@@ -57,10 +57,18 @@ func init() {
 
 	// Extract all other Environment variables
 	// Address to Fenix TestData Sync server
-	common_config.FenixTestDataSyncServerAddress = mustGetenv("FenixTestDataSyncServerAddress")
+	FenixTestDataSyncServerAddress = fenixSyncShared.MustGetEnvironmentVariable("FenixTestDataSyncServerAddress")
 
 	// Port for Fenix TestData Sync server
-	common_config.FenixTestDataSyncServerPort, err = strconv.Atoi(mustGetenv("FenixTestDataSyncServerPort"))
+	FenixTestDataSyncServerPort, err = strconv.Atoi(fenixSyncShared.MustGetEnvironmentVariable("FenixTestDataSyncServerPort"))
+	if err != nil {
+		fmt.Println("Couldn't convert environment variable 'FenixTestDataSyncServerPort' to an integer, error: ", err)
+		os.Exit(0)
+
+	}
+
+	// Port for Fenix TestData Sync Admin server
+	localServerEngineLocalAdminPort, err = strconv.Atoi(fenixSyncShared.MustGetEnvironmentVariable("FenixTestDataSyncServerAdminPort"))
 	if err != nil {
 		fmt.Println("Couldn't convert environment variable 'FenixTestDataSyncServerPort' to an integer, error: ", err)
 		os.Exit(0)
@@ -68,10 +76,10 @@ func init() {
 	}
 
 	// Address to Client TestData Sync server
-	common_config.ClientTestDataSyncServerAddress = mustGetenv("ClientTestDataSyncServerAddress")
+	ClientTestDataSyncServerAddress = fenixSyncShared.MustGetEnvironmentVariable("ClientTestDataSyncServerAddress")
 
 	// Port for Client TestData Sync server
-	common_config.ClientTestDataSyncServerPort, err = strconv.Atoi(mustGetenv("ClientTestDataSyncServerPort"))
+	ClientTestDataSyncServerPort, err = strconv.Atoi(fenixSyncShared.MustGetEnvironmentVariable("ClientTestDataSyncServerPort"))
 	if err != nil {
 		fmt.Println("Couldn't convert environment variable 'ClientTestDataSyncServerPort' to an integer, error: ", err)
 		os.Exit(0)
@@ -79,6 +87,6 @@ func init() {
 	}
 
 	// Create the Dial up string to Fenix TestData SyncServer
-	fenixClientTestDataSyncServer_address_to_dial = common_config.ClientTestDataSyncServerAddress + ":" + strconv.Itoa(common_config.ClientTestDataSyncServerPort)
+	fenixclienttestdatasyncserverAddressToDial = ClientTestDataSyncServerAddress + ":" + strconv.Itoa(ClientTestDataSyncServerPort)
 
 }

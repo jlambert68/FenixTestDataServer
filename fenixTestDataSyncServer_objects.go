@@ -1,14 +1,19 @@
 package main
 
 import (
-	"FenixTestDataServer/common_config"
 	fenixClientTestDataSyncServerGrpcApi "github.com/jlambert68/FenixGrpcApi/Client/fenixClientTestDataSyncServerGrpcApi/go_grpc_api"
+	fenixTestDataSyncServerGrpcAdminApi "github.com/jlambert68/FenixGrpcApi/Fenix/fenixTestDataSyncServerGrpcApi/go_grpc_admin_api"
 	fenixTestDataSyncServerGrpcApi "github.com/jlambert68/FenixGrpcApi/Fenix/fenixTestDataSyncServerGrpcApi/go_grpc_api"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"net"
 	"strconv"
 )
+
+// Logrus debug level
+//const LoggingLevel = logrus.DebugLevel
+//const LoggingLevel = logrus.InfoLevel
+const LoggingLevel = logrus.DebugLevel // InfoLevel
 
 type fenixTestDataSyncServerObjectStruct struct {
 	logger                                 *logrus.Logger
@@ -17,9 +22,17 @@ type fenixTestDataSyncServerObjectStruct struct {
 
 var fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct
 
+// Address to Fenix TestData Server & Client, will have their values from Environment variables at startup
+var (
+	FenixTestDataSyncServerAddress  string
+	FenixTestDataSyncServerPort     int
+	ClientTestDataSyncServerAddress string
+	ClientTestDataSyncServerPort    int
+)
+
 // Global connection constants
-var localServerEngineLocalPort = common_config.FenixTestDataSyncServer_port
-var localServerEngineLocalAdminPort = common_config.FenixTestDataSyncServer_Adminport
+var localServerEngineLocalPort = FenixTestDataSyncServerPort
+var localServerEngineLocalAdminPort int
 
 var (
 	registerfenixTestDataSyncServerServer      *grpc.Server
@@ -29,11 +42,11 @@ var (
 )
 
 var (
-	// Standard gRPC Clientr
+	// Standard gRPC Clientr for calling Fenix Client
 	remoteFenixClientTestDataSyncServerConnection *grpc.ClientConn
 	gRpcClientForFenixClientTestDataSyncServer    fenixClientTestDataSyncServerGrpcApi.FenixClientTestDataGrpcServicesClient
 
-	fenixClientTestDataSyncServer_address_to_dial string = common_config.FenixClientTestDataSyncServer_address + ":" + strconv.Itoa(common_config.FenixClientTestDataSyncServer_initial_port)
+	fenixclienttestdatasyncserverAddressToDial string = ClientTestDataSyncServerAddress + ":" + strconv.Itoa(ClientTestDataSyncServerPort)
 
 	fenixClientTestDataSyncServerClient fenixClientTestDataSyncServerGrpcApi.FenixClientTestDataGrpcServicesClient
 )
@@ -45,9 +58,10 @@ type FenixTestDataGrpcServicesServer struct {
 
 // Server used for register clients Name, Ip and Por and Clients Test Enviroments and Clients Test Commandst
 type FenixTestDataGrpcServicesAdminServer struct {
-	fenixTestDataSyncServerGrpcApi.UnimplementedFenixTestDataGrpcAdminServicesServer
+	fenixTestDataSyncServerGrpcAdminApi.UnimplementedFenixTestDataGrpcAdminServicesServer
 }
 
+/*
 // Channels which takes incoming gRPC-messages and pass them to 'message process engine'
 // 'TestDataClientInformationMessage' from 'gRPC-RegisterTestDataClient'
 var TestDataClientInformationMessageChannel chan fenixTestDataSyncServerGrpcApi.TestDataClientInformationMessage
@@ -63,6 +77,6 @@ var TestDataHeaderMessageChannel chan fenixTestDataSyncServerGrpcApi.TestDataHea
 
 // 'MerkleTreeMessage' from 'gRPC-SendTestDataRows'
 var MerkleTreeMessageMessageChannel chan fenixTestDataSyncServerGrpcApi.MerkleTreeMessage
-
+*/
 var highestFenixProtoFileVersion int32 = -1
 var highestClientProtoFileVersion int32 = -1

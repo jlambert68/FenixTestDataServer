@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	fenixSyncShared "github.com/jlambert68/FenixSyncShared"
 	"github.com/sirupsen/logrus"
 )
 
@@ -33,18 +34,19 @@ func FenixServerMain() {
 	// Init variables
 	dbDataMap = make(map[memDBClientUuidType]*tempDBStruct)
 
-	tempDBStruct_val := &tempDBStruct{
+	tempdbstructVal := &tempDBStruct{
 		clientData: &tempDBDataStruct{
 			merkleHash: "APAN",
 		},
 	}
+
 	a, b := dbDataMap[memDBClientUuidType("Hej")]
 	fmt.Println(a, b)
-	dbDataMap[memDBClientUuidType("Hej")] = tempDBStruct_val
+	dbDataMap[memDBClientUuidType("Hej")] = tempdbstructVal
 	a, b = dbDataMap[memDBClientUuidType("Hej")]
 	fmt.Println(a, b)
 
-	connectToDB()
+	fenixSyncShared.ConnectToDB()
 
 	// Set up BackendObject
 	fenixTestDataSyncServerObject = &fenixTestDataSyncServerObjectStruct{stateProcessIncomingAndOutgoingMessage: true}
@@ -52,14 +54,18 @@ func FenixServerMain() {
 	// Init logger
 	fenixTestDataSyncServerObject.InitLogger("")
 
-	// Celan up when leaving. Is placed after logger because shutdown logs information
+	// Clean up when leaving. Is placed after logger because shutdown logs information
 	defer cleanup()
 
 	// Load Data from cloudDB into memoryDB
-	_ = fenixTestDataSyncServerObject.loadTestDataFromCloudDB()
+	_ = fenixTestDataSyncServerObject.loadNecessaryTestDataFromCloudDB()
+
+	// Initiate client data in memoryDB
 
 	// Start Backend gRPC-server and Admin-gRPC-server
 	go fenixTestDataSyncServerObject.InitGrpcServer()
 	fenixTestDataSyncServerObject.InitGrpcAdminServer()
 
 }
+
+// TODO slå ihop common_code till ett bibliotek

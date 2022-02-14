@@ -1,10 +1,10 @@
 package main
 
 import (
-	"FenixTestDataServer/common_config"
 	fenixClientTestDataSyncServerGrpcApi "github.com/jlambert68/FenixGrpcApi/Client/fenixClientTestDataSyncServerGrpcApi/go_grpc_api"
 	fenixTestDataSyncServerGrpcAdminApi "github.com/jlambert68/FenixGrpcApi/Fenix/fenixTestDataSyncServerGrpcApi/go_grpc_admin_api"
 	fenixTestDataSyncServerGrpcApi "github.com/jlambert68/FenixGrpcApi/Fenix/fenixTestDataSyncServerGrpcApi/go_grpc_api"
+	fenixSyncShared "github.com/jlambert68/FenixSyncShared"
 	"github.com/sirupsen/logrus"
 )
 
@@ -169,13 +169,50 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) isAdmi
 }
 
 // ********************************************************************************************************************
+// Check if Calling Client is in list with known klients
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) isClientKnownToServer(callingClientUuid string) (returnMessage *fenixTestDataSyncServerGrpcApi.AckNackResponse) {
+
+	// Check if Client exist in CloudDB
+	_, valueExits := cloudDBClientsMap[memDBClientUuidType(callingClientUuid)]
+
+	// Check if Client exists
+	if valueExits == false {
+		// Client doesn't exit in CloudDB (or hasn't been loaded from cloud
+
+		// Set Error codes to return message
+		var errorCodes []fenixTestDataSyncServerGrpcApi.ErrorCodesEnum
+		var errorCode fenixTestDataSyncServerGrpcApi.ErrorCodesEnum
+
+		errorCode = fenixTestDataSyncServerGrpcApi.ErrorCodesEnum_ERROR_UNKNOWN_CALLER
+		errorCodes = append(errorCodes, errorCode)
+
+		// Create Return message
+		returnMessage = &fenixTestDataSyncServerGrpcApi.AckNackResponse{
+			AckNack:    false,
+			Comments:   "Client '" + callingClientUuid + "' is unknown to FenixTestDataSyncServer",
+			ErrorCodes: errorCodes,
+		}
+
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"id": "dc311b1e-13c2-4c76-ab43-95c50f439d35",
+		}).Debug("Calling Client '" + callingClientUuid + "' is unknown to FenixTestDataSyncServer")
+
+		return returnMessage
+
+	} else {
+		return nil
+	}
+
+}
+
+// ********************************************************************************************************************
 // Check if Calling Client has Hashed the MerklePath correctly
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) isClientsMerklePathCorrectlyHashed(callingClientUuid string, merklePath string, merklePathHash string) (returnMessage *fenixTestDataSyncServerGrpcApi.AckNackResponse) {
 
 	var hashIsCorrectlyHashed bool
 
 	// Verify that MerkleFilterPath is hashed correctly
-	tempHashedMerkleFilter := common_config.HashSingleValue(merklePath)
+	tempHashedMerkleFilter := fenixSyncShared.HashSingleValue(merklePath)
 
 	// Check if MerklePath is correctly hashed
 	if tempHashedMerkleFilter == merklePathHash {
@@ -259,4 +296,43 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getHig
 	highestClientProtoFileVersion = maxValue
 
 	return highestClientProtoFileVersion
+}
+
+// Exctract Values, and create, for TestDataHeaderItemMessageHash
+func createTestDataHeaderItemMessageHash(testDataHeaderItemMessage *fenixTestDataSyncServerGrpcApi.TestDataHeaderItemMessage) (testDataHeaderItemMessageHash string) {
+
+	var valuesToHash []string
+	var valueToHash string
+
+	// Extract and add values to array
+	// HeaderLabel
+	valueToHash = testDataHeaderItemMessage.HeaderLabel
+	valuesToHash = append(valuesToHash, valueToHash)
+
+	// HeaderShouldBeUsedForTestDataFilter as 'true' or 'false'
+	if testDataHeaderItemMessage.HeaderShouldBeUsedForTestDataFilter == false {
+		valuesToHash = append(valuesToHash, "false")
+	} else {
+		valuesToHash = append(valuesToHash, "true")
+	}
+
+	// HeaderIsMandatoryInTestDataFilter as 'true' or 'false'
+	if testDataHeaderItemMessage.HeaderIsMandatoryInTestDataFilter == false {
+		valuesToHash = append(valuesToHash, "false")
+	} else {
+		valuesToHash = append(valuesToHash, "true")
+	}
+
+	// HeaderSelectionType
+	valueToHash = testDataHeaderItemMessage.HeaderSelectionType.String()
+	valuesToHash = append(valuesToHash, valueToHash)
+
+	// HeaderFilterValues - An array thar is added
+	valueToHash = testDataHeaderItemMessage.HeaderLabel
+	valuesToHash = append(valuesToHash, valueToHash)
+
+	// Hash all values in the array
+	testDataHeaderItemMessageHash = fenixSyncShared.HashValues(valuesToHash, true)
+
+	return testDataHeaderItemMessageHash
 }

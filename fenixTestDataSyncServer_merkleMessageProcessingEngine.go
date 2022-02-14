@@ -1,10 +1,11 @@
 package main
 
 import (
-	"FenixTestDataServer/common_config"
+	//fenixSyncShared "github.com/jlambert68/FenixSyncShared"
 	"github.com/go-gota/gota/dataframe"
 	"github.com/go-gota/gota/series"
 	fenixTestDataSyncServerGrpcApi "github.com/jlambert68/FenixGrpcApi/Fenix/fenixTestDataSyncServerGrpcApi/go_grpc_api"
+	fenixSyncShared "github.com/jlambert68/FenixSyncShared"
 	"github.com/sirupsen/logrus"
 	"strconv"
 )
@@ -82,13 +83,13 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) verify
 
 	// Loop all MerkleTreeNodes and create a DataFrame for the data
 	for _, headerItem := range testDataHeaderItems {
-		testDataHeaderItemMessageHash := common_config.CreateTestDataHeaderItemMessageHash(headerItem)
+		testDataHeaderItemMessageHash := createTestDataHeaderItemMessageHash(headerItem)
 		headerItemValues = append(headerItemValues, testDataHeaderItemMessageHash)
 
 	}
 
 	// Hash all 'testDataHeaderItemMessageHash' into a single hash
-	reHashedHeaderItemMessageHash := common_config.HashValues(headerItemValues, false)
+	reHashedHeaderItemMessageHash := fenixSyncShared.HashValues(headerItemValues, false)
 
 	if headerHash != reHashedHeaderItemMessageHash {
 
@@ -225,7 +226,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) conver
 		rowDataframe = rowDataframe.Mutate(testDataHashSeriesColumn)
 
 		// Hash all values for row
-		hashedRow := common_config.HashValues(valuesToHash, true)
+		hashedRow := fenixSyncShared.HashValues(valuesToHash, true)
 
 		// Validate that Row-hash is correct calculated
 		if hashedRow != testDataRow.RowHash {

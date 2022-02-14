@@ -1,7 +1,6 @@
 package main
 
 import (
-	"FenixTestDataServer/common_config"
 	"github.com/sirupsen/logrus"
 	"log"
 	"os"
@@ -11,24 +10,24 @@ import (
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) InitLogger(filename string) {
 	fenixTestDataSyncServerObject.logger = logrus.StandardLogger()
 
-	switch common_config.LoggingLevel {
+	switch LoggingLevel {
 
 	case logrus.DebugLevel:
-		log.Println("'common_config.LoggingLevel': ", common_config.LoggingLevel)
+		log.Println("'fenixSyncShared.LoggingLevel': ", LoggingLevel)
 
 	case logrus.InfoLevel:
-		log.Println("'common_config.LoggingLevel': ", common_config.LoggingLevel)
+		log.Println("'fenixSyncShared.LoggingLevel': ", LoggingLevel)
 
 	case logrus.WarnLevel:
-		log.Println("'common_config.LoggingLevel': ", common_config.LoggingLevel)
+		log.Println("'fenixSyncShared.LoggingLevel': ", LoggingLevel)
 
 	default:
-		log.Println("Not correct value for debugging-level, this was used: ", common_config.LoggingLevel)
+		log.Println("Not correct value for debugging-level, this was used: ", LoggingLevel)
 		os.Exit(0)
 
 	}
 
-	logrus.SetLevel(common_config.LoggingLevel)
+	logrus.SetLevel(LoggingLevel)
 	logrus.SetFormatter(&logrus.TextFormatter{
 		ForceColors:     true,
 		FullTimestamp:   true,

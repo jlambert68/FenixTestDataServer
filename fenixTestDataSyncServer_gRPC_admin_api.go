@@ -1,15 +1,15 @@
 package main
 
 import (
-	"FenixTestDataServer/common_config"
 	fenixTestDataSyncServerGrpcAdminApi "github.com/jlambert68/FenixGrpcApi/Fenix/fenixTestDataSyncServerGrpcApi/go_grpc_admin_api"
+	fenixSyncShared "github.com/jlambert68/FenixSyncShared"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 )
 
 // *********************************************************************
 //AreYouAlive - Fenix client can check if Fenix Testdata sync server is alive with this service
-func (s *FenixTestDataGrpcServicesAdminServer) AreYouAlive(ctx context.Context, emptyParameter *fenixTestDataSyncServerGrpcAdminApi.EmptyParameter) (*fenixTestDataSyncServerGrpcAdminApi.AckNackResponse, error) {
+func (s *FenixTestDataGrpcServicesAdminServer) AreYouAlive(_ context.Context, emptyParameter *fenixTestDataSyncServerGrpcAdminApi.EmptyParameter) (*fenixTestDataSyncServerGrpcAdminApi.AckNackResponse, error) {
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"id": "92921719-3cb7-4d8d-8876-0ad8771faba8",
@@ -26,12 +26,12 @@ func (s *FenixTestDataGrpcServicesAdminServer) AreYouAlive(ctx context.Context, 
 		return returnMessage, nil
 	}
 
-	return &fenixTestDataSyncServerGrpcAdminApi.AckNackResponse{AckNack: true, Comments: "I'am Fenix TestDataSyncAdminServer and I'm alive, and my time is " + common_config.GenerateDatetimeTimeStampForDB()}, nil
+	return &fenixTestDataSyncServerGrpcAdminApi.AckNackResponse{AckNack: true, Comments: "I'am Fenix TestDataSyncAdminServer and I'm alive, and my time is " + fenixSyncShared.GenerateDatetimeTimeStampForDB()}, nil
 }
 
 // *********************************************************************
 // AllowIncomingAndOutgoingMessages - Retry to allow incoming gRPC calls and process outgoing calls
-func (s *FenixTestDataGrpcServicesAdminServer) AllowOrDisallowIncomingAndOutgoingMessages(ctx context.Context, allowOrDisallowIncomingAndOutgoingMessage *fenixTestDataSyncServerGrpcAdminApi.AllowOrDisallowIncomingAndOutgoingMessage) (*fenixTestDataSyncServerGrpcAdminApi.AckNackResponse, error) {
+func (s *FenixTestDataGrpcServicesAdminServer) AllowOrDisallowIncomingAndOutgoingMessages(_ context.Context, allowOrDisallowIncomingAndOutgoingMessage *fenixTestDataSyncServerGrpcAdminApi.AllowOrDisallowIncomingAndOutgoingMessage) (*fenixTestDataSyncServerGrpcAdminApi.AckNackResponse, error) {
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"id": "e7b5686b-6bdf-4218-ac05-e184acf7feb1",
@@ -56,7 +56,7 @@ func (s *FenixTestDataGrpcServicesAdminServer) AllowOrDisallowIncomingAndOutgoin
 
 // *********************************************************************
 // RestartFenixServerProcesses - Restart Fenix TestData Server processes
-func (s *FenixTestDataGrpcServicesAdminServer) RestartFenixServerProcesses(ctx context.Context, emptyParameter *fenixTestDataSyncServerGrpcAdminApi.EmptyParameter) (*fenixTestDataSyncServerGrpcAdminApi.AckNackResponse, error) {
+func (s *FenixTestDataGrpcServicesAdminServer) RestartFenixServerProcesses(_ context.Context, emptyParameter *fenixTestDataSyncServerGrpcAdminApi.EmptyParameter) (*fenixTestDataSyncServerGrpcAdminApi.AckNackResponse, error) {
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"id": "8ecf6bfc-2ff6-4b50-b4be-faef443e0c0e",
@@ -74,7 +74,7 @@ func (s *FenixTestDataGrpcServicesAdminServer) RestartFenixServerProcesses(ctx c
 	}
 
 	// Reload Data from cloudDB into memoryDB
-	_ = fenixTestDataSyncServerObject.loadTestDataFromCloudDB()
+	_ = fenixTestDataSyncServerObject.loadNecessaryTestDataFromCloudDB()
 	// Check if TestData server should process incoming messages
 	returnMessage = fenixTestDataSyncServerObject.isThereATemporaryStopInProcessingInOrOutgoingMessagesAdmin()
 	if returnMessage != nil {

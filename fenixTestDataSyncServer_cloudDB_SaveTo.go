@@ -1,13 +1,11 @@
 package main
 
 import (
-	"FenixTestDataServer/common_config"
 	"context"
 	"fmt"
 	"github.com/jackc/pgx/v4"
+	fenixSyncShared "github.com/jlambert68/FenixSyncShared"
 	"github.com/sirupsen/logrus"
-	"strconv"
-	"strings"
 )
 
 // ****************************************************************************************************************
@@ -38,7 +36,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveAl
 	sqlToExecute = sqlToExecute + "clients.client_areatyp_id = 1 " // Clients used for 'TestData'
 
 	// Query DB
-	rows, _ := DbPool.Query(context.Background(), sqlToExecute)
+	rows, _ := fenixSyncShared.DbPool.Query(context.Background(), sqlToExecute)
 
 	// Variables to used when extract data from result set
 	var testDataClient cloudDBTestDataClientStruct
@@ -79,14 +77,14 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveAl
 	sqlToExecute = sqlToExecute + "FROM testdata.header.filtervalues "
 
 	// Query DB
-	rows, _ := DbPool.Query(context.Background(), sqlToExecute)
+	rows, _ := fenixSyncShared.DbPool.Query(context.Background(), sqlToExecute)
 
 	// Variables to used when extract data from result set
 	var testDataHeaderFilterValue cloudDBTestDataHeaderFilterValuesStruct
 
 	// Extract data from DB result set
 	for rows.Next() {
-		err := rows.Scan(&testDataHeaderFilterValue.headerItemHash, &testDataHeaderFilterValue.headerFilterValue, &testDataHeaderFilterValue.clientUuid, &testDataHeaderFilterValue.domainUuid)
+		err := rows.Scan(&testDataHeaderFilterValue.headerItemHash, &testDataHeaderFilterValue.headerFilterValue, &testDataHeaderFilterValue.clientUuid, &testDataHeaderFilterValue.clientUuid)
 		if err != nil {
 			return err
 		}
@@ -123,16 +121,16 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveAl
 	sqlToExecute = sqlToExecute + "FROM testdata.header.items "
 
 	// Query DB
-	rows, _ := DbPool.Query(context.Background(), sqlToExecute)
+	rows, _ := fenixSyncShared.DbPool.Query(context.Background(), sqlToExecute)
 
 	// Variables to used when extract data from result set
 	var testDataHeaderItem cloudDBTestDataHeaderItemStruct
 
 	// Extract data from DB result set
 	for rows.Next() {
-		err := rows.Scan(&testDataHeaderItem.clientUuid, &testDataHeaderItem.domainUuid, &testDataHeaderItem.headerItemHash,
+		err := rows.Scan(&testDataHeaderItem.clientUuid, &testDataHeaderItem.headerItemsHash, &testDataHeaderItem.headerItemHash,
 			&testDataHeaderItem.headerLabel, &testDataHeaderItem.shouldBeUsedInFilter, &testDataHeaderItem.isMandatoryInFilter,
-			&testDataHeaderItem.filterSelectionType, &testDataHeaderItem.filterValuesHash)
+			&testDataHeaderItem.filterSelectionType, &testDataHeaderItem)
 		if err != nil {
 			return err
 		}
@@ -165,7 +163,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveTe
 	var dataToBeInserted = [][]string{
 		{currentUserUuid,
 			string(fenixTestDataSyncServerObject.getDomainUuidForClient(currentUserUuid)),
-			common_config.GenerateDatetimeTimeStampForDB(),
+			fenixSyncShared.GenerateDatetimeTimeStampForDB(),
 			fenixTestDataSyncServerObject.getCurrentMerkleHashForServer(currentUserUuid),
 			fenixTestDataSyncServerObject.getCurrentMerkleFilterForServer(currentUserUuid),
 			fenixTestDataSyncServerObject.getCurrentMerkleFilterHashForServer(currentUserUuid)},
@@ -229,14 +227,14 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveAl
 	sqlToExecute = sqlToExecute + "FROM testdata.merkletrees "
 
 	// Query DB
-	rows, _ := DbPool.Query(context.Background(), sqlToExecute)
+	rows, _ := fenixSyncShared.DbPool.Query(context.Background(), sqlToExecute)
 
 	// Variables to used when extract data from result set
 	var testDataMerkleTree cloudDBTestDataMerkleTreeStruct
 
 	// Extract data from DB result set
 	for rows.Next() {
-		err := rows.Scan(&testDataMerkleTree.clientUuid, &testDataMerkleTree.domainUuid,
+		err := rows.Scan(&testDataMerkleTree.clientUuid, &testDataMerkleTree.merkleHash,
 			&testDataMerkleTree.nodeLevel, &testDataMerkleTree.nodeName,
 			&testDataMerkleTree.nodePath, &testDataMerkleTree.nodeHash,
 			&testDataMerkleTree.nodeChildHash)
@@ -275,14 +273,14 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveAl
 	sqlToExecute = sqlToExecute + "FROM testdata.row.items.current "
 
 	// Query DB
-	rows, _ := DbPool.Query(context.Background(), sqlToExecute)
+	rows, _ := fenixSyncShared.DbPool.Query(context.Background(), sqlToExecute)
 
 	// Variables to used when extract data from result set
 	var testDataRowItem cloudDBTestDataRowItemCurrentStruct
 
 	// Extract data from DB result set
 	for rows.Next() {
-		err := rows.Scan(&testDataRowItem.clientUuid, &testDataRowItem.domainUuid,
+		err := rows.Scan(&testDataRowItem.clientUuid, &testDataRowItem.clientUuid,
 			&testDataRowItem.rowHash, &testDataRowItem.testdataValueAsString,
 			&testDataRowItem.leafNodeName, &testDataRowItem.leafNodePath)
 		if err != nil {
@@ -301,7 +299,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveAl
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) testSQL(currentClientUuid string) (err error) {
 
 	// Begin SQL Transaction
-	txn, err := DbPool.Begin(context.Background())
+	txn, err := fenixSyncShared.DbPool.Begin(context.Background())
 	if err != nil {
 		fmt.Println("err: ", err)
 		return
@@ -334,6 +332,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) testSQ
 	return nil
 }
 
+/*
 // ReplaceSQL replaces the instance occurrence of any string pattern with an increasing $n based sequence
 func ReplaceSQL(old, searchPattern string) string {
 	tmpCount := strings.Count(old, searchPattern)
@@ -342,6 +341,7 @@ func ReplaceSQL(old, searchPattern string) string {
 	}
 	return old
 }
+*/
 
 // Generates all "VALUES('xxx', 'yyy')..." for insert statements
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) generateSQLInsertValues(testdata [][]string) (sqlInsertValuesString string) {

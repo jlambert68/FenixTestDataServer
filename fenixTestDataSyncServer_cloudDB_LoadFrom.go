@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	fenixSyncShared "github.com/jlambert68/FenixSyncShared"
 	"github.com/sirupsen/logrus"
 )
 
@@ -9,7 +10,7 @@ import (
 // Load data from CloudDB into memory structures, to speed up stuff
 //
 // All TestTDataClients in CloudDB
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAllClientsFromCloudDB(testDataClients *[]cloudDBTestDataClientStruct) (err error, memCloudDBAllClientsMap cloudDBClientsMapType) {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAllClientsFromCloudDB(testDataClients *[]cloudDBTestDataClientStruct) (memCloudDBAllClientsMap cloudDBClientsMapType, err error) {
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"Id": "16af90a4-aa07-4d8b-921a-a47c04811a9b",
@@ -56,7 +57,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 	sqlToExecute = sqlToExecute + "c.client_areatyp_id = 1 " // Clients used for 'TestData'
 
 	// Query DB
-	rows, err := DbPool.Query(context.Background(), sqlToExecute)
+	rows, err := fenixSyncShared.DbPool.Query(context.Background(), sqlToExecute)
 
 	if err != nil {
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
@@ -65,7 +66,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 			"sqlToExecute": sqlToExecute,
 		}).Error("Something went wrong when executing SQL")
 
-		return err, nil
+		return nil, err
 	}
 
 	// Variables to used when extract data from result set
@@ -81,7 +82,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 			&testDataClient.description)
 
 		if err != nil {
-			return err, nil
+			return nil, err
 		}
 
 		*testDataClients = append(*testDataClients, testDataClient)
@@ -93,7 +94,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 	}
 
 	// No errors occurred
-	return nil, memCloudDBAllClientsMap
+	return memCloudDBAllClientsMap, nil
 
 }
 
@@ -133,7 +134,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 	sqlToExecute = sqlToExecute + "WHERE tdhfv.client_uuid::text = '" + clientUuid + "';"
 
 	// Query DB
-	rows, err := DbPool.Query(context.Background(), sqlToExecute)
+	rows, err := fenixSyncShared.DbPool.Query(context.Background(), sqlToExecute)
 
 	if err != nil {
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
@@ -210,7 +211,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 	sqlToExecute = sqlToExecute + "WHERE tdhi.client_uuid::text = '" + clientUuid + "';"
 
 	// Query DB
-	rows, err := DbPool.Query(context.Background(), sqlToExecute)
+	rows, err := fenixSyncShared.DbPool.Query(context.Background(), sqlToExecute)
 
 	if err != nil {
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
@@ -286,7 +287,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 	sqlToExecute = sqlToExecute + "WHERE tdmh.client_uuid::text = '" + clientUuid + "';"
 
 	// Query DB
-	rows, err := DbPool.Query(context.Background(), sqlToExecute)
+	rows, err := fenixSyncShared.DbPool.Query(context.Background(), sqlToExecute)
 
 	if err != nil {
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
@@ -360,7 +361,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 	sqlToExecute = sqlToExecute + "WHERE tdmt.client_uuid::text = '" + clientUuid + "';"
 
 	// Query DB
-	rows, err := DbPool.Query(context.Background(), sqlToExecute)
+	rows, err := fenixSyncShared.DbPool.Query(context.Background(), sqlToExecute)
 
 	if err != nil {
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
@@ -438,7 +439,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 	sqlToExecute = sqlToExecute + "WHERE tdri.client_uuid::text = '" + clientUuid + "';"
 
 	// Query DB
-	rows, err := DbPool.Query(context.Background(), sqlToExecute)
+	rows, err := fenixSyncShared.DbPool.Query(context.Background(), sqlToExecute)
 
 	if err != nil {
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
