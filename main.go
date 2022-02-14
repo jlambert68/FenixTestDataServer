@@ -57,10 +57,10 @@ func init() {
 
 	// Extract all other Environment variables
 	// Address to Fenix TestData Sync server
-	FenixTestDataSyncServerAddress = fenixSyncShared.MustGetEnvironmentVariable("FenixTestDataSyncServerAddress")
+	fenixTestDataSyncServerAddress = fenixSyncShared.MustGetEnvironmentVariable("FenixTestDataSyncServerAddress")
 
 	// Port for Fenix TestData Sync server
-	FenixTestDataSyncServerPort, err = strconv.Atoi(fenixSyncShared.MustGetEnvironmentVariable("FenixTestDataSyncServerPort"))
+	fenixTestDataSyncServerPort, err = strconv.Atoi(fenixSyncShared.MustGetEnvironmentVariable("FenixTestDataSyncServerPort"))
 	if err != nil {
 		fmt.Println("Couldn't convert environment variable 'FenixTestDataSyncServerPort' to an integer, error: ", err)
 		os.Exit(0)
@@ -68,25 +68,25 @@ func init() {
 	}
 
 	// Port for Fenix TestData Sync Admin server
-	localServerEngineLocalAdminPort, err = strconv.Atoi(fenixSyncShared.MustGetEnvironmentVariable("FenixTestDataSyncServerAdminPort"))
+	fenixTestDataSyncServerAdminPort, err = strconv.Atoi(fenixSyncShared.MustGetEnvironmentVariable("FenixTestDataSyncServerAdminPort"))
 	if err != nil {
-		fmt.Println("Couldn't convert environment variable 'FenixTestDataSyncServerPort' to an integer, error: ", err)
+		fmt.Println("Couldn't convert environment variable 'FenixTestDataSyncServerAdminPort' to an integer, error: ", err)
 		os.Exit(0)
 
 	}
 
 	// Address to Client TestData Sync server
-	ClientTestDataSyncServerAddress = fenixSyncShared.MustGetEnvironmentVariable("ClientTestDataSyncServerAddress")
+	clientTestDataSyncServerAddress = fenixSyncShared.MustGetEnvironmentVariable("ClientTestDataSyncServerAddress")
 
 	// Port for Client TestData Sync server
-	ClientTestDataSyncServerPort, err = strconv.Atoi(fenixSyncShared.MustGetEnvironmentVariable("ClientTestDataSyncServerPort"))
+	clientTestDataSyncServerPort, err = strconv.Atoi(fenixSyncShared.MustGetEnvironmentVariable("ClientTestDataSyncServerPort"))
 	if err != nil {
-		fmt.Println("Couldn't convert environment variable 'ClientTestDataSyncServerPort' to an integer, error: ", err)
+		fmt.Println("Couldn't convert environment variable 'clientTestDataSyncServerPort' to an integer, error: ", err)
 		os.Exit(0)
 
 	}
 
-	// Create the Dial up string to Fenix TestData SyncServer
-	fenixclienttestdatasyncserverAddressToDial = ClientTestDataSyncServerAddress + ":" + strconv.Itoa(ClientTestDataSyncServerPort)
+	// Create the Dial-up string to Fenix Client TestData SyncServer
+	fenixclienttestdatasyncserverAddressToDial = clientTestDataSyncServerAddress + ":" + strconv.Itoa(clientTestDataSyncServerPort)
 
 }

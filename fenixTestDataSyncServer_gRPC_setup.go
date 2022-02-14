@@ -8,6 +8,7 @@ import (
 	"strconv"
 )
 
+// InitGrpcServer :
 // Set up and start Backend gRPC-server
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) InitGrpcServer() {
 
@@ -25,23 +26,22 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) InitGr
 		"Id": "054bc0ef-93bb-4b75-8630-74e3823f71da",
 	}).Info("Fenix TestData Sync Server tries to start")
 
-	localServerEngineLocalPort = localServerEngineLocalPort
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
-		"Id":                           "ca3593b1-466b-4536-be91-5e038de178f4",
-		"localServerEngineLocalPort: ": localServerEngineLocalPort,
-	}).Info("Start listening on:")
-	gRPClis, err = net.Listen("tcp", ":"+strconv.Itoa(localServerEngineLocalPort))
+		"Id":                            "ca3593b1-466b-4536-be91-5e038de178f4",
+		"fenixTestDataSyncServerPort: ": fenixTestDataSyncServerPort,
+	}).Info("Fenix  Server Start listening on:")
+	gRPClis, err = net.Listen("tcp", ":"+strconv.Itoa(fenixTestDataSyncServerPort))
 
 	if err != nil {
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 			"Id":    "ad7815b3-63e8-4ab1-9d4a-987d9bd94c76",
 			"err: ": err,
-		}).Error("failed to listen:")
+		}).Error("Fenix Server failed to listen:")
 	} else {
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
-			"Id":                           "ba070b9b-5d57-4c0a-ab4c-a76247a50fd3",
-			"localServerEngineLocalPort: ": localServerEngineLocalPort,
-		}).Info("Success in listening on port:")
+			"Id":                            "ba070b9b-5d57-4c0a-ab4c-a76247a50fd3",
+			"fenixTestDataSyncServerPort: ": fenixTestDataSyncServerPort,
+		}).Info("Fenix Server Success in listening on port:")
 
 	}
 
@@ -53,13 +53,14 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) InitGr
 	fenixTestDataSyncServerGrpcApi.RegisterFenixTestDataGrpcServicesServer(registerfenixTestDataSyncServerServer, &FenixTestDataGrpcServicesServer{})
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
-		"Id":                           "e843ece9-b707-4c60-b1d8-14464305e68f",
-		"localServerEngineLocalPort: ": localServerEngineLocalPort,
+		"Id":                            "e843ece9-b707-4c60-b1d8-14464305e68f",
+		"fenixTestDataSyncServerPort: ": fenixTestDataSyncServerPort,
 	}).Info("Fenix TestData Sync gRPC Server - started")
 	registerfenixTestDataSyncServerServer.Serve(gRPClis)
 
 }
 
+// StopGrpcServer :
 // Stop Backend gRPC-server
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) StopGrpcServer() {
 
@@ -75,8 +76,8 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) StopGr
 	registerfenixTestDataSyncServerServer.GracefulStop()
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
-		"localServerEngineLocalPort: ": localServerEngineLocalPort,
-	}).Info("Close net.Listing")
+		"fenixTestDataSyncServerPort: ": fenixTestDataSyncServerPort,
+	}).Info("Fenix Server Close net.Listing")
 	_ = gRPClis.Close()
 
 }

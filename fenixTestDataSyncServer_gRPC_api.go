@@ -8,7 +8,9 @@ import (
 )
 
 // *********************************************************************
-//Fenix client can check if Fenix Testdata sync server is alive with this service
+
+// AreYouAlive :
+// Fenix client can check if Fenix Testdata sync server is alive with this service
 func (s *FenixTestDataGrpcServicesServer) AreYouAlive(_ context.Context, emptyParameter *fenixTestDataSyncServerGrpcApi.EmptyParameter) (*fenixTestDataSyncServerGrpcApi.AckNackResponse, error) {
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
@@ -30,6 +32,8 @@ func (s *FenixTestDataGrpcServicesServer) AreYouAlive(_ context.Context, emptyPa
 }
 
 // *********************************************************************
+
+// SendMerkleHash :
 // Fenix client can send TestData MerkleHash to Fenix Testdata sync server with this service
 func (s *FenixTestDataGrpcServicesServer) SendMerkleHash(_ context.Context, merkleHashMessage *fenixTestDataSyncServerGrpcApi.MerkleHashMessage) (*fenixTestDataSyncServerGrpcApi.AckNackResponse, error) {
 
@@ -111,6 +115,8 @@ func (s *FenixTestDataGrpcServicesServer) SendMerkleHash(_ context.Context, merk
 }
 
 // *********************************************************************
+
+// SendMerkleTree _
 // Fenix client can send TestData MerkleTree to Fenix Testdata sync server with this service
 func (s *FenixTestDataGrpcServicesServer) SendMerkleTree(_ context.Context, merkleTreeMessage *fenixTestDataSyncServerGrpcApi.MerkleTreeMessage) (*fenixTestDataSyncServerGrpcApi.AckNackResponse, error) {
 
@@ -214,6 +220,8 @@ func (s *FenixTestDataGrpcServicesServer) SendMerkleTree(_ context.Context, merk
 }
 
 // *********************************************************************
+
+// SendTestDataHeaderHash :
 // Fenix client can send TestDataHeaders to Fenix Testdata sync server with this service
 func (s *FenixTestDataGrpcServicesServer) SendTestDataHeaderHash(_ context.Context, testDataHeaderHashMessageMessage *fenixTestDataSyncServerGrpcApi.TestDataHeaderHashMessage) (*fenixTestDataSyncServerGrpcApi.AckNackResponse, error) {
 
@@ -285,6 +293,8 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataHeaderHash(_ context.Conte
 }
 
 // *********************************************************************
+
+// SendTestDataHeaders :
 // Fenix client can send TestDataHeaders to Fenix Testdata sync server with this service
 func (s *FenixTestDataGrpcServicesServer) SendTestDataHeaders(_ context.Context, testDataHeaderMessage *fenixTestDataSyncServerGrpcApi.TestDataHeadersMessage) (*fenixTestDataSyncServerGrpcApi.AckNackResponse, error) {
 
@@ -379,6 +389,8 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataHeaders(_ context.Context,
 }
 
 // *********************************************************************
+
+// SendTestDataRows :
 // Fenix client can send TestData rows to Fenix Testdata sync server with this service
 func (s *FenixTestDataGrpcServicesServer) SendTestDataRows(_ context.Context, testdataRowsMessages *fenixTestDataSyncServerGrpcApi.TestdataRowsMessages) (*fenixTestDataSyncServerGrpcApi.AckNackResponse, error) {
 
@@ -488,7 +500,10 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataRows(_ context.Context, te
 	return &fenixTestDataSyncServerGrpcApi.AckNackResponse{AckNack: true, Comments: ""}, nil
 }
 
-// RegisterTestDataClient Fenix client can register itself with the Fenix Testdata sync server
+// *********************************************************************
+
+// RegisterTestDataClient :
+// Fenix client can register itself with the Fenix Testdata sync server
 func (s *FenixTestDataGrpcServicesServer) RegisterTestDataClient(_ context.Context, testDataClientInformationMessage *fenixTestDataSyncServerGrpcApi.TestDataClientInformationMessage) (*fenixTestDataSyncServerGrpcApi.AckNackResponse, error) {
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{

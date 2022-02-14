@@ -7,9 +7,9 @@ import (
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"net"
-	"strconv"
 )
 
+// LoggingLevel
 // Logrus debug level
 //const LoggingLevel = logrus.DebugLevel
 //const LoggingLevel = logrus.InfoLevel
@@ -24,15 +24,17 @@ var fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct
 
 // Address to Fenix TestData Server & Client, will have their values from Environment variables at startup
 var (
-	FenixTestDataSyncServerAddress  string
-	FenixTestDataSyncServerPort     int
-	ClientTestDataSyncServerAddress string
-	ClientTestDataSyncServerPort    int
+	fenixTestDataSyncServerAddress string
+	fenixTestDataSyncServerPort    int
+	//fenixTestDataSyncServerAdminAddress string
+	fenixTestDataSyncServerAdminPort int
+	clientTestDataSyncServerAddress  string
+	clientTestDataSyncServerPort     int
 )
 
 // Global connection constants
-var localServerEngineLocalPort = FenixTestDataSyncServerPort
-var localServerEngineLocalAdminPort int
+//var localServerEngineLocalPort = fenixTestDataSyncServerPort
+//var localServerEngineLocalAdminPort int
 
 var (
 	registerfenixTestDataSyncServerServer      *grpc.Server
@@ -46,16 +48,18 @@ var (
 	remoteFenixClientTestDataSyncServerConnection *grpc.ClientConn
 	gRpcClientForFenixClientTestDataSyncServer    fenixClientTestDataSyncServerGrpcApi.FenixClientTestDataGrpcServicesClient
 
-	fenixclienttestdatasyncserverAddressToDial string = ClientTestDataSyncServerAddress + ":" + strconv.Itoa(ClientTestDataSyncServerPort)
+	fenixclienttestdatasyncserverAddressToDial string
 
 	fenixClientTestDataSyncServerClient fenixClientTestDataSyncServerGrpcApi.FenixClientTestDataGrpcServicesClient
 )
 
+// FenixTestDataGrpcServicesServer :
 // Server used for register clients Name, Ip and Por and Clients Test Enviroments and Clients Test Commandst
 type FenixTestDataGrpcServicesServer struct {
 	fenixTestDataSyncServerGrpcApi.UnimplementedFenixTestDataGrpcServicesServer
 }
 
+// FenixTestDataGrpcServicesAdminServer :
 // Server used for register clients Name, Ip and Por and Clients Test Enviroments and Clients Test Commandst
 type FenixTestDataGrpcServicesAdminServer struct {
 	fenixTestDataSyncServerGrpcAdminApi.UnimplementedFenixTestDataGrpcAdminServicesServer

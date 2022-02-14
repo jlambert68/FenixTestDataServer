@@ -1,13 +1,14 @@
 package main
 
 import (
-	fenixTestDataSyncServerGrpcApi "github.com/jlambert68/FenixGrpcApi/Fenix/fenixTestDataSyncServerGrpcApi/go_grpc_api"
+	fenixTestDataSyncServerGrpcAdminApi "github.com/jlambert68/FenixGrpcApi/Fenix/fenixTestDataSyncServerGrpcApi/go_grpc_admin_api"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"net"
 	"strconv"
 )
 
+// InitGrpcAdminServer :
 // Set up and start Backend gRPC-server
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) InitGrpcAdminServer() {
 
@@ -25,23 +26,22 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) InitGr
 		"Id": "cd06dd40-5b41-45f1-a39e-435a31ef67db",
 	}).Info("Fenix TestData Sync Server (Admin) tries to start")
 
-	localServerEngineLocalPort = localServerEngineLocalPort
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
-		"Id":                                "56610866-03c0-4c51-8947-8c6440b0f740",
-		"localServerEngineLocalAdminPort: ": localServerEngineLocalAdminPort,
-	}).Info("Start listening on:")
-	gRPCAdminLis, err = net.Listen("tcp", ":"+strconv.Itoa(localServerEngineLocalAdminPort))
+		"Id":                                 "56610866-03c0-4c51-8947-8c6440b0f740",
+		"fenixTestDataSyncServerAdminPort: ": fenixTestDataSyncServerAdminPort,
+	}).Info("Admin Server Start listening on:")
+	gRPCAdminLis, err = net.Listen("tcp", ":"+strconv.Itoa(fenixTestDataSyncServerAdminPort))
 
 	if err != nil {
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 			"Id":    "5f2ad52c-cfab-43b0-bb96-4ef0876bc544",
 			"err: ": err,
-		}).Error("failed to listen:")
+		}).Error("Fenix Server failed to listen:")
 	} else {
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
-			"Id":                                "66d6ae5a-e392-4c13-8c28-d62392e342be",
-			"localServerEngineLocalAdminPort: ": localServerEngineLocalAdminPort,
-		}).Info("Success in listening on port:")
+			"Id":                                 "66d6ae5a-e392-4c13-8c28-d62392e342be",
+			"fenixTestDataSyncServerAdminPort: ": fenixTestDataSyncServerAdminPort,
+		}).Info("Admin Server Success in listening on port:")
 
 	}
 
@@ -50,17 +50,18 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) InitGr
 		"Id": "5b3590a9-3842-4325-ba16-cb27dc621d47",
 	}).Info("Starting Fenix TestData Sync gRPC Admin Server")
 	registerfenixTestDataSyncAdminServerServer = grpc.NewServer()
-	fenixTestDataSyncServerGrpcApi.RegisterFenixTestDataGrpcAdminServicesServer(registerfenixTestDataSyncAdminServerServer, &FenixTestDataGrpcServicesAdminServer{})
+	fenixTestDataSyncServerGrpcAdminApi.RegisterFenixTestDataGrpcAdminServicesServer(registerfenixTestDataSyncAdminServerServer, &FenixTestDataGrpcServicesAdminServer{})
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
-		"Id":                           "97f74966-71e6-4c90-a172-be0cbbc9da65",
-		"localServerEngineLocalPort: ": localServerEngineLocalAdminPort,
-	}).Info("Fenix TestData Sync gRPC Server - started")
+		"Id":                                 "97f74966-71e6-4c90-a172-be0cbbc9da65",
+		"fenixTestDataSyncServerAdminPort: ": fenixTestDataSyncServerAdminPort,
+	}).Info("Fenix TestData Sync gRPC Admin Server - started")
 	registerfenixTestDataSyncAdminServerServer.Serve(gRPCAdminLis)
 
 }
 
-// Stop Backend gRPC-Adminserver
+// StopGrpcAdminServer :
+// Stop Backend gRPC-AdminServer
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) StopGrpcAdminServer() {
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
@@ -75,8 +76,8 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) StopGr
 	registerfenixTestDataSyncServerServer.GracefulStop()
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
-		"localServerEngineLocalAdminPort: ": localServerEngineLocalAdminPort,
-	}).Info("Close net.Listing")
+		"fenixTestDataSyncServerAdminPort: ": fenixTestDataSyncServerAdminPort,
+	}).Info("Fenix Admin Server Close net.Listing")
 	_ = gRPCAdminLis.Close()
 
 }

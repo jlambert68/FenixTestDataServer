@@ -40,7 +40,7 @@ type tempDBStruct struct {
 	clientData *tempDBDataStruct
 }
 
-type MerkleTree_struct struct {
+type MerkletreeStruct struct {
 	MerkleLevel     int
 	MerklePath      string
 	MerkleHash      string
@@ -117,10 +117,12 @@ type memDBHeaderItemsStruct struct {
 
 type HeaderFilterSelectionTypeType int
 
+/*
 const (
 	HEADER_IS_SINGLE_SELECT HeaderFilterSelectionTypeType = iota
 	HEADER_IS_MULTI_SELECT
 )
+*/
 
 type memDBHeaderFilterValuesItemStruct struct {
 	HeaderFilterValuesHash string
@@ -141,7 +143,7 @@ type memDBAllowedClientsStruct struct {
 
 // Initiate tempDBStruct
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) initiateTempDBStruct() tempDBStruct {
-	tempDBStruct_initiated := tempDBStruct{
+	tempdbstructInitiated := tempDBStruct{
 		serverData: &tempDBDataStruct{
 			merkleHash: "",
 			merkleTree: dataframe.DataFrame{
@@ -166,11 +168,10 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) initia
 		},
 	}
 
-	return tempDBStruct_initiated
+	return tempdbstructInitiated
 }
 
-// Inititate all memoryDB for all clients found in CloudDB
-
+// Initiate all memoryDB for all clients found in CloudDB
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) initiateMemoryDBForClients() bool {
 
 	// Loop over all loaded clients
@@ -267,11 +268,10 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveCu
 
 	} else {
 
-		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
-			"Id": "173d0222-cad0-45f5-9558-075a595fdea1",
-		}).Fatalln("REMOVE CODE because this part should never be executed")
+		// Initiate data structure for client
 		tempDBStructInitiated := fenixTestDataSyncServerObject.initiateTempDBStruct()
 		tempDBStructInitiated.clientData.merkleHash = merkleHashMessage.MerkleHash
+
 		dbDataMap[memDBClientUuidType(merkleHashMessage.TestDataClientUuid)] = &tempDBStructInitiated
 	}
 
@@ -309,11 +309,10 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveCu
 
 	} else {
 
-		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
-			"Id": "74b9993a-6d55-4712-99a1-57ca0218ccb5",
-		}).Fatalln("REMOVE CODE because this part should never be executed")
+		// Initiate data structure for client
 		tempDBStructInitiated := fenixTestDataSyncServerObject.initiateTempDBStruct()
 		tempDBStructInitiated.clientData.merkleFilterHash = merkleHashMessage.MerkleFilterHash
+
 		dbDataMap[memDBClientUuidType(merkleHashMessage.TestDataClientUuid)] = &tempDBStructInitiated
 	}
 
@@ -351,11 +350,10 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveCu
 
 	} else {
 
-		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
-			"Id": "fe7aecd7-49c7-4820-92db-fb1a605a09b4",
-		}).Fatalln("REMOVE CODE because this part should never be executed")
+		// Initiate data structure for client
 		tempDBStructInitiated := fenixTestDataSyncServerObject.initiateTempDBStruct()
 		tempDBStructInitiated.clientData.merkleFilter = merkleHashMessage.MerkleFilter
+
 		dbDataMap[memDBClientUuidType(merkleHashMessage.TestDataClientUuid)] = &tempDBStructInitiated
 	}
 
@@ -364,38 +362,116 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveCu
 
 // Retrieve current TestData-MerkleHash for Server
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCurrentMerkleHashForServer(testDataClientGuid string) (currentMerkleHashForServer string) {
+	/*
+		// Get pointer to data for Client_UUID
+		tempdbData, valueExits := dbDataMap[memDBClientUuidType(testDataClientGuid)]
+
+		// Get the data
+		if valueExits == true {
+			currentMerkleHashForServer = tempdbData.serverData.merkleHash
+		} else {
+			currentMerkleHashForServer = "#VALUE IS MISSING#"
+		}
+
+		return currentMerkleHashForServer
+
+
+	*/
 
 	// Get pointer to data for Client_UUID
 	tempdbData, valueExits := dbDataMap[memDBClientUuidType(testDataClientGuid)]
 
-	// Get the data
-	if valueExits == true {
+	// Get the data, and it must be any saved to be used as serve memoryDB-copy
+	if valueExits == true && len(tempdbData.clientData.merkleHash) > 0 {
 		currentMerkleHashForServer = tempdbData.serverData.merkleHash
 	} else {
-		currentMerkleHashForServer = "#VALUE IS MISSING#"
+
+		// Load Client's TestDataMerkleHashes from CloudDB
+		var tempMemDBAllTestDataMerkleHashes []cloudDBTestDataMerkleHashStruct
+		err := fenixTestDataSyncServerObject.loadAllTestDataMerkleHashesForClientFromCloudDB(testDataClientGuid, &tempMemDBAllTestDataMerkleHashes)
+		if err != nil {
+			fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+				"Id":    "202bbd5b-19a1-4ebd-923d-0114161e6c2b",
+				"error": err,
+			}).Error("Problem when executing: 'loadAllTestDataMerkleHashesForClientFromCloudDB()'")
+
+			fenixTestDataSyncServerObject.stateProcessIncomingAndOutgoingMessage = false
+			currentMerkleHashForServer = "#VALUE IS MISSING#"
+
+		} else {
+
+			// Verify that a maximum of one MerkleHash-object has been retrieved
+			switch len(tempMemDBAllTestDataMerkleHashes) {
+
+			// No Saved MerkleHash in CloudDB for specified Client
+			case 0:
+
+				fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+					"Id":                 "7ee3595a-0457-4d0f-a1a3-c89b3fd34787",
+					"testDataClientGuid": testDataClientGuid,
+				}).Debug("No Saved MerkleHash in CloudDB for specified Client")
+
+			// MerkleHash has previously been saved and loaded from CloudDB
+			case 1:
+
+				// Save MerkleHash in memDB
+				_ = fenixTestDataSyncServerObject.saveCurrentMerkleHashForServer(testDataClientGuid, tempMemDBAllTestDataMerkleHashes[0].merkleHash)
+
+				fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+					"Id":                               "08d8c4d7-2f39-4a99-b94d-dd44f705172d",
+					"testDataClientGuid":               testDataClientGuid,
+					"tempMemDBAllTestDataMerkleHashes": tempMemDBAllTestDataMerkleHashes[0],
+				}).Debug("MerkleHash data found in CloudDB")
+
+			// There are more than one MerkleHash-object, which shouldn't happen
+			default:
+				fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+					"Id":                               "a9f37032-167d-4524-878e-814ffe27f012",
+					"testDataClientGuid":               testDataClientGuid,
+					"Number of MerkleHash-objecs":      len(tempMemDBAllTestDataMerkleHashes),
+					"tempMemDBAllTestDataMerkleHashes": tempMemDBAllTestDataMerkleHashes[0],
+				}).Fatalln("There are more than one MerkleHash-object found in CloudDB, which shouldn't happen")
+
+			}
+
+			currentMerkleHashForServer = tempMemDBAllTestDataMerkleHashes[0].merkleHash
+
+		}
 	}
 
 	return currentMerkleHashForServer
+
 }
 
 // Save current TestData-MerkleHash for Server
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveCurrentMerkleHashForServer(clientUuid string, merkleHash string) bool {
 
 	// Get pointer to data for Client_UUID
-	tempdbData := dbDataMap[memDBClientUuidType(clientUuid)]
+	tempdbData, valueExits := dbDataMap[memDBClientUuidType(clientUuid)]
 
-	// Get pointer to server data
-	serverData := tempdbData.serverData
+	if valueExits == true {
 
-	// MerkleHash
-	serverData.merkleHash = merkleHash
+		// Get pointer to server data
+		serverData := tempdbData.serverData
+
+		// MerkleHash
+		serverData.merkleHash = merkleHash
+
+	} else {
+
+		// Initiate data structure for server
+		tempDBStructInitiated := fenixTestDataSyncServerObject.initiateTempDBStruct()
+		tempDBStructInitiated.serverData.merkleHash = merkleHash
+
+		dbDataMap[memDBClientUuidType(clientUuid)] = &tempDBStructInitiated
+	}
 
 	return true
 }
 
 // Retrieve current TestData-MerkleFilterHash for Server
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCurrentMerkleFilterHashForServer(testDataClientGuid string) (currentMerkleFilterHashForServer string) {
-
+rätta upp denna
 	// Get pointer to data for Client_UUID
 	tempdbData, valueExits := dbDataMap[memDBClientUuidType(testDataClientGuid)]
 

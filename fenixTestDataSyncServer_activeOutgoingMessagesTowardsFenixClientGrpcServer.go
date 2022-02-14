@@ -10,6 +10,7 @@ import (
 	"google.golang.org/grpc/credentials"
 )
 
+// SetConnectionToFenixClientTestDataSyncServer :
 // Set upp connection and Dial to FenixTestDataSyncServer
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) SetConnectionToFenixClientTestDataSyncServer() {
 
@@ -58,6 +59,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) SetCon
 //func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct)  RegisterTestDataClient(EmptyParameter) returns (AckNackResponse) {
 //}
 
+// AskClientToSendMerkleHash :
 // Fenix Server asks Fenix client to send TestData MerkleHash to Fenix Testdata sync server with this service
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) AskClientToSendMerkleHash(TestDataClientGuid string) {
 
@@ -104,6 +106,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) AskCli
 	}
 }
 
+// AskClientToSendMerkleTree :
 // Fenix Server asks Fenix client to send TestData MerkleTree to Fenix Testdata sync server with this service
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) AskClientToSendMerkleTree(TestDataClientGuid string) {
 
@@ -151,6 +154,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) AskCli
 
 }
 
+// AskClientToSendTestDataHeaderHash :
 // Fenix Server asks Fenix client to send TestDataHeaderHash to Fenix Testdata sync server with this service
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) AskClientToSendTestDataHeaderHash(TestDataClientGuid string) {
 
@@ -198,6 +202,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) AskCli
 
 }
 
+// AskClientToSendTestDataHeaders :
 // Fenix Server asks Fenix client to send TestDataHeaders to Fenix Testdata sync server with this service
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) AskClientToSendTestDataHeaders(TestDataClientGuid string) {
 
@@ -245,6 +250,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) AskCli
 
 }
 
+// AskClientToSendTestDataRows :
 // Fenix Server asks Fenix client to  send TestData rows, based on list of MerklePaths, to Fenix Testdata sync server with this service
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) AskClientToSendTestDataRows(testDataClientGuid string) {
 
@@ -299,6 +305,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) AskCli
 
 }
 
+// AskClientToSendAllTestDataRows :
 // Fenix Server asks Fenix client to  send All TestData rows to Fenix Testdata sync server with this service
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) AskClientToSendAllTestDataRows(TestDataClientGuid string) {
 

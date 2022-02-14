@@ -7,7 +7,7 @@ import (
 )
 
 // Used for only process cleanup once
-var cleanupProcessed bool = false
+var cleanupProcessed = false
 
 func cleanup() {
 
@@ -40,10 +40,10 @@ func FenixServerMain() {
 		},
 	}
 
-	a, b := dbDataMap[memDBClientUuidType("Hej")]
+	a, b := dbDataMap[("Hej")]
 	fmt.Println(a, b)
-	dbDataMap[memDBClientUuidType("Hej")] = tempdbstructVal
-	a, b = dbDataMap[memDBClientUuidType("Hej")]
+	dbDataMap[("Hej")] = tempdbstructVal
+	a, b = dbDataMap[("Hej")]
 	fmt.Println(a, b)
 
 	fenixSyncShared.ConnectToDB()

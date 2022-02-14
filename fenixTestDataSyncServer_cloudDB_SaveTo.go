@@ -162,7 +162,6 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveTe
 	// Data to be inserted in the DB-table
 	var dataToBeInserted = [][]string{
 		{currentUserUuid,
-			string(fenixTestDataSyncServerObject.getDomainUuidForClient(currentUserUuid)),
 			fenixSyncShared.GenerateDatetimeTimeStampForDB(),
 			fenixTestDataSyncServerObject.getCurrentMerkleHashForServer(currentUserUuid),
 			fenixTestDataSyncServerObject.getCurrentMerkleFilterForServer(currentUserUuid),
@@ -177,7 +176,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveTe
 
 	// Create Insert Statement for current MerkleHash-data for Client
 	sqlToExecute = sqlToExecute + "INSERT INTO public.testdata_merklehashes "
-	sqlToExecute = sqlToExecute + "(client_uuid, domain_uuid, updated_timestamp, merklehash, merkle_filterpath, merkle_filterpath_hash) "
+	sqlToExecute = sqlToExecute + "(client_uuid, updated_timestamp, merklehash, merkle_filterpath, merkle_filterpath_hash) "
 	sqlToExecute = sqlToExecute + fenixTestDataSyncServerObject.generateSQLInsertValues(dataToBeInserted)
 	sqlToExecute = sqlToExecute + ";"
 

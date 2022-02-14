@@ -4,6 +4,7 @@ import (
 	"context"
 	fenixSyncShared "github.com/jlambert68/FenixSyncShared"
 	"github.com/sirupsen/logrus"
+	"time"
 )
 
 // ****************************************************************************************************************
@@ -47,7 +48,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 
 	sqlToExecute := ""
 	sqlToExecute = sqlToExecute + "SELECT c.client_uuid, c.client_name, c.domain_uuid, c.description "
-	sqlToExecute = sqlToExecute + "FROM clients c"
+	sqlToExecute = sqlToExecute + "FROM clients c "
 	sqlToExecute = sqlToExecute + "WHERE c.activated = true "
 	sqlToExecute = sqlToExecute + "AND "
 	sqlToExecute = sqlToExecute + "c.deleted = false "
@@ -302,11 +303,15 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 	// Variables to used when extract data from result set
 	var testDataMerkleHash cloudDBTestDataMerkleHashStruct
 
+	var tempTimeStamp time.Time
+	var timeStampAsString string
+	timeStampLayOut := "2006-01-02 15:04:05.000000" //milliseconds
+
 	// Extract data from DB result set
 	for rows.Next() {
 		err := rows.Scan(
 			&testDataMerkleHash.clientUuid,
-			&testDataMerkleHash.updatedTimeStamp,
+			&tempTimeStamp, //&testDataMerkleHash.updatedTimeStamp,
 			&testDataMerkleHash.merkleHash,
 			&testDataMerkleHash.merkleFilterPath,
 			&testDataMerkleHash.merkleFilterPathHash)
@@ -314,6 +319,11 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 		if err != nil {
 			return err
 		}
+
+		// Convert timestamp into string representation and add to  extracted data
+		timeStampAsString = tempTimeStamp.Format(timeStampLayOut)
+		testDataMerkleHash.updatedTimeStamp = timeStampAsString
+
 		*testDataMerkleHashs = append(*testDataMerkleHashs, testDataMerkleHash)
 
 	}

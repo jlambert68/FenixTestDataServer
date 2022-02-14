@@ -42,14 +42,14 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) conver
 		"id": "17be0c7e-cfb9-4505-a7a0-d44542485f59",
 	}).Debug("Outgoing gRPC 'convertgRpcMerkleTreeMessageToDataframe'")
 
-	var myMerkleTree []MerkleTree_struct
+	var myMerkleTree []MerkletreeStruct
 
 	//dbCurrentMerkleTreeForClient = merkleTreeMessage.MerkleTreeNodes
 	merkleTreeNodes := merkleTreeMessage.MerkleTreeNodes
 
 	// Loop all MerkleTreeNodes and create a DataFrame for the data
 	for _, merkleTreeNode := range merkleTreeNodes {
-		myMerkleTreeRow := MerkleTree_struct{
+		myMerkleTreeRow := MerkletreeStruct{
 			MerkleLevel:     int(merkleTreeNode.NodeLevel),
 			MerklePath:      merkleTreeNode.NodeName,
 			MerkleHash:      merkleTreeNode.NodeHash,

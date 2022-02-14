@@ -8,7 +8,9 @@ import (
 )
 
 // *********************************************************************
-//AreYouAlive - Fenix client can check if Fenix Testdata sync server is alive with this service
+
+// AreYouAlive :
+// Fenix client can check if Fenix Testdata sync server is alive with this service
 func (s *FenixTestDataGrpcServicesAdminServer) AreYouAlive(_ context.Context, emptyParameter *fenixTestDataSyncServerGrpcAdminApi.EmptyParameter) (*fenixTestDataSyncServerGrpcAdminApi.AckNackResponse, error) {
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
@@ -30,7 +32,9 @@ func (s *FenixTestDataGrpcServicesAdminServer) AreYouAlive(_ context.Context, em
 }
 
 // *********************************************************************
-// AllowIncomingAndOutgoingMessages - Retry to allow incoming gRPC calls and process outgoing calls
+
+// AllowOrDisallowIncomingAndOutgoingMessages :
+// Retry to allow incoming gRPC calls and process outgoing calls
 func (s *FenixTestDataGrpcServicesAdminServer) AllowOrDisallowIncomingAndOutgoingMessages(_ context.Context, allowOrDisallowIncomingAndOutgoingMessage *fenixTestDataSyncServerGrpcAdminApi.AllowOrDisallowIncomingAndOutgoingMessage) (*fenixTestDataSyncServerGrpcAdminApi.AckNackResponse, error) {
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
@@ -55,7 +59,9 @@ func (s *FenixTestDataGrpcServicesAdminServer) AllowOrDisallowIncomingAndOutgoin
 }
 
 // *********************************************************************
-// RestartFenixServerProcesses - Restart Fenix TestData Server processes
+
+// RestartFenixServerProcesses :
+// Restart Fenix TestData Server processes
 func (s *FenixTestDataGrpcServicesAdminServer) RestartFenixServerProcesses(_ context.Context, emptyParameter *fenixTestDataSyncServerGrpcAdminApi.EmptyParameter) (*fenixTestDataSyncServerGrpcAdminApi.AckNackResponse, error) {
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
