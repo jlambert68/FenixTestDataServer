@@ -287,7 +287,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) concat
 		"id": "5716a1e8-11dc-4c70-9579-94d7d177689b",
 	}).Debug("New rows to add to existing rows are '"+strconv.Itoa(testdataDataframe.Nrow())+"' for Client: ", testDataClientGuid)
 
-	allTestdataAsDataFrame = fenixTestDataSyncServerObject.getCurrentTestDataRowsForClient(testDataClientGuid)
+	allTestdataAsDataFrame = fenixTestDataSyncServerObject.getCurrentTestDataRowItemsForClient(testDataClientGuid)
 
 	if allTestdataAsDataFrame.Nrow() == 0 {
 

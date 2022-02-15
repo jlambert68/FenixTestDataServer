@@ -78,35 +78,35 @@ func (s *FenixTestDataGrpcServicesServer) SendMerkleHash(_ context.Context, merk
 
 	// Compare current server- and client MerkleHash and MerklePathFilter
 	currentServerMerkleHash := fenixTestDataSyncServerObject.getCurrentMerkleHashForServer(callingClientUuid)
-	currentServerMerkleFilterHash := fenixTestDataSyncServerObject.getCurrentMerkleFilterHashForServer(callingClientUuid)
+	currentServerMerkleFilterHash := fenixTestDataSyncServerObject.getCurrentMerkleFilterPathHashForServer(callingClientUuid)
 
-	//  if differents in MerkleHash or MerkleFilterHash, then ask client for MerkleTree
+	//  if different in MerkleHash or MerkleFilterHash, then ask client for MerkleTree
 	if currentServerMerkleHash != merkleHashMessage.MerkleHash || currentServerMerkleFilterHash != merkleHashMessage.MerkleFilterHash {
 
 		// Save the MerkleHash
-		_ = fenixTestDataSyncServerObject.saveCurrentMerkleHashForClient(*merkleHashMessage)
+		_ = fenixTestDataSyncServerObject.saveCurrentMerkleHashForClient(callingClientUuid, merkleHashMessage.MerkleHash)
 
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 			"id": "d9c676ca-11a1-4007-8182-2f54834013a5",
 		}).Debug("Saved the MerkleHash for Client: " + callingClientUuid)
 
 		// Save the MerklePath
-		_ = fenixTestDataSyncServerObject.saveCurrentMerkleFilterForClient(*merkleHashMessage)
+		_ = fenixTestDataSyncServerObject.saveCurrentMerkleFilterPathForClient(callingClientUuid, merkleHashMessage.MerkleFilter)
 
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 			"id": "d296a28c-4ad4-4dc5-9d2e-90230e55b4e2",
-		}).Debug("Saved the MerkleFilter for Client: " + callingClientUuid)
+		}).Debug("Saved the MerkleFilterPath for Client: " + callingClientUuid)
 
 		// Save the MerkleFilterHash
-		_ = fenixTestDataSyncServerObject.saveCurrentMerkleFilterHashForClient(*merkleHashMessage)
+		_ = fenixTestDataSyncServerObject.saveCurrentMerkleFilterPathHashForClient(callingClientUuid, merkleHashMessage.MerkleFilterHash)
 
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 			"id": "2ac5988d-28f0-4e39-aa59-729608bdfb0c",
-		}).Debug("Saved the MerkleFilterHash for Client: " + callingClientUuid)
+		}).Debug("Saved the MerkleFilterPathHash for Client: " + callingClientUuid)
 
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 			"id": "cd30f2ae-6f79-4a0a-a8d8-a78d32dd6c71",
-		}).Debug("There is different in MerkleHash or MerkleFilterHash, so ask client for MerkleTree for Client: " + callingClientUuid)
+		}).Debug("There is different in MerkleHash or/and MerkleFilterHash, so ask client for MerkleTree for Client: " + callingClientUuid)
 
 		defer fenixTestDataSyncServerObject.AskClientToSendMerkleTree(callingClientUuid)
 	}
@@ -116,7 +116,7 @@ func (s *FenixTestDataGrpcServicesServer) SendMerkleHash(_ context.Context, merk
 
 // *********************************************************************
 
-// SendMerkleTree _
+// SendMerkleTree :
 // Fenix client can send TestData MerkleTree to Fenix Testdata sync server with this service
 func (s *FenixTestDataGrpcServicesServer) SendMerkleTree(_ context.Context, merkleTreeMessage *fenixTestDataSyncServerGrpcApi.MerkleTreeMessage) (*fenixTestDataSyncServerGrpcApi.AckNackResponse, error) {
 
@@ -189,8 +189,11 @@ func (s *FenixTestDataGrpcServicesServer) SendMerkleTree(_ context.Context, merk
 	//  if different in MerkleHash(MerkleTree was different) then ask client for TestData-rows that the Server hasn't got
 	if currentServerMerkleHash != recalculatedMerkleRootHash {
 
-		// Save the MerkleHash and MerkleTree Dataframe message
-		_ = fenixTestDataSyncServerObject.saveCurrentMerkleTreeForClient(callingClientUuid, merkleTreeAsDataFrame)
+		// Convert incoming gRPC-MerkleTree into memoryDB-object for MerkleTreeNodes
+		memDBMerkleTreeNodes := fenixTestDataSyncServerObject.convertGrpcMerkleTreeNodesIntoMemDBMerkleTreeNodes(recalculatedMerkleRootHash, merkleTreeMessage)
+
+		// Save the MerkleHash and memDBMerkleTreeNodes
+		_ = fenixTestDataSyncServerObject.saveCurrentMerkleTreeNodesForClient(callingClientUuid, memDBMerkleTreeNodes)
 
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 			"id": "cd30f2ae-6f79-4a0a-a8d8-a78d32dd6c71",
@@ -205,7 +208,7 @@ func (s *FenixTestDataGrpcServicesServer) SendMerkleTree(_ context.Context, merk
 			defer fenixTestDataSyncServerObject.AskClientToSendAllTestDataRows(callingClientUuid)
 		} else {
 			// Remove TestDataRows that is not represented in current client MerkleTree
-			fenixTestDataSyncServerObject.removeTestDataRowsInMemoryDBThatIsNotRepresentedInClientsMerkleTree(callingClientUuid)
+			fenixTestDataSyncServerObject.removeTestDataRowItemsInMemoryDBThatIsNotRepresentedInClientsMerkleTree(callingClientUuid)
 
 			// Ask for the rows that is missing
 			fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
@@ -447,7 +450,7 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataRows(_ context.Context, te
 	allRowsAsDataFrame := fenixTestDataSyncServerObject.concatenateWithCurrentServerTestData(callingClientUuid, newRowsAsDataFrame)
 
 	// Get calling Client's MerkleFilterPath
-	merkleFilterPath := fenixTestDataSyncServerObject.getCurrentMerkleFilterForClient(callingClientUuid)
+	merkleFilterPath := fenixTestDataSyncServerObject.getCurrentMerkleFilterPathForClient(callingClientUuid)
 
 	// Recreate MerkleHash from All testdata rows, both existing rows for Server and new from Client
 	computedMerkleHash, _, testdataWithLeafNodeHash := fenixSyncShared.CreateMerkleTreeFromDataFrame(allRowsAsDataFrame, merkleFilterPath)
@@ -482,7 +485,7 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataRows(_ context.Context, te
 	} else {
 
 		// Save TestDataRows to MemoryDB
-		_ = fenixTestDataSyncServerObject.saveCurrentTestDataRowsForClient(callingClientUuid, testdataWithLeafNodeHash)
+		_ = fenixTestDataSyncServerObject.saveCurrentTestDataRowItemsForClient(callingClientUuid, testdataWithLeafNodeHash)
 
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 			"id": "9aa8379e-5d5c-4eb4-9b18-d52da4291795",

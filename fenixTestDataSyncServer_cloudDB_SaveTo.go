@@ -159,26 +159,65 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveTe
 		}).Debug("Exiting: saveTestDataMerkleHasheDataFromMemDBToCloudDB()")
 	}()
 
-	// Data to be inserted in the DB-table
-	var dataToBeInserted = [][]string{
-		{currentUserUuid,
-			fenixSyncShared.GenerateDatetimeTimeStampForDB(),
-			fenixTestDataSyncServerObject.getCurrentMerkleHashForServer(currentUserUuid),
-			fenixTestDataSyncServerObject.getCurrentMerkleFilterForServer(currentUserUuid),
-			fenixTestDataSyncServerObject.getCurrentMerkleFilterHashForServer(currentUserUuid)},
-	}
-
 	sqlToExecute := ""
 
 	// Create Delete Statement for removing current MerkleHash-data for Client
 	sqlToExecute = sqlToExecute + "DELETE FROM public.testdata_merklehashes "
 	sqlToExecute = sqlToExecute + "WHERE client_uuid = '" + currentUserUuid + "'; "
 
+	// Data to be inserted in the DB-table
+	var dataToBeInserted = [][]string{
+		{currentUserUuid,
+			fenixSyncShared.GenerateDatetimeTimeStampForDB(),
+			fenixTestDataSyncServerObject.getCurrentMerkleHashForServer(currentUserUuid),
+			fenixTestDataSyncServerObject.getCurrentMerkleFilterPathForServer(currentUserUuid),
+			fenixTestDataSyncServerObject.getCurrentMerkleFilterPathHashForServer(currentUserUuid)},
+	}
+
 	// Create Insert Statement for current MerkleHash-data for Client
 	sqlToExecute = sqlToExecute + "INSERT INTO public.testdata_merklehashes "
 	sqlToExecute = sqlToExecute + "(client_uuid, updated_timestamp, merklehash, merkle_filterpath, merkle_filterpath_hash) "
 	sqlToExecute = sqlToExecute + fenixTestDataSyncServerObject.generateSQLInsertValues(dataToBeInserted)
 	sqlToExecute = sqlToExecute + ";"
+
+	// Create Delete Statement for removing current MerkleTree-data for Client
+	sqlToExecute = sqlToExecute + "DELETE FROM public.testdata_merkletrees "
+	sqlToExecute = sqlToExecute + "WHERE client_uuid = '" + currentUserUuid + "'; "
+
+	// Data to be inserted in the DB-table
+	merkleTreeNodes := dbDataMap[memDBClientUuidType(currentUserUuid)].serverData.merkleTreeNodes //merkleTree
+
+	dataRowToBeInserted := []string{}
+	dataToBeInserted = [][]string{}
+
+	for _, merkleTreeNode := range merkleTreeNodes {
+
+		dataRowToBeInserted = []string{
+			currentUserUuid,
+			string(merkleTreeNode.nodeLevel),
+			merkleTreeNode.nodeName,
+			merkleTreeNode.nodePath,
+			merkleTreeNode.nodeHash,
+			merkleTreeNode.nodeChildHash,
+			fenixSyncShared.GenerateDatetimeTimeStampForDB(),
+			fenixTestDataSyncServerObject.getCurrentMerkleHashForServer(currentUserUuid),
+		}
+
+		dataToBeInserted = append(dataToBeInserted, dataRowToBeInserted)
+
+	}
+
+	// Create Insert Statement for current MerkleTree-data for Client
+
+	// Create Insert Statement for current MerkleHash-data for Client
+	sqlToExecute = sqlToExecute + "INSERT INTO public.testdata_merkletrees "
+	sqlToExecute = sqlToExecute + "(client_uuid, node_level, node_name, node_filter_path, node_hash, node_child_hash, updated_timestamp, merkleHash) "
+	sqlToExecute = sqlToExecute + fenixTestDataSyncServerObject.generateSQLInsertValues(dataToBeInserted)
+	sqlToExecute = sqlToExecute + ";"
+
+	// Create Delete Statement for removing current TestData for Client
+
+	// Create Insert Statement for current MerkleTree-data for Client
 
 	// Query DB
 	comandTag, err := dbTransaction.Exec(context.Background(), sqlToExecute)

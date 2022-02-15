@@ -336,3 +336,32 @@ func createTestDataHeaderItemMessageHash(testDataHeaderItemMessage *fenixTestDat
 
 	return testDataHeaderItemMessageHash
 }
+
+// ********************************************************************************************************************
+// Convert gRPC MerkleTreeNodes into object used in memDB and when storing to database
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) convertGrpcMerkleTreeNodesIntoMemDBMerkleTreeNodes(merkleHash string, gRPCMerkleTreeMessage *fenixTestDataSyncServerGrpcApi.MerkleTreeMessage) (memDBMerkleTreeNodes []cloudDBTestDataMerkleTreeStruct) {
+
+	var memDBMerkleTreeNode cloudDBTestDataMerkleTreeStruct
+
+	// Loop all gRPC MerkleNodes and convert into object used in memoryDB
+	for _, gRPCMerkleTreeNode := range gRPCMerkleTreeMessage.MerkleTreeNodes {
+
+		memDBMerkleTreeNode = cloudDBTestDataMerkleTreeStruct{
+			clientUuid:       gRPCMerkleTreeMessage.TestDataClientUuid,
+			merkleHash:       merkleHash,
+			nodeLevel:        int(gRPCMerkleTreeNode.NodeLevel),
+			nodeName:         gRPCMerkleTreeNode.NodeName,
+			nodePath:         gRPCMerkleTreeNode.NodePath,
+			nodeHash:         gRPCMerkleTreeNode.NodeHash,
+			nodeChildHash:    gRPCMerkleTreeNode.NodeChildHash,
+			updatedTimeStamp: "",
+		}
+
+		// Append to list of all nodes
+		memDBMerkleTreeNodes = append(memDBMerkleTreeNodes, memDBMerkleTreeNode)
+
+	}
+
+	return memDBMerkleTreeNodes
+
+}
