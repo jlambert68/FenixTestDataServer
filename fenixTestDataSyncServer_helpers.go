@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/go-gota/gota/dataframe"
 	fenixClientTestDataSyncServerGrpcApi "github.com/jlambert68/FenixGrpcApi/Client/fenixClientTestDataSyncServerGrpcApi/go_grpc_api"
 	fenixTestDataSyncServerGrpcAdminApi "github.com/jlambert68/FenixGrpcApi/Fenix/fenixTestDataSyncServerGrpcApi/go_grpc_admin_api"
 	fenixTestDataSyncServerGrpcApi "github.com/jlambert68/FenixGrpcApi/Fenix/fenixTestDataSyncServerGrpcApi/go_grpc_api"
@@ -298,7 +299,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getHig
 	return highestClientProtoFileVersion
 }
 
-// Exctract Values, and create, for TestDataHeaderItemMessageHash
+// Extract Values, and create, for TestDataHeaderItemMessageHash
 func createTestDataHeaderItemMessageHash(testDataHeaderItemMessage *fenixTestDataSyncServerGrpcApi.TestDataHeaderItemMessage) (testDataHeaderItemMessageHash string) {
 
 	var valuesToHash []string
@@ -364,4 +365,133 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) conver
 
 	return memDBMerkleTreeNodes
 
+}
+
+// Extract the MerkleFilterPaths to be sent to client, to be able to receive the missing, or changed, TestDataRows
+func missedPathsToRetrieveFromClient(serverCopyMerkleTree []cloudDBTestDataMerkleTreeStruct, newClientMerkleTree []cloudDBTestDataMerkleTreeStruct) (merklePathsToRetrieve []string) {
+
+	var highestLeafNodeLevel = 0
+	var foundChildNodeHashInServer bool
+	var leafNodeHashForClient string
+	var leafNodesToRequest []cloudDBTestDataMerkleTreeStruct
+
+	// Get highest LeafNodeLevel for Server-copy
+	for _, leafNode := range serverCopyMerkleTree {
+		if leafNode.nodeLevel > highestLeafNodeLevel {
+			highestLeafNodeLevel = leafNode.nodeLevel
+		}
+	}
+
+	// Extract all LeafNodes for Client
+	// Loop over all LeafNodes to find those that are not in Server-copy
+	for _, clientMerkleTreeNode := range newClientMerkleTree {
+
+		leafNodeHashForClient = clientMerkleTreeNode.nodeChildHash
+
+		// Loop over  Server MerkleNodeChildHashes to see if the ChildNodeHash exists there
+		foundChildNodeHashInServer = false
+		for _, serverMerkleTreeNode := range serverCopyMerkleTree {
+			if serverMerkleTreeNode.nodeChildHash == leafNodeHashForClient {
+				foundChildNodeHashInServer = true
+				break
+			}
+		}
+
+		// if the Clients ChildHash wasn't found among ServerMerkleTreeNodes then add it to array
+		if foundChildNodeHashInServer == false {
+			leafNodesToRequest = append(leafNodesToRequest, clientMerkleTreeNode)
+		}
+
+	}
+
+	// Loop over 'leafNodesToRequest' to generate array with all MerkleFilterPath to be able to retrieve correct TestData-rows from Client
+	for _, leafNodeToRequest := range leafNodesToRequest {
+		merklePathsToRetrieve = append(merklePathsToRetrieve, leafNodeToRequest.nodePath)
+	}
+
+	return merklePathsToRetrieve
+
+}
+
+// Search array and look if value exists in the array
+func existsValueInStringArray(valueToSearchFor string, arrayToSearchIn []string) (existsInArray bool) {
+
+	existsInArray = false
+
+	// Loop array and search for value
+	for _, value := range arrayToSearchIn {
+		if valueToSearchFor == value {
+			// Value was found
+			existsInArray = true
+			break
+		}
+	}
+
+	return existsInArray
+}
+
+// // Convert gRPC-RowsMessage into cloudDBTestDataRowItems-message
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) convertgRpcTestDataRowsMessageToCloudDBTestDataRowItems(
+	gRpcTestDataRowsItemMessage *fenixTestDataSyncServerGrpcApi.TestdataRowsMessages,
+	dataFrameHavingLeafNodeChildHashes dataframe.DataFrame) (memDBtestDataRowItems []cloudDBTestDataRowItemCurrentStruct) {
+
+	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"id": "bdea5110-1af8-4e2f-a78a-ed1b2ad15514",
+	}).Debug("Incoming gRPC 'convertgRpcTestDataRowsMessageToCloudDBTestDataRowItems'")
+
+	defer fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"id": "50c6be0a-a522-4aa6-ae7e-1db5936846f1",
+	}).Debug("Outgoing gRPC 'convertgRpcTestDataRowsMessageToCloudDBTestDataRowItems'")
+
+	var leafNodeHash string
+	var leafNodeHashColumn int
+	var rowHashColumn int
+
+	gRpcTestDataRowsMessage := gRpcTestDataRowsItemMessage.TestDataRows
+	// Loop over gRPC-TestDataRow-messages and convert into memoryDB-object
+	for gRpcTestDataRow, gRpcTestDataRowMessage := range gRpcTestDataRowsMessage {
+
+		// Find the LeafNodeHash from dataFrame containing that info
+		// TODO change from DataFrame to contain this into more standard data structure
+		numberOfRowsInDataFrame := dataFrameHavingLeafNodeChildHashes.Nrow()
+		headersInDataFrame := dataFrameHavingLeafNodeChildHashes.Names()
+		for rowColumn, headerInDataFrame := range headersInDataFrame {
+			if headerInDataFrame == "LeafNodeHash" {
+				leafNodeHashColumn = rowColumn
+			}
+			if headerInDataFrame == "TestDataHash" {
+				rowHashColumn = rowColumn
+			}
+		}
+
+		for rowCounterInDataFrame := 0; rowCounterInDataFrame < numberOfRowsInDataFrame; rowCounterInDataFrame++ {
+			if gRpcTestDataRowMessage.RowHash == dataFrameHavingLeafNodeChildHashes.Elem(rowCounterInDataFrame, rowHashColumn).String() {
+				leafNodeHash = dataFrameHavingLeafNodeChildHashes.Elem(rowCounterInDataFrame, leafNodeHashColumn).String()
+				break
+			}
+		}
+
+		// Loop over columns in 'testDataColumnsItem'
+		testDataColumnsItem := gRpcTestDataRowMessage.TestDataItems
+		for testDataColumn, columnValue := range testDataColumnsItem {
+
+			// Extract data and populate memoryDB-object
+			memDBtestDataRowItem := cloudDBTestDataRowItemCurrentStruct{
+				clientUuid:            gRpcTestDataRowsItemMessage.TestDataClientUuid,
+				rowHash:               gRpcTestDataRowMessage.RowHash,
+				testdataValueAsString: columnValue.TestDataItemValueAsString,
+				leafNodeName:          gRpcTestDataRowMessage.LeafNodeName,
+				leafNodePath:          gRpcTestDataRowMessage.LeafNodePath,
+				leafNodeHash:          leafNodeHash,
+				valueColumnOrder:      testDataColumn,
+				valueRowOrder:         gRpcTestDataRow,
+				updatedTimeStamp:      "",
+			}
+
+			// Add 'memDBtestDataRowItem' to array
+			memDBtestDataRowItems = append(memDBtestDataRowItems, memDBtestDataRowItem)
+		}
+	}
+
+	return memDBtestDataRowItems
 }

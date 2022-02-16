@@ -273,7 +273,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) AskCli
 	clientsNewMerkleTree := fenixTestDataSyncServerObject.getCurrentMerkleTreeNodesForClient(testDataClientGuid)
 
 	// Extract all paths to retrieve from client
-	merklePathsToRetreive := fenixSyncShared.MissedPathsToRetreiveFromClient(serverCopyMerkleTree, clientsNewMerkleTree)
+	merklePathsToRetreive := missedPathsToRetrieveFromClient(serverCopyMerkleTree, clientsNewMerkleTree)
 
 	// Set up connection to Client-server
 	fenixTestDataSyncServerObject.SetConnectionToFenixClientTestDataSyncServer()

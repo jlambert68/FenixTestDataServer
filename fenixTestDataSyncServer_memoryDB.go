@@ -2,7 +2,6 @@ package main
 
 import (
 	"github.com/go-gota/gota/dataframe"
-	"github.com/go-gota/gota/series"
 	"github.com/sirupsen/logrus"
 )
 
@@ -28,12 +27,12 @@ type tempTestDataRowStruct struct {
 type tempDBDataStruct struct {
 	merkleHash string
 	//merkleTree           dataframe.DataFrame
-	merkleTreeNodes                  []cloudDBTestDataMerkleTreeStruct
-	merkleTreeNodesThatNoLongerExist []cloudDBTestDataMerkleTreeStruct
-	MerkleFilterPath                 string
-	MerkleFilterPathHash             string
-	headerHash                       string
-	headers                          []string
+	merkleTreeNodes                             []cloudDBTestDataMerkleTreeStruct
+	merkleTreeNodesChildHashesThatNoLongerExist []string
+	MerkleFilterPath                            string
+	MerkleFilterPathHash                        string
+	headerHash                                  string
+	headers                                     []string
 	//testDataRows         dataframe.DataFrame //[]tempTestDataRowStruct
 	testDataRowItems []cloudDBTestDataRowItemCurrentStruct
 }
@@ -51,6 +50,7 @@ type MerkletreeStruct struct {
 
 // Memory Object used as temporary storage before saving testdata to Cloud-DB
 // Memory Object also used as cash and there by minimize DB-access
+// TODO THis object is not used, I think --> REMOVE
 var memoryDB memoryDBStruct
 
 type memoryDBStruct struct {
@@ -148,24 +148,24 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) initia
 
 	tempdbstructInitiated := tempDBStruct{
 		serverData: &tempDBDataStruct{
-			merkleHash:                       "",
-			merkleTreeNodes:                  nil,
-			merkleTreeNodesThatNoLongerExist: nil,
-			MerkleFilterPath:                 "",
-			MerkleFilterPathHash:             "",
-			headerHash:                       "",
-			headers:                          nil,
-			testDataRowItems:                 nil,
+			merkleHash:      "",
+			merkleTreeNodes: nil,
+			merkleTreeNodesChildHashesThatNoLongerExist: nil,
+			MerkleFilterPath:     "",
+			MerkleFilterPathHash: "",
+			headerHash:           "",
+			headers:              nil,
+			testDataRowItems:     nil,
 		},
 		clientData: &tempDBDataStruct{
-			merkleHash:                       "",
-			merkleTreeNodes:                  nil,
-			merkleTreeNodesThatNoLongerExist: nil,
-			MerkleFilterPath:                 "",
-			MerkleFilterPathHash:             "",
-			headerHash:                       "",
-			headers:                          nil,
-			testDataRowItems:                 nil,
+			merkleHash:      "",
+			merkleTreeNodes: nil,
+			merkleTreeNodesChildHashesThatNoLongerExist: nil,
+			MerkleFilterPath:     "",
+			MerkleFilterPathHash: "",
+			headerHash:           "",
+			headers:              nil,
+			testDataRowItems:     nil,
 		},
 	}
 
@@ -971,21 +971,36 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) remove
 	clientData := tempdbData.clientData
 
 	// Extract the hashes for all leaf nodes from MerkleTree
-	leafNodesHashes := clientData.merkleTree.Col("MerkleChildHash").Records()
+	var leafNodesHashes []string
+	for _, MerkleTreeNode := range clientData.merkleTreeNodes {
+		leafNodesHashes = append(leafNodesHashes, MerkleTreeNode.nodeChildHash)
+	}
 
 	// Get the TestData to process
-	clientTestData := clientData.testDataRows
+	clientTestData := clientData.testDataRowItems
 
-	// Filter
-	//isNotInListFkn := fenixSyncShared.IsNotInListFilter(leafNodesHashes)
-	clientTestData = clientTestData.Filter(
-		dataframe.F{
-			Colname:    "LeafNodeHash",
-			Comparator: series.In,       // series.CompFunc,
-			Comparando: leafNodesHashes, //isNotInListFkn(),
-		})
+	// Filter out what should be kept and what should be removed
+	var clientTestDataToKeep []cloudDBTestDataRowItemCurrentStruct
+	var leafNodeHashesToRemove []string
 
-	clientData.testDataRows = clientTestData
+	// Loop over existing data and process each item
+	for _, testDataItem := range clientTestData {
+		if existsValueInStringArray(testDataItem.leafNodeHash, leafNodesHashes) == true {
+			// Row should be kept
+			clientTestDataToKeep = append(clientTestDataToKeep, testDataItem)
+
+		} else {
+			// LeafNodeHashes to be removed
+			leafNodeHashesToRemove = append(leafNodeHashesToRemove, testDataItem.leafNodeHash)
+
+		}
+	}
+
+	// Save rows to be kept in memoryDB
+	clientData.testDataRowItems = clientTestDataToKeep
+
+	// Save the leafNodeHashes to be removed
+	clientData.merkleTreeNodesChildHashesThatNoLongerExist = leafNodeHashesToRemove
 
 	return true
 }

@@ -484,8 +484,13 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataRows(_ context.Context, te
 
 	} else {
 
+		// Convert gRPC-RowsMessage into cloudDBTestDataRowItems-message
+		cloudDBTestDataRowItemMessage := fenixTestDataSyncServerObject.convertgRpcTestDataRowsMessageToCloudDBTestDataRowItems(
+			testdataRowsMessages,
+			testdataWithLeafNodeHash)
+
 		// Save TestDataRows to MemoryDB
-		_ = fenixTestDataSyncServerObject.saveCurrentTestDataRowItemsForClient(callingClientUuid, testdataWithLeafNodeHash)
+		_ = fenixTestDataSyncServerObject.saveCurrentTestDataRowItemsForClient(callingClientUuid, cloudDBTestDataRowItemMessage)
 
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 			"id": "9aa8379e-5d5c-4eb4-9b18-d52da4291795",
