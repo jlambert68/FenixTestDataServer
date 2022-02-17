@@ -409,7 +409,9 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataRows(_ context.Context, te
 	callingClientUuid := testdataRowsMessages.TestDataClientUuid
 
 	// Check if Client is using correct proto files version
-	returnMessage := fenixTestDataSyncServerObject.isClientUsingCorrectTestDataProtoFileVersion(testdataRowsMessages.TestDataClientUuid, testdataRowsMessages.ProtoFileVersionUsedByClient)
+	returnMessage := fenixTestDataSyncServerObject.isClientUsingCorrectTestDataProtoFileVersion(
+		testdataRowsMessages.TestDataClientUuid,
+		testdataRowsMessages.ProtoFileVersionUsedByClient)
 	if returnMessage != nil {
 		// Not correct proto-file version is used
 		return returnMessage, nil
@@ -429,13 +431,19 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataRows(_ context.Context, te
 		return returnMessage, nil
 	}
 
-	// Convert proto-message for rows into Dataframe object
-	newRowsAsDataFrame, returnMessage := fenixTestDataSyncServerObject.convertgRpcTestDataRowsMessageToDataFrame(testdataRowsMessages)
+	/*
+		// Convert proto-message for rows into Dataframe object
+		newRowsAsDataFrame, returnMessage := fenixTestDataSyncServerObject.convertgRpcTestDataRowsMessageToDataFrame(testdataRowsMessages)
 
-	// When row-hash is wrong calculated from client then respond that back to client
-	if returnMessage != nil {
-		return returnMessage, nil
-	}
+		// When row-hash is wrong calculated from client then respond that back to client
+		if returnMessage != nil {
+			return returnMessage, nil
+		}
+	*/
+
+	// Convert gRPC-RowsMessage into cloudDBTestDataRowItems-message
+	cloudDBTestDataRowItemsMessage := fenixTestDataSyncServerObject.convertgRpcTestDataRowsMessageToCloudDBTestDataRowItems(
+		testdataRowsMessages)
 
 	currentTestDataHeaders := fenixTestDataSyncServerObject.getCurrentHeadersForClient(callingClientUuid)
 
@@ -447,13 +455,35 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataRows(_ context.Context, te
 	}
 
 	// Concatenate with current Server data
-	allRowsAsDataFrame := fenixTestDataSyncServerObject.concatenateWithCurrentServerTestData(callingClientUuid, newRowsAsDataFrame)
+	concatenatedTestDataRows := fenixTestDataSyncServerObject.concatenateWithCurrentServerTestData(
+		callingClientUuid,
+		cloudDBTestDataRowItemsMessage)
 
 	// Get calling Client's MerkleFilterPath
 	merkleFilterPath := fenixTestDataSyncServerObject.getCurrentMerkleFilterPathForClient(callingClientUuid)
 
+	// Generate RowHashToMerkleChildNodeHashMap for TestData Rows and return map of type; "MAP[<RowHash>]=<MerkleChildNodeHash>" - 'MAP[string]string')
+	rowHashToLeafNodeHashMap := fenixTestDataSyncServerObject.generateRowHashToMerkleChildNodeHashMap(
+		concatenatedTestDataRows,
+		fenixTestDataSyncServerObject.getCurrentMerkleTreeNodesForClient(callingClientUuid))
+
+	// Add MerkleLeafNodeHashes to TestDataRowItems
+	testDataRowsIncludingLeafNodeHashes := fenixTestDataSyncServerObject.addMerkleLeafNodeHashesToTestDataRowItems(
+		concatenatedTestDataRows,
+		rowHashToLeafNodeHashMap)
+
+	// Convert the memoryDB-object for TestDataRows into a DataFrame
+	testDataRowsIncludingLeafNodeHashesAsDataFrame, returnMessage := fenixTestDataSyncServerObject.convertCloudDBTestDataRowItemsMessageToDataFrame(
+		testDataRowsIncludingLeafNodeHashes)
+	if returnMessage != nil {
+		// Something got wrong
+		return returnMessage, nil
+	}
+
 	// Recreate MerkleHash from All testdata rows, both existing rows for Server and new from Client
-	computedMerkleHash, _, testdataWithLeafNodeHash := fenixSyncShared.CreateMerkleTreeFromDataFrame(allRowsAsDataFrame, merkleFilterPath)
+	computedMerkleHash, _, _ := fenixSyncShared.CreateMerkleTreeFromDataFrame(
+		testDataRowsIncludingLeafNodeHashesAsDataFrame,
+		merkleFilterPath)
 
 	//Compare 'computedMerkleHash' with MerkleHash from Client
 	clientMerkleHash := fenixTestDataSyncServerObject.getCurrentMerkleHashForClient(callingClientUuid)
@@ -486,11 +516,11 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataRows(_ context.Context, te
 
 		// Convert gRPC-RowsMessage into cloudDBTestDataRowItems-message
 		cloudDBTestDataRowItemMessage := fenixTestDataSyncServerObject.convertgRpcTestDataRowsMessageToCloudDBTestDataRowItems(
-			testdataRowsMessages,
-			testdataWithLeafNodeHash)
+			testdataRowsMessages)
 
 		// Save TestDataRows to MemoryDB
-		_ = fenixTestDataSyncServerObject.saveCurrentTestDataRowItemsForClient(callingClientUuid, cloudDBTestDataRowItemMessage)
+		_ = fenixTestDataSyncServerObject.saveCurrentTestDataRowItemsForClient(
+			callingClientUuid, cloudDBTestDataRowItemMessage)
 
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 			"id": "9aa8379e-5d5c-4eb4-9b18-d52da4291795",
@@ -512,7 +542,9 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataRows(_ context.Context, te
 
 // RegisterTestDataClient :
 // Fenix client can register itself with the Fenix Testdata sync server
-func (s *FenixTestDataGrpcServicesServer) RegisterTestDataClient(_ context.Context, testDataClientInformationMessage *fenixTestDataSyncServerGrpcApi.TestDataClientInformationMessage) (*fenixTestDataSyncServerGrpcApi.AckNackResponse, error) {
+func (s *FenixTestDataGrpcServicesServer) RegisterTestDataClient(
+	_ context.Context,
+	testDataClientInformationMessage *fenixTestDataSyncServerGrpcApi.TestDataClientInformationMessage) (*fenixTestDataSyncServerGrpcApi.AckNackResponse, error) {
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"id": "5133b80b-6f3a-4562-9e62-1b3ceb169cc1",

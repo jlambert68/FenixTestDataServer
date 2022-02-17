@@ -272,8 +272,8 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) conver
 
 }
 
-// Concartenate TestDataRows as a DataFrame with the current Server TestDataRows-DataFrame
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) concatenateWithCurrentServerTestData(testDataClientGuid string, testdataDataframe dataframe.DataFrame) (allTestdataAsDataFrame dataframe.DataFrame) {
+// Concatenate TestDataRows as a DataFrame with the current Server TestDataRows-DataFrame
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) concatenateWithCurrentServerTestData(testDataClientGuid string, testdataToBeAdded []cloudDBTestDataRowItemCurrentStruct) (concatenatedTestdata []cloudDBTestDataRowItemCurrentStruct) {
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"id": "75e3cea1-d459-4f4f-9289-b728feee7ec0",
@@ -285,49 +285,219 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) concat
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"id": "5716a1e8-11dc-4c70-9579-94d7d177689b",
-	}).Debug("New rows to add to existing rows are '"+strconv.Itoa(testdataDataframe.Nrow())+"' for Client: ", testDataClientGuid)
+	}).Debug("New rows to add to existing rows are '"+strconv.Itoa(len(testdataToBeAdded))+"' for Client: ", testDataClientGuid)
 
-	allTestdataAsDataFrame = fenixTestDataSyncServerObject.getCurrentTestDataRowItemsForClient(testDataClientGuid)
+	// Get testdatarows from memoryDB
+	testDataRowItemsForClientInMemDB := fenixTestDataSyncServerObject.getCurrentTestDataRowItemsForClient(testDataClientGuid)
+	//concatenatedTestdata = fenixTestDataSyncServerObject.getCurrentTestDataRowItemsForClient(testDataClientGuid)
 
-	if allTestdataAsDataFrame.Nrow() == 0 {
+	if len(testDataRowItemsForClientInMemDB) == 0 {
 
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 			"id": "a98bf92e-ec7d-4968-b8fa-b72e47fef830",
 		}).Debug("There are no TestDataRows in memDB for so returning new Rows to work with, Client: ", testDataClientGuid)
 
-		return testdataDataframe
+		return testdataToBeAdded
+
 	} else {
 
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 			"id": "c8385ebf-53e1-4449-8171-f0c5bc2bdd68",
-		}).Debug("Existing number of rows are '"+strconv.Itoa(allTestdataAsDataFrame.Nrow())+"' for Client: ", testDataClientGuid)
+		}).Debug("Existing number of rows are '"+strconv.Itoa(len(concatenatedTestdata))+"' for Client: ", testDataClientGuid)
 
-		//headerKeys := testdataDataframe.Names()
-		allTestdataAsDataFrame = allTestdataAsDataFrame.Concat(testdataDataframe) //, headerKeys...)
+		//headerKeys := testdataToBeAdded.Names()
+		//concatenatedTestdata = concatenatedTestdata.Concat(testdataToBeAdded) //, headerKeys...)
+		concatenatedTestdata = append(testDataRowItemsForClientInMemDB, testdataToBeAdded...)
 
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 			"id": "c8385ebf-53e1-4449-8171-f0c5bc2bdd68",
-		}).Debug("Concatenated number of rows are '"+strconv.Itoa(allTestdataAsDataFrame.Nrow())+"' for Client: ", testDataClientGuid)
+		}).Debug("Concatenated number of rows are '"+strconv.Itoa(len(concatenatedTestdata))+"' for Client: ", testDataClientGuid)
 
 	}
 
-	return allTestdataAsDataFrame
+	return concatenatedTestdata
 
 }
 
-/*
-// Convert Dataframe into JSON
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) convertDataFramIntoJSON(testdataDataframe dataframe.DataFrame) (json string) {
+// Convert TestDataRow message into TestData dataframe object
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) convertCloudDBTestDataRowItemsMessageToDataFrame(cloudDBTestDataRowItems []cloudDBTestDataRowItemCurrentStruct) (testdataAsDataFrame dataframe.DataFrame, returnMessage *fenixTestDataSyncServerGrpcApi.AckNackResponse) {
 
-	var a io.Writer
+	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"id": "4a22eea7-806f-4d50-9b2f-1d5449203db6",
+	}).Debug("Incoming gRPC 'convertCloudDBTestDataRowItemsMessageToDataFrame'")
 
-	err := testdataDataframe.WriteJSON(a)
-	if err != nil {
-		return ""
+	defer fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"id": "9768e8b2-0c0f-41cc-90e5-3f0c17bb9ed8",
+	}).Debug("Outgoing gRPC 'convertCloudDBTestDataRowItemsMessageToDataFrame'")
+
+	testdataAsDataFrame = dataframe.New()
+
+	currentTestDataClientGuid := cloudDBTestDataRowItems[0].clientUuid
+
+	currentTestDataHeaders := fenixTestDataSyncServerObject.getCurrentHeadersForClient(currentTestDataClientGuid)
+
+	// If there are no headers in Database then Ask client for HeaderHash
+	if len(currentTestDataHeaders) == 0 {
+		fenixTestDataSyncServerObject.AskClientToSendTestDataHeaderHash(currentTestDataClientGuid)
+		currentTestDataHeaders = fenixTestDataSyncServerObject.getCurrentHeadersForClient(currentTestDataClientGuid)
+
+		// Validate that we got hte TestData Headers
+		if len(currentTestDataHeaders) == 0 {
+
+			// Set Error codes to return message
+			var errorCodes []fenixTestDataSyncServerGrpcApi.ErrorCodesEnum
+			var errorCode fenixTestDataSyncServerGrpcApi.ErrorCodesEnum
+
+			errorCode = fenixTestDataSyncServerGrpcApi.ErrorCodesEnum_ERROR_UNKNOWN_CALLER //TODO Change to correct error
+			errorCodes = append(errorCodes, errorCode)
+
+			// Create Return message
+			returnMessage = &fenixTestDataSyncServerGrpcApi.AckNackResponse{
+				AckNack:    false,
+				Comments:   "Fenix Asked for TestDataHeaders but didn't receive them i a correct way",
+				ErrorCodes: errorCodes,
+			}
+
+			fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+				"Id": "b20fb287-2e60-4f6f-b635-fea49f367a67",
+			}).Info("Fenix Asked for TestDataHeaders but didn't receive them i a correct way")
+
+			// leave
+			return testdataAsDataFrame, returnMessage
+		}
 	}
 
-	return ""
+	// Add 'KEY' to all headers
+	var testDataHeadersInDataFrame []string
+	testDataHeadersInDataFrame = append(testDataHeadersInDataFrame, currentTestDataHeaders...)
+	testDataHeadersInDataFrame = append(testDataHeadersInDataFrame, "TestDataHash")
+
+	//testDataRows := testdataRowsMessages.TestDataRows
+	// Create matrix for testdata
+	dataMatrix := make(map[int]map[int]string) //make(map[<row>>]map[<column>]<value>
+
+	// Create a map for RowHashes
+	testDataRowHashes := make(map[int]string) //make(map[<row>>]<rowHash>
+
+	// Loop over all 'cloudDBTestDataRowItems' and add to matriix
+	for _, cloudDBTestDataRowItem := range cloudDBTestDataRowItems {
+
+		// Verify that datapoint doesn't exist
+		_, dataPointExists := dataMatrix[cloudDBTestDataRowItem.valueRowOrder][cloudDBTestDataRowItem.valueColumnOrder]
+		if dataPointExists == true {
+			fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+				"Id":                                   "a2043be7-657a-4c94-a1a0-374243e82571",
+				"cloudDBTestDataRowItem.valueRowOrder": cloudDBTestDataRowItem.valueRowOrder,
+				"cloudDBTestDataRowItem.valueColumnOrder": cloudDBTestDataRowItem.valueRowOrder,
+			}).Fatal("Datapoint should only appears once")
+		}
+
+		// Add data to matirix
+		dataMatrix[cloudDBTestDataRowItem.valueRowOrder][cloudDBTestDataRowItem.valueColumnOrder] = cloudDBTestDataRowItem.testdataValueAsString
+
+		// Only add RowHash if it not exists
+		_, rowHashExists := testDataRowHashes[cloudDBTestDataRowItem.valueRowOrder]
+		if rowHashExists == false {
+			testDataRowHashes[cloudDBTestDataRowItem.valueRowOrder] = cloudDBTestDataRowItem.rowHash
+		}
+	}
+
+	// Loop all MerkleTreeNodes and create a DataFrame for the data
+	numberOfRowsInMatrix := len(dataMatrix)
+	var numberOfColumnsInMatrixRow int
+	var numberOfColumnInFirstMatrixRow int
+
+	for testDataRowCounter := 0; testDataRowCounter < numberOfRowsInMatrix; testDataRowCounter++ {
+
+		// Extract row
+		testDataRow := dataMatrix[testDataRowCounter]
+
+		// Create one row, as a dataframe
+		rowDataframe := dataframe.New()
+		var valuesToHash []string
+
+		// Get the number of columns in row
+		numberOfColumnsInMatrixRow = len(testDataRow)
+
+		// Verify that all rows have the same number of columns
+		if testDataRowCounter == 0 {
+			numberOfColumnInFirstMatrixRow = numberOfColumnsInMatrixRow
+
+		} else {
+
+			if numberOfColumnsInMatrixRow != numberOfColumnInFirstMatrixRow {
+				fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+					"Id":                             "a2043be7-657a-4c94-a1a0-374243e82571",
+					"numberOfColumnInFirstMatrixRow": numberOfColumnInFirstMatrixRow,
+					"numberOfColumnsInMatrixRow":     numberOfColumnsInMatrixRow,
+				}).Fatal("It seems that all TestDataRows doesn't have the same number o columns")
+			}
+		}
+
+		// Loop over columns
+		for testDataColumnCounter := 0; testDataColumnCounter < numberOfColumnsInMatrixRow; testDataColumnCounter++ {
+			//		for testDataItemCounter, testDataItem := range testDataRow {
+
+			if rowDataframe.Nrow() == 0 {
+				// Create New
+				rowDataframe = dataframe.New(
+					series.New([]string{testDataRow[testDataColumnCounter]}, series.String, currentTestDataHeaders[testDataColumnCounter]))
+			} else {
+				// Add to existing
+				rowDataframe = rowDataframe.Mutate(
+					series.New([]string{testDataRow[testDataColumnCounter]}, series.String, currentTestDataHeaders[testDataColumnCounter]))
+			}
+
+			valuesToHash = append(valuesToHash, testDataRow[testDataColumnCounter])
+		}
+
+		// Create and add column for 'TestDataHash'
+		testDataHashSeriesColumn := series.New([]string{"key"}, series.String, "TestDataHash")
+		rowDataframe = rowDataframe.Mutate(testDataHashSeriesColumn)
+
+		// Hash all values for row
+		hashedRow := fenixSyncShared.HashValues(valuesToHash, true)
+
+		// Validate that Row-hash is correct calculated
+		if hashedRow != testDataRowHashes[testDataRowCounter] {
+
+			// Set Error codes to return message
+			var errorCodes []fenixTestDataSyncServerGrpcApi.ErrorCodesEnum
+			var errorCode fenixTestDataSyncServerGrpcApi.ErrorCodesEnum
+
+			errorCode = fenixTestDataSyncServerGrpcApi.ErrorCodesEnum_ERROR_ROWHASH_NOT_CORRECT_CALCULATED
+			errorCodes = append(errorCodes, errorCode)
+
+			// Create Return message
+			returnMessage = &fenixTestDataSyncServerGrpcApi.AckNackResponse{
+				AckNack:    false,
+				Comments:   "RowsHashes seems not to be correct calculated.",
+				ErrorCodes: errorCodes,
+			}
+
+			fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+				"Id": "9e591230-1100-4771-ae38-c98a71daf784",
+			}).Info("RowsHashes seems not to be correct calculated.")
+
+			// Exit function Respond back to client when hash error
+			return testdataAsDataFrame, returnMessage
+		}
+
+		// Add TestDataHash to row DataFrame
+		rowDataframe.Elem(0, rowDataframe.Ncol()-1).Set(hashedRow)
+		//) Mutate(
+		//	series.New([]string{hashedRow}, series.String, "TestDataHash"))
+
+		// Add the row to the Dataframe for the testdata
+		// Special handling first when first time
+		if testdataAsDataFrame.Nrow() == 0 {
+			testdataAsDataFrame = rowDataframe.Copy()
+
+		} else {
+			testdataAsDataFrame = testdataAsDataFrame.OuterJoin(rowDataframe, testDataHeadersInDataFrame...)
+		}
+	}
+
+	return testdataAsDataFrame, nil
+
 }
-
-
-*/

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/go-gota/gota/dataframe"
 	fenixClientTestDataSyncServerGrpcApi "github.com/jlambert68/FenixGrpcApi/Client/fenixClientTestDataSyncServerGrpcApi/go_grpc_api"
 	fenixTestDataSyncServerGrpcAdminApi "github.com/jlambert68/FenixGrpcApi/Fenix/fenixTestDataSyncServerGrpcApi/go_grpc_admin_api"
 	fenixTestDataSyncServerGrpcApi "github.com/jlambert68/FenixGrpcApi/Fenix/fenixTestDataSyncServerGrpcApi/go_grpc_api"
@@ -432,8 +431,7 @@ func existsValueInStringArray(valueToSearchFor string, arrayToSearchIn []string)
 
 // // Convert gRPC-RowsMessage into cloudDBTestDataRowItems-message
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) convertgRpcTestDataRowsMessageToCloudDBTestDataRowItems(
-	gRpcTestDataRowsItemMessage *fenixTestDataSyncServerGrpcApi.TestdataRowsMessages,
-	dataFrameHavingLeafNodeChildHashes dataframe.DataFrame) (memDBtestDataRowItems []cloudDBTestDataRowItemCurrentStruct) {
+	gRpcTestDataRowsItemMessage *fenixTestDataSyncServerGrpcApi.TestdataRowsMessages) (memDBtestDataRowItems []cloudDBTestDataRowItemCurrentStruct) {
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"id": "bdea5110-1af8-4e2f-a78a-ed1b2ad15514",
@@ -443,33 +441,35 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) conver
 		"id": "50c6be0a-a522-4aa6-ae7e-1db5936846f1",
 	}).Debug("Outgoing gRPC 'convertgRpcTestDataRowsMessageToCloudDBTestDataRowItems'")
 
-	var leafNodeHash string
-	var leafNodeHashColumn int
-	var rowHashColumn int
+	//var leafNodeHash string
+	//var leafNodeHashColumn int
+	//var rowHashColumn int
 
 	gRpcTestDataRowsMessage := gRpcTestDataRowsItemMessage.TestDataRows
 	// Loop over gRPC-TestDataRow-messages and convert into memoryDB-object
 	for gRpcTestDataRow, gRpcTestDataRowMessage := range gRpcTestDataRowsMessage {
 
-		// Find the LeafNodeHash from dataFrame containing that info
-		// TODO change from DataFrame to contain this into more standard data structure
-		numberOfRowsInDataFrame := dataFrameHavingLeafNodeChildHashes.Nrow()
-		headersInDataFrame := dataFrameHavingLeafNodeChildHashes.Names()
-		for rowColumn, headerInDataFrame := range headersInDataFrame {
-			if headerInDataFrame == "LeafNodeHash" {
-				leafNodeHashColumn = rowColumn
+		/*
+			// Find the LeafNodeHash from dataFrame containing that info
+			// TODO change from DataFrame to contain this into more standard data structure
+			numberOfRowsInDataFrame := dataFrameHavingLeafNodeChildHashes.Nrow()
+			headersInDataFrame := dataFrameHavingLeafNodeChildHashes.Names()
+			for rowColumn, headerInDataFrame := range headersInDataFrame {
+				if headerInDataFrame == "LeafNodeHash" {
+					leafNodeHashColumn = rowColumn
+				}
+				if headerInDataFrame == "TestDataHash" {
+					rowHashColumn = rowColumn
+				}
 			}
-			if headerInDataFrame == "TestDataHash" {
-				rowHashColumn = rowColumn
-			}
-		}
 
-		for rowCounterInDataFrame := 0; rowCounterInDataFrame < numberOfRowsInDataFrame; rowCounterInDataFrame++ {
-			if gRpcTestDataRowMessage.RowHash == dataFrameHavingLeafNodeChildHashes.Elem(rowCounterInDataFrame, rowHashColumn).String() {
-				leafNodeHash = dataFrameHavingLeafNodeChildHashes.Elem(rowCounterInDataFrame, leafNodeHashColumn).String()
-				break
+			for rowCounterInDataFrame := 0; rowCounterInDataFrame < numberOfRowsInDataFrame; rowCounterInDataFrame++ {
+				if gRpcTestDataRowMessage.RowHash == dataFrameHavingLeafNodeChildHashes.Elem(rowCounterInDataFrame, rowHashColumn).String() {
+					leafNodeHash = dataFrameHavingLeafNodeChildHashes.Elem(rowCounterInDataFrame, leafNodeHashColumn).String()
+					break
+				}
 			}
-		}
+		*/
 
 		// Loop over columns in 'testDataColumnsItem'
 		testDataColumnsItem := gRpcTestDataRowMessage.TestDataItems
@@ -482,7 +482,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) conver
 				testdataValueAsString: columnValue.TestDataItemValueAsString,
 				leafNodeName:          gRpcTestDataRowMessage.LeafNodeName,
 				leafNodePath:          gRpcTestDataRowMessage.LeafNodePath,
-				leafNodeHash:          leafNodeHash,
+				leafNodeHash:          "", //leafNodeHash,
 				valueColumnOrder:      testDataColumn,
 				valueRowOrder:         gRpcTestDataRow,
 				updatedTimeStamp:      "",
@@ -494,4 +494,85 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) conver
 	}
 
 	return memDBtestDataRowItems
+}
+
+// Generate relations between LeafNodeName, LeafNodeHash and TestDataRowHash
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) generateRowHashToMerkleChildNodeHashMap(testDataRowItems []cloudDBTestDataRowItemCurrentStruct, merkleTreeRowItems []cloudDBTestDataMerkleTreeStruct) (rowHashToLeafNodeHashMap map[string]string) {
+
+	rowHashToLeafNodeHashMap = make(map[string]string)       //map[<rowHash>]<leafNodeHash>
+	leafNodeNameToLeafNodeHashMap := make(map[string]string) //map[<leafNodeName>]<leafNodHash>
+
+	// Loop over MerkleTreeItems and create relation between LeafNodeName -> LeafNodeHash
+	for _, merkleTreeRowItem := range merkleTreeRowItems {
+
+		_, leafNodeNameExist := rowHashToLeafNodeHashMap[merkleTreeRowItem.nodeName]
+		if leafNodeNameExist == true {
+			// LeafNodeName should never exist twice
+			fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+				"id":                         "d63cf823-8d8d-4053-b0e2-fbc2be89d867",
+				"merkleTreeRowItem.nodeName": merkleTreeRowItem.nodeName,
+			}).Fatal("LeafNodeName should never exist twice")
+		}
+
+		// Add relation to map
+		leafNodeNameToLeafNodeHashMap[merkleTreeRowItem.nodeName] = merkleTreeRowItem.nodeChildHash
+
+	}
+
+	// Loop all TestDataItems and create relation RowHash -> LeafNodeHash
+	for _, testDataRowItem := range testDataRowItems {
+
+		// Only need to process for first column because all columns, in same row, have same rowHash and LeafNode
+		if testDataRowItem.valueColumnOrder == 0 {
+
+			// Check if RowHah already exist in Map
+			_, rowHashExist := rowHashToLeafNodeHashMap[testDataRowItem.rowHash]
+			if rowHashExist == false {
+
+				// No RowHash exist so add RowHash and LeafNodeHash that will be found in 'leafNodeNameToLeafNodeHashMap'
+				// First verify that value exist in 'leafNodeNameToLeafNodeHashMap'
+				_, leafNodeNameExist := leafNodeNameToLeafNodeHashMap[testDataRowItem.leafNodeName]
+				if leafNodeNameExist == true {
+					rowHashToLeafNodeHashMap[testDataRowItem.rowHash] = leafNodeNameToLeafNodeHashMap[testDataRowItem.leafNodeName]
+
+				} else {
+
+					// We should never come here because it should exist
+					fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+						"id":                           "598f7326-37cc-4bdb-80dc-997235219d83",
+						"testDataRowItem.leafNodeName": testDataRowItem.leafNodeName,
+					}).Fatal("LeafNodeName is missing in 'leafNodeNameToLeafNodeHashMap' which never should happen")
+				}
+			}
+		}
+	}
+
+	return rowHashToLeafNodeHashMap
+}
+
+// Add MerkleLeafNodeHashes to TestDataRowItems
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) addMerkleLeafNodeHashesToTestDataRowItems(testDataRowItems []cloudDBTestDataRowItemCurrentStruct, rowHashToLeafNodeHashMap map[string]string) []cloudDBTestDataRowItemCurrentStruct {
+
+	// Loop all TestDataRowItems and add the ChildNodeHash to it
+	for testDataRowItemPosition, testDataRowItem := range testDataRowItems {
+
+		// Verify that value exist
+		leafNodeHash, existsVRowHash := rowHashToLeafNodeHashMap[testDataRowItem.rowHash]
+
+		if existsVRowHash == true {
+			// It didn't exist which should not happen
+			fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+				"id":                       "570afc75-196a-45b9-996d-d68646611b95",
+				"rowHashToLeafNodeHashMap": rowHashToLeafNodeHashMap,
+				"testDataRowItem.rowHash":  testDataRowItem.rowHash,
+			}).Fatal("RowHash is missing in MAP which is not expected")
+
+		} else {
+
+			// RowHash existed so add the LeadNodeHash to the TestDataRowItem
+			testDataRowItems[testDataRowItemPosition].leafNodeHash = leafNodeHash
+		}
+	}
+
+	return testDataRowItems
 }
