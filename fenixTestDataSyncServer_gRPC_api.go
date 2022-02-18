@@ -527,12 +527,29 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataRows(_ context.Context, te
 		}).Debug("The TestDataRows were saved for Client: " + callingClientUuid)
 
 		// Move Client-data to Server-data in MemoryDB for client
-		_ = fenixTestDataSyncServerObject.moveCurrentTestDataAndMerkleTreeFromClientToServer(callingClientUuid)
+		success := fenixTestDataSyncServerObject.moveCurrentTestDataAndMerkleTreeFromClientToServer(callingClientUuid)
 
-		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
-			"id": "c7728251-ec36-4cca-a529-1f8db67acc96",
-		}).Debug("The TestDataRows were copied from Client to Server for Client: " + callingClientUuid)
+		if success == true {
+			fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+				"id": "c7728251-ec36-4cca-a529-1f8db67acc96",
+			}).Debug("The TestDataRows were copied from Client to Server for Client: " + callingClientUuid)
+		} else {
+			// Set Error codes to return message
+			var errorCodes []fenixTestDataSyncServerGrpcApi.ErrorCodesEnum
+			var errorCode fenixTestDataSyncServerGrpcApi.ErrorCodesEnum
 
+			errorCode = fenixTestDataSyncServerGrpcApi.ErrorCodesEnum_ERROR_TEMPORARY_STOP_IN_PROCESSING
+			errorCodes = append(errorCodes, errorCode)
+
+			// Create Return message
+			returnMessage = &fenixTestDataSyncServerGrpcApi.AckNackResponse{
+				AckNack:    false,
+				Comments:   "Something went wrong",
+				ErrorCodes: nil,
+			}
+
+			return returnMessage, nil
+		}
 	}
 
 	return &fenixTestDataSyncServerGrpcApi.AckNackResponse{AckNack: true, Comments: ""}, nil

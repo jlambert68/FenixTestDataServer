@@ -843,8 +843,11 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) moveCu
 	tempdbData.serverData.testDataRowItems = tempdbData.clientData.testDataRowItems
 
 	// Save TestData in CloudDB
-	fenixTestDataSyncServerObject.saveMerkleHashMerkleTreeAndTestDataRowsToCloudDB(testDataClientGuid)
+	err := fenixTestDataSyncServerObject.saveMerkleHashMerkleTreeAndTestDataRowsToCloudDB(testDataClientGuid)
 
+	if err != nil {
+		return false
+	}
 	return true
 }
 
