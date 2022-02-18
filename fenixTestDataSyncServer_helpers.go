@@ -557,14 +557,13 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) addMer
 	for testDataRowItemPosition, testDataRowItem := range testDataRowItems {
 
 		// Verify that value exist
-		leafNodeHash, existsVRowHash := rowHashToLeafNodeHashMap[testDataRowItem.rowHash]
+		leafNodeHash, existsRowHash := rowHashToLeafNodeHashMap[testDataRowItem.rowHash]
 
-		if existsVRowHash == true {
+		if existsRowHash == false {
 			// It didn't exist which should not happen
 			fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
-				"id":                       "570afc75-196a-45b9-996d-d68646611b95",
-				"rowHashToLeafNodeHashMap": rowHashToLeafNodeHashMap,
-				"testDataRowItem.rowHash":  testDataRowItem.rowHash,
+				"id":                      "570afc75-196a-45b9-996d-d68646611b95",
+				"testDataRowItem.rowHash": testDataRowItem.rowHash,
 			}).Fatal("RowHash is missing in MAP which is not expected")
 
 		} else {

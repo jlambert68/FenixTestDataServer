@@ -226,6 +226,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveTe
 		return err
 	}
 
+	// Log response from CloudDB
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"Id":                       "539d7f8e-4a69-4fe1-b4dd-5d5148d1a8b6",
 		"comandTag.Insert()":       comandTag.Insert(),
@@ -334,7 +335,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveAl
 
 }
 
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) testSQL(currentClientUuid string) (err error) {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveMerkleHashMerkleTreeAndTestDataRowsToCloudDB(currentClientUuid string) (err error) {
 
 	// Begin SQL Transaction
 	txn, err := fenixSyncShared.DbPool.Begin(context.Background())
@@ -357,11 +358,17 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) testSQ
 		fenixTestDataSyncServerObject.stateProcessIncomingAndOutgoingMessage = true
 
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
-			"id": "673271e5-5b12-43fa-a576-057b492419e6",
-		}).Error("Stop processing messages")
+			"id": "348629ad-c358-4043-81ca-ff5f73b579c5",
+		}).Error("Stop process in and outgoing messages")
 
 		// Rollback any SQL transactions
 		txn.Rollback(context.Background())
+
+		// Clear memoryDB for Server
+		_ = fenixTestDataSyncServerObject.clearCurrentMerkleDataAndTestDataRowsForServer(currentClientUuid)
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"id": "1557cc22-c291-45f7-b85b-008b38e60b0b",
+		}).Error("Clearing memoryDB for Server, regarding MerkleHash, MerkleTree and TestDataRows")
 
 		return err
 

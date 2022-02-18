@@ -843,7 +843,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) moveCu
 	tempdbData.serverData.testDataRowItems = tempdbData.clientData.testDataRowItems
 
 	// Save TestData in CloudDB
-	fenixTestDataSyncServerObject.testSQL(testDataClientGuid)
+	fenixTestDataSyncServerObject.saveMerkleHashMerkleTreeAndTestDataRowsToCloudDB(testDataClientGuid)
 
 	return true
 }
@@ -1001,6 +1001,133 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) remove
 
 	// Save the leafNodeHashes to be removed
 	clientData.merkleTreeNodesChildHashesThatNoLongerExist = leafNodeHashesToRemove
+
+	return true
+}
+
+// Clear current Server MerkleHash, MerkleTree and TestData
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) clearCurrentMerkleDataAndTestDataRowsForServer(testDataClientGuid string) bool {
+
+	// Clear current Server MerkleHash
+	_ = fenixTestDataSyncServerObject.clearCurrentMerkleHashForServer(testDataClientGuid)
+
+	// Clear current Server MerkleTree
+	_ = fenixTestDataSyncServerObject.clearCurrentMerkleTreeForServer(testDataClientGuid)
+
+	// Clear current Server MerkleFilterPath
+	_ = fenixTestDataSyncServerObject.clearCurrentMerkleFilterPathForServer(testDataClientGuid)
+
+	// Clear current Server MerkleFilterPathHash
+	_ = fenixTestDataSyncServerObject.clearCurrentMerkleFilterPathHashForServer(testDataClientGuid)
+
+	// Clear current Server TestDataRowItems
+	_ = fenixTestDataSyncServerObject.clearCurrentTestDataRowItemsForServer(testDataClientGuid)
+
+	return true
+
+}
+
+// Clear current Server MerkleHash
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) clearCurrentMerkleHashForServer(testDataClientGuid string) bool {
+
+	// Get pointer to data for Client_UUID
+	tempdbData, valueExits := dbDataMap[memDBClientUuidType(testDataClientGuid)]
+
+	// Validate that reference exists
+	if valueExits == true {
+		// Clear values
+		tempdbData.serverData.merkleHash = ""
+
+	} else {
+		// This should not happen
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"Id": "f6b19b42-fdfb-4adb-ab3f-735cc51c28c4",
+		}).Fatalln("Reference to Client in memoryDB should exist for Client: ", testDataClientGuid)
+	}
+
+	return true
+}
+
+// Clear current Server MerkleTree
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) clearCurrentMerkleTreeForServer(testDataClientGuid string) bool {
+
+	// Get pointer to data for Client_UUID
+	tempdbData, valueExits := dbDataMap[memDBClientUuidType(testDataClientGuid)]
+
+	// Validate that reference exists
+	if valueExits == true {
+		// Clear values
+		tempdbData.serverData.merkleTreeNodes = []cloudDBTestDataMerkleTreeStruct{}
+
+	} else {
+		// This should not happen
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"Id": "a350f7bf-b537-4494-aeec-739634b200ca",
+		}).Fatalln("Reference to Client in memoryDB should exist for Client: ", testDataClientGuid)
+	}
+
+	return true
+}
+
+// Clear current Server MerkleFilterPath
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) clearCurrentMerkleFilterPathForServer(testDataClientGuid string) bool {
+
+	// Get pointer to data for Client_UUID
+	tempdbData, valueExits := dbDataMap[memDBClientUuidType(testDataClientGuid)]
+
+	// Validate that reference exists
+	if valueExits == true {
+		// Clear values
+		tempdbData.serverData.MerkleFilterPath = ""
+
+	} else {
+		// This should not happen
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"Id": "18045c11-2f5a-4ccd-ae5d-c837aab859a8",
+		}).Fatalln("Reference to Client in memoryDB should exist for Client: ", testDataClientGuid)
+	}
+
+	return true
+}
+
+// Clear current Server MerkleFilterPathHash
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) clearCurrentMerkleFilterPathHashForServer(testDataClientGuid string) bool {
+
+	// Get pointer to data for Client_UUID
+	tempdbData, valueExits := dbDataMap[memDBClientUuidType(testDataClientGuid)]
+
+	// Validate that reference exists
+	if valueExits == true {
+		// Clear values
+		tempdbData.serverData.MerkleFilterPathHash = ""
+
+	} else {
+		// This should not happen
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"Id": "07c70742-a965-4890-824a-f28576fea5d9",
+		}).Fatalln("Reference to Client in memoryDB should exist for Client: ", testDataClientGuid)
+	}
+
+	return true
+}
+
+// Clear current Server TestDataRowItems
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) clearCurrentTestDataRowItemsForServer(testDataClientGuid string) bool {
+
+	// Get pointer to data for Client_UUID
+	tempdbData, valueExits := dbDataMap[memDBClientUuidType(testDataClientGuid)]
+
+	// Validate that reference exists
+	if valueExits == true {
+		// Clear values
+		tempdbData.serverData.testDataRowItems = []cloudDBTestDataRowItemCurrentStruct{}
+
+	} else {
+		// This should not happen
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"Id": "4c23449d-53b0-4f38-a31e-555da1487252",
+		}).Fatalln("Reference to Client in memoryDB should exist for Client: ", testDataClientGuid)
+	}
 
 	return true
 }

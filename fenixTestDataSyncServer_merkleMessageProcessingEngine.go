@@ -392,8 +392,17 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) conver
 			}).Fatal("Datapoint should only appears once")
 		}
 
-		// Add data to matirix
-		dataMatrix[cloudDBTestDataRowItem.valueRowOrder][cloudDBTestDataRowItem.valueColumnOrder] = cloudDBTestDataRowItem.testdataValueAsString
+		// Add data to matrix
+		// If 'row-map" already doesn't exist then initiate it
+		_, rowExists := dataMatrix[cloudDBTestDataRowItem.valueRowOrder]
+		if rowExists == false {
+			// Initiate row in map and add column value
+			dataMatrix[cloudDBTestDataRowItem.valueRowOrder] = map[int]string{}
+			dataMatrix[cloudDBTestDataRowItem.valueRowOrder][cloudDBTestDataRowItem.valueColumnOrder] = cloudDBTestDataRowItem.testdataValueAsString
+		} else {
+			// Row exists then just add column value
+			dataMatrix[cloudDBTestDataRowItem.valueRowOrder][cloudDBTestDataRowItem.valueColumnOrder] = cloudDBTestDataRowItem.testdataValueAsString
+		}
 
 		// Only add RowHash if it not exists
 		_, rowHashExists := testDataRowHashes[cloudDBTestDataRowItem.valueRowOrder]
