@@ -109,6 +109,13 @@ func (s *FenixTestDataGrpcServicesServer) SendMerkleHash(_ context.Context, merk
 		}).Debug("There is different in MerkleHash or/and MerkleFilterHash, so ask client for MerkleTree for Client: " + callingClientUuid)
 
 		defer fenixTestDataSyncServerObject.AskClientToSendMerkleTree(callingClientUuid)
+	} else {
+
+		// MerkleHash and MerkleFilterHash is already  in memDB, so just return that everthing is 'OK'
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"id": "6e97bea0-ccb2-4f8c-964c-c3ba4fe963ff",
+		}).Debug("MerkleHash and MerkleFilterHash is already  in memDB, so just return that everything is 'OK' for Client: " + callingClientUuid)
+
 	}
 
 	return &fenixTestDataSyncServerGrpcApi.AckNackResponse{AckNack: true, Comments: ""}, nil

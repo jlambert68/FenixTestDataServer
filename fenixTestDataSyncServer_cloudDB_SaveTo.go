@@ -160,9 +160,16 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveTe
 		}).Debug("Exiting: saveTestDataMerkleHashDataFromMemDBToCloudDB()")
 	}()
 
+	// Get a common dateTimeStamp to use
+	currentDataTimeStamp := fenixSyncShared.GenerateDatetimeTimeStampForDB()
+
 	var dataRowToBeInsertedMultiType []interface{}
 	var dataRowsToBeInsertedMultiType [][]interface{}
 	sqlToExecute := ""
+
+	// Create Delete Statement for removing current TestDataRow-data for Client
+	sqlToExecute = sqlToExecute + "DELETE FROM public.testdata_row_items_current "
+	sqlToExecute = sqlToExecute + "WHERE client_uuid = '" + currentUserUuid + "'; "
 
 	// Create Delete Statement for removing current MerkleTree-data for Client
 	sqlToExecute = sqlToExecute + "DELETE FROM public.testdata_merkletrees "
@@ -172,29 +179,23 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveTe
 	sqlToExecute = sqlToExecute + "DELETE FROM public.testdata_merklehashes "
 	sqlToExecute = sqlToExecute + "WHERE client_uuid = '" + currentUserUuid + "'; "
 
+	// Create Insert Statement for current MerkleHash-data for Client
+
 	// Data to be inserted in the DB-table
-	/*
-		var dataToBeInserted = [][]string{
-			{currentUserUuid,
-				fenixSyncShared.GenerateDatetimeTimeStampForDB(),
-				fenixTestDataSyncServerObject.getCurrentMerkleHashForServer(currentUserUuid),
-				fenixTestDataSyncServerObject.getCurrentMerkleFilterPathForServer(currentUserUuid),
-				fenixTestDataSyncServerObject.getCurrentMerkleFilterPathHashForServer(currentUserUuid)},
-		}
-	*/
 	dataRowToBeInsertedMultiType = append(dataRowToBeInsertedMultiType, currentUserUuid)
-	dataRowToBeInsertedMultiType = append(dataRowToBeInsertedMultiType, fenixSyncShared.GenerateDatetimeTimeStampForDB())
+	dataRowToBeInsertedMultiType = append(dataRowToBeInsertedMultiType, currentDataTimeStamp)
 	dataRowToBeInsertedMultiType = append(dataRowToBeInsertedMultiType, fenixTestDataSyncServerObject.getCurrentMerkleHashForServer(currentUserUuid))
 	dataRowToBeInsertedMultiType = append(dataRowToBeInsertedMultiType, fenixTestDataSyncServerObject.getCurrentMerkleFilterPathForServer(currentUserUuid))
 	dataRowToBeInsertedMultiType = append(dataRowToBeInsertedMultiType, fenixTestDataSyncServerObject.getCurrentMerkleFilterPathHashForServer(currentUserUuid))
 
 	dataRowsToBeInsertedMultiType = append(dataRowsToBeInsertedMultiType, dataRowToBeInsertedMultiType)
 
-	// Create Insert Statement for current MerkleHash-data for Client
 	sqlToExecute = sqlToExecute + "INSERT INTO public.testdata_merklehashes "
 	sqlToExecute = sqlToExecute + "(client_uuid, updated_timestamp, merklehash, merkle_filterpath, merkle_filterpath_hash) "
 	sqlToExecute = sqlToExecute + fenixTestDataSyncServerObject.generateSQLInsertValues(dataRowsToBeInsertedMultiType)
 	sqlToExecute = sqlToExecute + ";"
+
+	// Create Insert Statement for current MerkleTree-data for Client
 
 	// Data to be inserted in the DB-table
 	dataRowsToBeInsertedMultiType = nil
@@ -203,42 +204,58 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveTe
 	for _, merkleTreeNode := range merkleTreeNodes {
 
 		dataRowToBeInsertedMultiType = nil
-		/*
-			dataRowToBeInserted = []string{
-				currentUserUuid,
-				strconv.FormatInt(int64(merkleTreeNode.nodeLevel), 10),
-				merkleTreeNode.nodeName,
-				merkleTreeNode.nodePath,
-				merkleTreeNode.nodeHash,
-				merkleTreeNode.nodeChildHash,
-				fenixSyncShared.GenerateDatetimeTimeStampForDB(),
-				fenixTestDataSyncServerObject.getCurrentMerkleHashForServer(currentUserUuid),
-			}
-		*/
+
+		// Data to be inserted in the DB-table
 		dataRowToBeInsertedMultiType = append(dataRowToBeInsertedMultiType, currentUserUuid)
 		dataRowToBeInsertedMultiType = append(dataRowToBeInsertedMultiType, merkleTreeNode.nodeLevel)
 		dataRowToBeInsertedMultiType = append(dataRowToBeInsertedMultiType, merkleTreeNode.nodeName)
 		dataRowToBeInsertedMultiType = append(dataRowToBeInsertedMultiType, merkleTreeNode.nodePath)
 		dataRowToBeInsertedMultiType = append(dataRowToBeInsertedMultiType, merkleTreeNode.nodeHash)
 		dataRowToBeInsertedMultiType = append(dataRowToBeInsertedMultiType, merkleTreeNode.nodeChildHash)
-		dataRowToBeInsertedMultiType = append(dataRowToBeInsertedMultiType, fenixSyncShared.GenerateDatetimeTimeStampForDB())
+		dataRowToBeInsertedMultiType = append(dataRowToBeInsertedMultiType, currentDataTimeStamp)
 		dataRowToBeInsertedMultiType = append(dataRowToBeInsertedMultiType, fenixTestDataSyncServerObject.getCurrentMerkleHashForServer(currentUserUuid))
 
 		dataRowsToBeInsertedMultiType = append(dataRowsToBeInsertedMultiType, dataRowToBeInsertedMultiType)
 
 	}
 
-	// Create Insert Statement for current MerkleTree-data for Client
 	sqlToExecute = sqlToExecute + "INSERT INTO public.testdata_merkletrees "
 	sqlToExecute = sqlToExecute + "(client_uuid, node_level, node_name, node_filter_path, node_hash, node_child_hash, updated_timestamp, \"merkleHash\") "
 	sqlToExecute = sqlToExecute + fenixTestDataSyncServerObject.generateSQLInsertValues(dataRowsToBeInsertedMultiType)
 	sqlToExecute = sqlToExecute + ";"
 
-	// Create Delete Statement for removing current TestData for Client
+	// Create Insert Statement for current TestDataRows-data for Client
 
-	// Create Insert Statement for current MerkleTree-data for Client
-	//TODO Fix order of deletion and order of Insert
-	// Query DB
+	// Data to be inserted in the DB-table
+	dataRowsToBeInsertedMultiType = nil
+	testDataRowItems := dbDataMap[memDBClientUuidType(currentUserUuid)].serverData.testDataRowItems
+
+	for _, testDataRowItem := range testDataRowItems {
+
+		dataRowToBeInsertedMultiType = nil
+
+		dataRowToBeInsertedMultiType = append(dataRowToBeInsertedMultiType, currentUserUuid)
+		dataRowToBeInsertedMultiType = append(dataRowToBeInsertedMultiType, testDataRowItem.rowHash)
+		dataRowToBeInsertedMultiType = append(dataRowToBeInsertedMultiType, testDataRowItem.testdataValueAsString)
+		dataRowToBeInsertedMultiType = append(dataRowToBeInsertedMultiType, currentDataTimeStamp)
+		dataRowToBeInsertedMultiType = append(dataRowToBeInsertedMultiType, testDataRowItem.leafNodeName)
+		dataRowToBeInsertedMultiType = append(dataRowToBeInsertedMultiType, testDataRowItem.leafNodePath)
+		dataRowToBeInsertedMultiType = append(dataRowToBeInsertedMultiType, testDataRowItem.leafNodeHash)
+		dataRowToBeInsertedMultiType = append(dataRowToBeInsertedMultiType, testDataRowItem.valueColumnOrder)
+		dataRowToBeInsertedMultiType = append(dataRowToBeInsertedMultiType, testDataRowItem.valueRowOrder)
+
+		dataRowsToBeInsertedMultiType = append(dataRowsToBeInsertedMultiType, dataRowToBeInsertedMultiType)
+
+	}
+
+	sqlToExecute = sqlToExecute + "INSERT INTO public.testdata_row_items_current "
+	sqlToExecute = sqlToExecute + "(client_uuid, row_hash, testdata_value_as_string , updated_timestamp, "
+	sqlToExecute = sqlToExecute + "leaf_node_name, leaf_node_path, leaf_node_hash, value_column_order, "
+	sqlToExecute = sqlToExecute + "value_row_order) "
+	sqlToExecute = sqlToExecute + fenixTestDataSyncServerObject.generateSQLInsertValues(dataRowsToBeInsertedMultiType)
+	sqlToExecute = sqlToExecute + ";"
+
+	// Execute Query CloudDB
 	comandTag, err := dbTransaction.Exec(context.Background(), sqlToExecute)
 
 	if err != nil {
@@ -413,8 +430,13 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) genera
 	sqlInsertValuesString = ""
 
 	// Loop over both rows and values
-	for _, rowValues := range testdata {
-		sqlInsertValuesString = sqlInsertValuesString + "VALUES("
+	for rowCounter, rowValues := range testdata {
+		if rowCounter == 0 {
+			// Only add 'VALUES' for first row
+			sqlInsertValuesString = sqlInsertValuesString + "VALUES("
+		} else {
+			sqlInsertValuesString = sqlInsertValuesString + ",("
+		}
 
 		for valueCounter, value := range rowValues {
 			switch valueType := value.(type) {
