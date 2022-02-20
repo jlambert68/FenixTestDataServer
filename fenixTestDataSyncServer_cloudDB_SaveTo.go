@@ -199,7 +199,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveTe
 
 	// Data to be inserted in the DB-table
 	dataRowsToBeInsertedMultiType = nil
-	merkleTreeNodes := dbDataMap[memDBClientUuidType(currentUserUuid)].serverData.merkleTreeNodes //merkleTree
+	merkleTreeNodes := dbDataMap[memDBClientUuidType(currentUserUuid)].serverData.merkleTreeNodes
 
 	for _, merkleTreeNode := range merkleTreeNodes {
 

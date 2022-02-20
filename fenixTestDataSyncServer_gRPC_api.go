@@ -113,7 +113,7 @@ func (s *FenixTestDataGrpcServicesServer) SendMerkleHash(_ context.Context, merk
 
 		// MerkleHash and MerkleFilterHash is already  in memDB, so just return that everthing is 'OK'
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
-			"id": "6e97bea0-ccb2-4f8c-964c-c3ba4fe963ff",
+			"id": "e09b2a3f-82f4-43a4-8ebd-c169557714e7",
 		}).Debug("MerkleHash and MerkleFilterHash is already  in memDB, so just return that everything is 'OK' for Client: " + callingClientUuid)
 
 	}
@@ -224,6 +224,13 @@ func (s *FenixTestDataGrpcServicesServer) SendMerkleTree(_ context.Context, merk
 
 			defer fenixTestDataSyncServerObject.AskClientToSendTestDataRows(callingClientUuid)
 		}
+	} else {
+
+		// MerkleTree is the same, 'nothing to see'
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"id": "94273c83-cfe4-415d-96bb-2890ea917116",
+		}).Debug("MerkleHash from MerkleTree is the same as in memroyDB for Client: " + callingClientUuid)
+
 	}
 
 	return &fenixTestDataSyncServerGrpcApi.AckNackResponse{AckNack: true, Comments: ""}, nil
@@ -473,7 +480,7 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataRows(_ context.Context, te
 	rowHashToLeafNodeHashMap := fenixTestDataSyncServerObject.generateRowHashToMerkleChildNodeHashMap(
 		concatenatedTestDataRows,
 		fenixTestDataSyncServerObject.getCurrentMerkleTreeNodesForClient(callingClientUuid))
-
+	//TODO debugga hit och se varför leaf node hash saknas i testdata rows
 	// Add MerkleLeafNodeHashes to TestDataRowItems
 	testDataRowsIncludingLeafNodeHashes := fenixTestDataSyncServerObject.addMerkleLeafNodeHashesToTestDataRowItems(
 		concatenatedTestDataRows,
@@ -522,12 +529,12 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataRows(_ context.Context, te
 	} else {
 
 		// Convert gRPC-RowsMessage into cloudDBTestDataRowItems-message
-		cloudDBTestDataRowItemMessage := fenixTestDataSyncServerObject.convertgRpcTestDataRowsMessageToCloudDBTestDataRowItems(
-			testdataRowsMessages)
+		//cloudDBTestDataRowItemMessage := fenixTestDataSyncServerObject.convertgRpcTestDataRowsMessageToCloudDBTestDataRowItems(
+		//	testdataRowsMessages)
 
 		// Save TestDataRows to MemoryDB
 		_ = fenixTestDataSyncServerObject.saveCurrentTestDataRowItemsForClient(
-			callingClientUuid, cloudDBTestDataRowItemMessage)
+			callingClientUuid, testDataRowsIncludingLeafNodeHashes) //cloudDBTestDataRowItemMessage)
 
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 			"id": "9aa8379e-5d5c-4eb4-9b18-d52da4291795",
@@ -558,6 +565,10 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataRows(_ context.Context, te
 			return returnMessage, nil
 		}
 	}
+
+	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"id": "78be9c02-5862-4dbb-bf3b-24a8d40aeb1d",
+	}).Debug("The TestDataRows are the same as the Server already have for Client: " + callingClientUuid)
 
 	return &fenixTestDataSyncServerGrpcApi.AckNackResponse{AckNack: true, Comments: ""}, nil
 }
