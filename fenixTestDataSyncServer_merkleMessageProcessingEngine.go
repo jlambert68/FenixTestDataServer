@@ -310,7 +310,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) concat
 		concatenatedTestdata = append(testDataRowItemsForClientInMemDB, testdataToBeAdded...)
 
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
-			"id": "c8385ebf-53e1-4449-8171-f0c5bc2bdd68",
+			"id": "85138c62-28a8-4669-a701-590c29fb4de1",
 		}).Debug("Concatenated number of rows are '"+strconv.Itoa(len(concatenatedTestdata))+"' for Client: ", testDataClientGuid)
 
 	}
@@ -386,7 +386,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) conver
 		_, dataPointExists := dataMatrix[cloudDBTestDataRowItem.valueRowOrder][cloudDBTestDataRowItem.valueColumnOrder]
 		if dataPointExists == true {
 			fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
-				"Id":                                   "a2043be7-657a-4c94-a1a0-374243e82571",
+				"Id":                                   "efa873d1-b023-48db-b948-67fe00e103d7",
 				"cloudDBTestDataRowItem.valueRowOrder": cloudDBTestDataRowItem.valueRowOrder,
 				"cloudDBTestDataRowItem.valueColumnOrder": cloudDBTestDataRowItem.valueRowOrder,
 			}).Fatal("Datapoint should only appears once")

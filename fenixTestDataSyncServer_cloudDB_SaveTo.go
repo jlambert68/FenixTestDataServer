@@ -225,7 +225,6 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveTe
 	sqlToExecute = sqlToExecute + ";"
 
 	// Create Insert Statement for current TestDataRows-data for Client
-
 	// Data to be inserted in the DB-table
 	dataRowsToBeInsertedMultiType = nil
 	testDataRowItems := dbDataMap[memDBClientUuidType(currentUserUuid)].serverData.testDataRowItems
@@ -251,6 +250,35 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveTe
 	sqlToExecute = sqlToExecute + "INSERT INTO public.testdata_row_items_current "
 	sqlToExecute = sqlToExecute + "(client_uuid, row_hash, testdata_value_as_string , updated_timestamp, "
 	sqlToExecute = sqlToExecute + "leaf_node_name, leaf_node_path, leaf_node_hash, value_column_order, "
+	sqlToExecute = sqlToExecute + "value_row_order) "
+	sqlToExecute = sqlToExecute + fenixTestDataSyncServerObject.generateSQLInsertValues(dataRowsToBeInsertedMultiType)
+	sqlToExecute = sqlToExecute + ";"
+
+	// Create Insert Statement for History TestDataRows-data for Client
+	// Data to be inserted in the DB-table
+	dataRowsToBeInsertedMultiType = nil
+	testDataRowItems = dbDataMap[memDBClientUuidType(currentUserUuid)].serverData.testDataRowItems
+
+	for _, testDataRowItem := range testDataRowItems {
+
+		dataRowToBeInsertedMultiType = nil
+
+		dataRowToBeInsertedMultiType = append(dataRowToBeInsertedMultiType, currentUserUuid)
+		dataRowToBeInsertedMultiType = append(dataRowToBeInsertedMultiType, testDataRowItem.rowHash)
+		dataRowToBeInsertedMultiType = append(dataRowToBeInsertedMultiType, testDataRowItem.testdataValueAsString)
+		dataRowToBeInsertedMultiType = append(dataRowToBeInsertedMultiType, currentDataTimeStamp)
+		dataRowToBeInsertedMultiType = append(dataRowToBeInsertedMultiType, testDataRowItem.leafNodeName)
+		dataRowToBeInsertedMultiType = append(dataRowToBeInsertedMultiType, testDataRowItem.leafNodePath)
+		dataRowToBeInsertedMultiType = append(dataRowToBeInsertedMultiType, testDataRowItem.valueColumnOrder)
+		dataRowToBeInsertedMultiType = append(dataRowToBeInsertedMultiType, testDataRowItem.valueRowOrder)
+
+		dataRowsToBeInsertedMultiType = append(dataRowsToBeInsertedMultiType, dataRowToBeInsertedMultiType)
+
+	}
+
+	sqlToExecute = sqlToExecute + "INSERT INTO public.testdata_row_items_history "
+	sqlToExecute = sqlToExecute + "(client_uuid, row_hash, testdata_value_as_string , updated_timestamp, "
+	sqlToExecute = sqlToExecute + "leaf_node_name, leaf_node_path, value_column_order, "
 	sqlToExecute = sqlToExecute + "value_row_order) "
 	sqlToExecute = sqlToExecute + fenixTestDataSyncServerObject.generateSQLInsertValues(dataRowsToBeInsertedMultiType)
 	sqlToExecute = sqlToExecute + ";"

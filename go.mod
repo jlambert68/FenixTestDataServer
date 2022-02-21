@@ -5,15 +5,15 @@ go 1.17
 require (
 	github.com/go-gota/gota v0.12.0
 	github.com/jackc/pgx/v4 v4.15.0
-	github.com/jlambert68/FenixGrpcApi v0.0.0-20220214121113-c8f0464bf3ed
+	github.com/jlambert68/FenixGrpcApi v0.0.0-20220221141403-7d1a59be0d60
 	github.com/jlambert68/FenixSyncShared v0.0.0-20220220093523-abd7f39d42b4
 	github.com/sirupsen/logrus v1.8.1
 	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd
-	google.golang.org/grpc v1.43.0
+	google.golang.org/grpc v1.44.0
 )
 
 require (
-	github.com/golang/protobuf v1.4.3 // indirect
+	github.com/golang/protobuf v1.5.0 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgconn v1.11.0 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
@@ -27,5 +27,5 @@ require (
 	golang.org/x/text v0.3.7 // indirect
 	gonum.org/v1/gonum v0.9.1 // indirect
 	google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013 // indirect
-	google.golang.org/protobuf v1.25.0 // indirect
+	google.golang.org/protobuf v1.27.1 // indirect
 )

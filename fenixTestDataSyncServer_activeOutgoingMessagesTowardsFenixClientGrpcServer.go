@@ -272,14 +272,14 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) AskCli
 	serverCopyMerkleTree := fenixTestDataSyncServerObject.getCurrentMerkleTreeNodesForServer(testDataClientGuid)
 	clientsNewMerkleTree := fenixTestDataSyncServerObject.getCurrentMerkleTreeNodesForClient(testDataClientGuid)
 
-	// Extract all paths to retrieve from client
-	merklePathsToRetreive := missedPathsToRetrieveFromClient(serverCopyMerkleTree, clientsNewMerkleTree)
+	// Extract all NodeNames to request from client
+	merkleNodeNamesToRequest := missedPathsToRetrieveFromClient(serverCopyMerkleTree, clientsNewMerkleTree)
 
 	// Set up connection to Client-server
 	fenixTestDataSyncServerObject.SetConnectionToFenixClientTestDataSyncServer()
 
 	merklePathsMessage := &fenixClientTestDataSyncServerGrpcApi.MerklePathsMessage{
-		MerklePath:                   merklePathsToRetreive,
+		MerklePath:                   merkleNodeNamesToRequest,
 		ProtoFileVersionUsedByCaller: fenixClientTestDataSyncServerGrpcApi.CurrentFenixClientTestDataProtoFileVersionEnum(fenixTestDataSyncServerObject.getHighestClientTestDataProtoFileVersion()),
 	}
 

@@ -403,13 +403,13 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCur
 					"testDataClientGuid": testDataClientGuid,
 				}).Debug("No Saved MerkleHash in CloudDB for specified Client")
 
+				currentMerkleHashForServer = ""
+
 			// MerkleHash has previously been saved and loaded from CloudDB
 			case 1:
 
 				// Save MerkleHash in memDB
 				_ = fenixTestDataSyncServerObject.saveCurrentMerkleHashForServer(testDataClientGuid, tempMemDBAllTestDataMerkleHashes[0].merkleHash)
-
-				currentMerkleHashForServer = "#VALUE IS MISSING#"
 
 				// Save MerkleFilterPathHash in memDB
 				_ = fenixTestDataSyncServerObject.saveCurrentMerkleFilterPathHashForServer(testDataClientGuid, tempMemDBAllTestDataMerkleHashes[0].merkleFilterPathHash)

@@ -367,7 +367,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) conver
 }
 
 // Extract the MerkleFilterPaths to be sent to client, to be able to receive the missing, or changed, TestDataRows
-func missedPathsToRetrieveFromClient(serverCopyMerkleTree []cloudDBTestDataMerkleTreeStruct, newClientMerkleTree []cloudDBTestDataMerkleTreeStruct) (merklePathsToRetrieve []string) {
+func missedPathsToRetrieveFromClient(serverCopyMerkleTree []cloudDBTestDataMerkleTreeStruct, newClientMerkleTree []cloudDBTestDataMerkleTreeStruct) (merkleNodeNamesToRequest []string) {
 
 	var highestLeafNodeLevel = 0
 	var foundChildNodeHashInServer bool
@@ -403,12 +403,12 @@ func missedPathsToRetrieveFromClient(serverCopyMerkleTree []cloudDBTestDataMerkl
 
 	}
 
-	// Loop over 'leafNodesToRequest' to generate array with all MerkleFilterPath to be able to retrieve correct TestData-rows from Client
+	// Loop over 'leafNodesToRequest' to generate array with all MerkleTreeNodeNames to be able to retrieve correct TestData-rows from Client
 	for _, leafNodeToRequest := range leafNodesToRequest {
-		merklePathsToRetrieve = append(merklePathsToRetrieve, leafNodeToRequest.nodePath)
+		merkleNodeNamesToRequest = append(merkleNodeNamesToRequest, leafNodeToRequest.nodeName)
 	}
 
-	return merklePathsToRetrieve
+	return merkleNodeNamesToRequest
 
 }
 

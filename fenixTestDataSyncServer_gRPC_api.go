@@ -5,6 +5,7 @@ import (
 	fenixSyncShared "github.com/jlambert68/FenixSyncShared"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
+	"io"
 )
 
 // *********************************************************************
@@ -80,14 +81,20 @@ func (s *FenixTestDataGrpcServicesServer) SendMerkleHash(_ context.Context, merk
 	currentServerMerkleHash := fenixTestDataSyncServerObject.getCurrentMerkleHashForServer(callingClientUuid)
 	currentServerMerkleFilterHash := fenixTestDataSyncServerObject.getCurrentMerkleFilterPathHashForServer(callingClientUuid)
 
-	//  if different in MerkleHash or MerkleFilterHash, then ask client for MerkleTree
+	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"id":                           "88add85d-f15e-4c89-97b3-30f291c45ed7",
+		"currentServerMerkleHash":      currentServerMerkleHash,
+		"merkleHashMessage.MerkleHash": merkleHashMessage.MerkleHash,
+	}).Debug("Comparing incoming MerkleHash with stored MerkleHash for Client: " + callingClientUuid)
+
+	//  if different in MerkleHash or MerkleFilterHFor LeafNodes the childHash will be calculated by using SHA256(NodeHash)ash, then ask client for MerkleTree
 	if currentServerMerkleHash != merkleHashMessage.MerkleHash || currentServerMerkleFilterHash != merkleHashMessage.MerkleFilterHash {
 
 		// Save the MerkleHash
 		_ = fenixTestDataSyncServerObject.saveCurrentMerkleHashForClient(callingClientUuid, merkleHashMessage.MerkleHash)
 
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
-			"id": "d9c676ca-11a1-4007-8182-2f54834013a5",
+			"id": "2987b74c-844c-4f70-8f9e-6ce0886857ab",
 		}).Debug("Saved the MerkleHash for Client: " + callingClientUuid)
 
 		// Save the MerklePath
@@ -409,7 +416,7 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataHeaders(_ context.Context,
 
 // SendTestDataRows :
 // Fenix client can send TestData rows to Fenix Testdata sync server with this service
-func (s *FenixTestDataGrpcServicesServer) SendTestDataRows(_ context.Context, testdataRowsMessages *fenixTestDataSyncServerGrpcApi.TestdataRowsMessages) (*fenixTestDataSyncServerGrpcApi.AckNackResponse, error) {
+func (s *FenixTestDataGrpcServicesServer) SendTestDataRows(stream fenixTestDataSyncServerGrpcApi.FenixTestDataGrpcServices_SendTestDataRowsServer) error { //(_ context.Context, testdataRowsMessages *fenixTestDataSyncServerGrpcApi.TestdataRowsMessages) (*fenixTestDataSyncServerGrpcApi.AckNackResponse, error) {
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"id": "2b1c8752-eb84-4c15-b8a7-22e2464e5168",
@@ -419,30 +426,51 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataRows(_ context.Context, te
 		"id": "755e8b4f-f184-4277-ad41-e041714c2ca8",
 	}).Debug("Outgoing gRPC 'SendTestDataRows'")
 
+	// Container to store all messages before process them
+	var testdataRowsMessagesStreamContainer []*fenixTestDataSyncServerGrpcApi.TestdataRowsMessages
+	var testdataRowsMessages *fenixTestDataSyncServerGrpcApi.TestdataRowsMessages
+
+	var err error
+	var returnMessage *fenixTestDataSyncServerGrpcApi.AckNackResponse
+
+	// Retrieve stream from Client
+	for {
+		// Receive message and add i to 'testdataRowsMessagesStreamContainer'
+		testdataRowsMessages, err = stream.Recv()
+		testdataRowsMessagesStreamContainer = append(testdataRowsMessagesStreamContainer, testdataRowsMessages)
+
+		// When no more messages is received then continue
+		if err == io.EOF {
+			break
+		}
+	}
+
+	testdataRowsMessages = testdataRowsMessagesStreamContainer[0]
+
 	// Get calling client
 	callingClientUuid := testdataRowsMessages.TestDataClientUuid
 
 	// Check if Client is using correct proto files version
-	returnMessage := fenixTestDataSyncServerObject.isClientUsingCorrectTestDataProtoFileVersion(
+	returnMessage = fenixTestDataSyncServerObject.isClientUsingCorrectTestDataProtoFileVersion(
 		testdataRowsMessages.TestDataClientUuid,
 		testdataRowsMessages.ProtoFileVersionUsedByClient)
 	if returnMessage != nil {
 		// Not correct proto-file version is used
-		return returnMessage, nil
+		return stream.SendAndClose(returnMessage)
 	}
 
 	// Verify that Client is known to Server
 	returnMessage = fenixTestDataSyncServerObject.isClientKnownToServer(callingClientUuid)
 	if returnMessage != nil {
 		// Client in unknown
-		return returnMessage, nil
+		return stream.SendAndClose(returnMessage)
 	}
 
 	// Check if TestData server should process incoming messages
 	returnMessage = fenixTestDataSyncServerObject.isThereATemporaryStopInProcessingInOrOutgoingMessages()
 	if returnMessage != nil {
 		// No processing of incoming messages
-		return returnMessage, nil
+		return stream.SendAndClose(returnMessage)
 	}
 
 	/*
@@ -491,7 +519,7 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataRows(_ context.Context, te
 		testDataRowsIncludingLeafNodeHashes)
 	if returnMessage != nil {
 		// Something got wrong
-		return returnMessage, nil
+		return stream.SendAndClose(returnMessage)
 	}
 
 	// Recreate MerkleHash from All testdata rows, both existing rows for Server and new from Client
@@ -523,8 +551,7 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataRows(_ context.Context, te
 			"id": "e9b43ac4-ed89-41ef-9762-bc7406633906",
 		}).Info("MerkleRoot hash is not the same as sent to server. Got " + clientMerkleHash + ", but recalculated to " + computedMerkleHash + " from testdata  Client: " + callingClientUuid)
 
-		// respond back to client when it used wrong proto-file
-		return returnMessage, nil
+		return stream.SendAndClose(returnMessage)
 
 	} else {
 
@@ -545,8 +572,11 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataRows(_ context.Context, te
 
 		if success == true {
 			fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
-				"id": "c7728251-ec36-4cca-a529-1f8db67acc96",
+				"id": "601150cd-856f-49db-acc5-779004e7701b",
 			}).Debug("The TestDataRows were copied from Client to Server for Client: " + callingClientUuid)
+
+			return stream.SendAndClose(&fenixTestDataSyncServerGrpcApi.AckNackResponse{AckNack: true, Comments: ""})
+
 		} else {
 			// Set Error codes to return message
 			var errorCodes []fenixTestDataSyncServerGrpcApi.ErrorCodesEnum
@@ -562,15 +592,9 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataRows(_ context.Context, te
 				ErrorCodes: nil,
 			}
 
-			return returnMessage, nil
+			return stream.SendAndClose(returnMessage)
 		}
 	}
-
-	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
-		"id": "78be9c02-5862-4dbb-bf3b-24a8d40aeb1d",
-	}).Debug("The TestDataRows are the same as the Server already have for Client: " + callingClientUuid)
-
-	return &fenixTestDataSyncServerGrpcApi.AckNackResponse{AckNack: true, Comments: ""}, nil
 }
 
 // *********************************************************************
