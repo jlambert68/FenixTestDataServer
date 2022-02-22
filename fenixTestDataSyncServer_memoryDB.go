@@ -652,13 +652,35 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCur
 	tempdbData, valueExits := dbDataMap[memDBClientUuidType(testDataClientGuid)]
 
 	// Get the data
-	if valueExits == true {
+	if valueExits == true && len(tempdbData.serverData.merkleTreeNodes) > 0 {
 		currentMerkleTreeNodesForServer = tempdbData.serverData.merkleTreeNodes
 	} else {
 		currentMerkleTreeNodesForServer = []cloudDBTestDataMerkleTreeStruct{}
+
+		// Load Client's TestDataMerkleFilterPathHashes from CloudDB
+		var tempCurrentMerkleTreeNodesForServer []cloudDBTestDataMerkleTreeStruct
+		err := fenixTestDataSyncServerObject.loadAllTestDataMerkleTreesForClientFromCloudDB(testDataClientGuid, &tempCurrentMerkleTreeNodesForServer)
+		if err != nil {
+			fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+				"Id":    "5d049aea-28ff-4cea-9387-cc76efe2031e",
+				"error": err,
+			}).Error("Problem when executing: 'loadAllTestDataMerkleTreesForClientFromCloudDB()'")
+
+			fenixTestDataSyncServerObject.stateProcessIncomingAndOutgoingMessage = false
+			tempCurrentMerkleTreeNodesForServer = nil
+
+		} else {
+
+			// Save MerkleTreeNodes in memDB
+			_ = fenixTestDataSyncServerObject.saveCurrentMerkleTreeNodesForServer(testDataClientGuid, tempCurrentMerkleTreeNodesForServer)
+
+			currentMerkleTreeNodesForServer = tempCurrentMerkleTreeNodesForServer
+
+		}
 	}
 
 	return currentMerkleTreeNodesForServer
+
 }
 
 // Save current TestData-MerkleTree for Server
@@ -898,9 +920,10 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCur
 	tempdbData, valueExits := dbDataMap[memDBClientUuidType(testDataClientGuid)]
 
 	// Get the data
-	if valueExits == true && len(tempdbData.serverData.merkleTreeNodesChildHashesThatNoLongerExist) > 0 {
+	if valueExits == true { //&& { len(tempdbData.serverData.merkleTreeNodesChildHashesThatNoLongerExist) > 0 {
 		leafNodeHashesThatNoLongerExist = tempdbData.serverData.merkleTreeNodesChildHashesThatNoLongerExist
-	} else {
+	}
+	/*else {
 
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 			"Id": "3aee5180-1dad-418d-afc5-140d408477d3",
@@ -909,6 +932,8 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCur
 		fenixTestDataSyncServerObject.stateProcessIncomingAndOutgoingMessage = false
 	}
 
+
+	*/
 	return leafNodeHashesThatNoLongerExist
 
 }
@@ -1002,16 +1027,16 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) exists
 */
 
 // Remove the rows that don't is represented in the Clients MerkleTree
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) removeTestDataRowItemsInMemoryDBThatIsNotRepresentedInClientsMerkleTree(callingClientUuid string) bool {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) removeTestDataRowItemsInMemoryDBThatIsNotRepresentedInClientsNewMerkleTree(callingClientUuid string) bool {
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"Id": "2712573d-354a-4fb9-a510-39b3844fe95d",
-	}).Debug("Entering: 'removeTestDataRowItemsInMemoryDBThatIsNotRepresentedInClientsMerkleTree'")
+	}).Debug("Entering: 'removeTestDataRowItemsInMemoryDBThatIsNotRepresentedInClientsNewMerkleTree'")
 
 	defer func() {
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 			"Id": "0fcc0362-263a-4945-a400-6e22baf53240",
-		}).Debug("Exiting: 'removeTestDataRowItemsInMemoryDBThatIsNotRepresentedInClientsMerkleTree'")
+		}).Debug("Exiting: 'removeTestDataRowItemsInMemoryDBThatIsNotRepresentedInClientsNewMerkleTree'")
 	}()
 
 	// Get pointer to data for Client_UUID
@@ -1021,36 +1046,48 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) remove
 	clientData := tempdbData.clientData
 
 	// Extract the hashes for all leaf nodes from MerkleTree
-	var leafNodesHashes []string
+	var clientsNewLeafNodesHashes []string
 	for _, MerkleTreeNode := range clientData.merkleTreeNodes {
-		leafNodesHashes = append(leafNodesHashes, MerkleTreeNode.nodeChildHash)
+		clientsNewLeafNodesHashes = append(clientsNewLeafNodesHashes, MerkleTreeNode.nodeChildHash)
 	}
 
 	// Get pointer to server data
 	serverData := tempdbData.serverData
 
 	// Get the TestData to process
-	serverTestData := serverData.testDataRowItems
+	serverMerkleTree := serverData.merkleTreeNodes
 
 	// Filter out what should be kept and what should be removed
-	var serverTestDataToKeep []cloudDBTestDataRowItemCurrentStruct
+	var serverTestDataToKeep []cloudDBTestDataMerkleTreeStruct
 	var leafNodeHashesToRemoveFromServer []string
 
-	// Loop over existing data and process each item
-	for _, testDataItem := range serverTestData {
-		if existsValueInStringArray(testDataItem.leafNodeHash, leafNodesHashes) == true {
-			// Row should be kept
-			serverTestDataToKeep = append(serverTestDataToKeep, testDataItem)
-
-		} else {
-			// LeafNodeHashes to be removed
-			leafNodeHashesToRemoveFromServer = append(leafNodeHashesToRemoveFromServer, testDataItem.leafNodeHash)
-
+	// Get NodeLevel for LeafNodes
+	var highestNodeLevel = -1
+	for _, serverMerkleTreeNodeItem := range serverMerkleTree {
+		if serverMerkleTreeNodeItem.nodeLevel > highestNodeLevel {
+			highestNodeLevel = serverMerkleTreeNodeItem.nodeLevel
 		}
 	}
 
-	// Save rows to be kept in memoryDB
-	serverData.testDataRowItems = serverTestDataToKeep
+	// Loop over existing ServerMerkleTree-data and process each item
+	for _, serverMerkleTreeNodeItem := range serverMerkleTree {
+
+		// Only process LeafNodes
+		if serverMerkleTreeNodeItem.nodeLevel == highestNodeLevel {
+			if existsValueInStringArray(serverMerkleTreeNodeItem.nodeChildHash, clientsNewLeafNodesHashes) == true {
+				// MerkleTreeRow that should be kept
+				serverTestDataToKeep = append(serverTestDataToKeep, serverMerkleTreeNodeItem)
+
+			} else {
+				// LeafNodeHashes to be removed
+				leafNodeHashesToRemoveFromServer = append(leafNodeHashesToRemoveFromServer, serverMerkleTreeNodeItem.nodeChildHash)
+
+			}
+		}
+	}
+
+	// Save MerkleTreeRows to be kept in memoryDB
+	serverData.merkleTreeNodes = serverTestDataToKeep
 
 	// Save the leafNodeHashes to be removed
 	serverData.merkleTreeNodesChildHashesThatNoLongerExist = leafNodeHashesToRemoveFromServer

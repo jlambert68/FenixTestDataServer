@@ -367,7 +367,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 
 	sqlToExecute := ""
 	sqlToExecute = sqlToExecute + "SELECT tdmt.* "
-	sqlToExecute = sqlToExecute + "public.testdata_merkletrees tdmt "
+	sqlToExecute = sqlToExecute + "FROM public.testdata_merkletrees tdmt "
 	sqlToExecute = sqlToExecute + "WHERE tdmt.client_uuid::text = '" + clientUuid + "';"
 
 	// Query DB
@@ -385,6 +385,9 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 
 	// Variables to used when extract data from result set
 	var testDataMerkleTree cloudDBTestDataMerkleTreeStruct
+	var tempTimeStamp time.Time
+	var timeStampAsString string
+	timeStampLayOut := "2006-01-02 15:04:05.000000" //milliseconds
 
 	// Extract data from DB result set
 	for rows.Next() {
@@ -395,12 +398,17 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 			&testDataMerkleTree.nodePath,
 			&testDataMerkleTree.nodeHash,
 			&testDataMerkleTree.nodeChildHash,
-			&testDataMerkleTree.updatedTimeStamp,
+			&tempTimeStamp,
 			&testDataMerkleTree.merkleHash)
 
 		if err != nil {
 			return err
 		}
+
+		// Convert timestamp into string representation and add to  extracted data
+		timeStampAsString = tempTimeStamp.Format(timeStampLayOut)
+		testDataMerkleTree.updatedTimeStamp = timeStampAsString
+
 		*testDataMerkleTrees = append(*testDataMerkleTrees, testDataMerkleTree)
 
 	}

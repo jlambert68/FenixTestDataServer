@@ -369,7 +369,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) conver
 // Extract the MerkleFilterPaths to be sent to client, to be able to receive the missing, or changed, TestDataRows
 func missedPathsToRetrieveFromClient(serverCopyMerkleTree []cloudDBTestDataMerkleTreeStruct, newClientMerkleTree []cloudDBTestDataMerkleTreeStruct) (merkleNodeNamesToRequest []string) {
 
-	var highestLeafNodeLevel = 0
+	var highestLeafNodeLevel = -1
 	var foundChildNodeHashInServer bool
 	var leafNodeHashForClient string
 	var leafNodesToRequest []cloudDBTestDataMerkleTreeStruct
@@ -385,22 +385,31 @@ func missedPathsToRetrieveFromClient(serverCopyMerkleTree []cloudDBTestDataMerkl
 	// Loop over all LeafNodes to find those that are not in Server-copy
 	for _, clientMerkleTreeNode := range newClientMerkleTree {
 
-		leafNodeHashForClient = clientMerkleTreeNode.nodeChildHash
+		// only process node when NodeLevel ==  'highestLeafNodeLevel'
+		if clientMerkleTreeNode.nodeLevel == highestLeafNodeLevel {
 
-		// Loop over  Server MerkleNodeChildHashes to see if the ChildNodeHash exists there
-		foundChildNodeHashInServer = false
-		for _, serverMerkleTreeNode := range serverCopyMerkleTree {
-			if serverMerkleTreeNode.nodeChildHash == leafNodeHashForClient {
-				foundChildNodeHashInServer = true
-				break
+			leafNodeHashForClient = clientMerkleTreeNode.nodeChildHash
+
+			// Loop over  Server MerkleNodeChildHashes to see if the ChildNodeHash exists there
+			foundChildNodeHashInServer = false
+
+			for _, serverMerkleTreeNode := range serverCopyMerkleTree {
+
+				// only process node when NodeLevel ==  'highestLeafNodeLevel'
+				if clientMerkleTreeNode.nodeLevel == highestLeafNodeLevel {
+
+					if serverMerkleTreeNode.nodeChildHash == leafNodeHashForClient {
+						foundChildNodeHashInServer = true
+						break
+					}
+				}
+			}
+
+			// if the Clients ChildHash wasn't found among ServerMerkleTreeNodes then add it to array
+			if foundChildNodeHashInServer == false {
+				leafNodesToRequest = append(leafNodesToRequest, clientMerkleTreeNode)
 			}
 		}
-
-		// if the Clients ChildHash wasn't found among ServerMerkleTreeNodes then add it to array
-		if foundChildNodeHashInServer == false {
-			leafNodesToRequest = append(leafNodesToRequest, clientMerkleTreeNode)
-		}
-
 	}
 
 	// Loop over 'leafNodesToRequest' to generate array with all MerkleTreeNodeNames to be able to retrieve correct TestData-rows from Client
@@ -497,30 +506,42 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) conver
 }
 
 // Generate relations between LeafNodeName, LeafNodeHash and TestDataRowHash
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) generateRowHashToMerkleChildNodeHashMap(testDataRowItems []cloudDBTestDataRowItemCurrentStruct, merkleTreeRowItems []cloudDBTestDataMerkleTreeStruct) (rowHashToLeafNodeHashMap map[string]string) {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) generateRowHashToMerkleChildNodeHashMap(OldServerDataRowItemsAndNewClientDataRowItems []cloudDBTestDataRowItemCurrentStruct, clientsNewMerkleTreeRowItems []cloudDBTestDataMerkleTreeStruct) (rowHashToLeafNodeHashMap map[string]string) {
 
 	rowHashToLeafNodeHashMap = make(map[string]string)       //map[<rowHash>]<leafNodeHash>
 	leafNodeNameToLeafNodeHashMap := make(map[string]string) //map[<leafNodeName>]<leafNodHash>
 
-	// Loop over MerkleTreeItems and create relation between LeafNodeName -> LeafNodeHash
-	for _, merkleTreeRowItem := range merkleTreeRowItems {
-
-		_, leafNodeNameExist := rowHashToLeafNodeHashMap[merkleTreeRowItem.nodeName]
-		if leafNodeNameExist == true {
-			// LeafNodeName should never exist twice
-			fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
-				"id":                         "d63cf823-8d8d-4053-b0e2-fbc2be89d867",
-				"merkleTreeRowItem.nodeName": merkleTreeRowItem.nodeName,
-			}).Fatal("LeafNodeName should never exist twice")
+	var highestLeafNodeLevel = -1
+	// Get highest LeafNodeLevel for 'clientsNewMerkleTreeRowItems'
+	for _, leafNode := range clientsNewMerkleTreeRowItems {
+		if leafNode.nodeLevel > highestLeafNodeLevel {
+			highestLeafNodeLevel = leafNode.nodeLevel
 		}
+	}
 
-		// Add relation to map
-		leafNodeNameToLeafNodeHashMap[merkleTreeRowItem.nodeName] = merkleTreeRowItem.nodeChildHash
+	// Loop over MerkleTreeItems and create relation between LeafNodeName -> LeafNodeHash
+	for _, merkleTreeRowItem := range clientsNewMerkleTreeRowItems {
 
+		// Only process LeafNodes
+		if merkleTreeRowItem.nodeLevel == highestLeafNodeLevel {
+
+			_, leafNodeNameExist := rowHashToLeafNodeHashMap[merkleTreeRowItem.nodeName]
+			if leafNodeNameExist == true {
+				// LeafNodeName should never exist twice
+				fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+					"id":                         "d63cf823-8d8d-4053-b0e2-fbc2be89d867",
+					"merkleTreeRowItem.nodeName": merkleTreeRowItem.nodeName,
+				}).Fatal("LeafNodeName should never exist twice")
+			}
+
+			// Add relation to map
+			leafNodeNameToLeafNodeHashMap[merkleTreeRowItem.nodeName] = merkleTreeRowItem.nodeChildHash
+
+		}
 	}
 
 	// Loop all TestDataItems and create relation RowHash -> LeafNodeHash
-	for _, testDataRowItem := range testDataRowItems {
+	for _, testDataRowItem := range OldServerDataRowItemsAndNewClientDataRowItems {
 
 		// Only need to process for first column because all columns, in same row, have same rowHash and LeafNode
 		if testDataRowItem.valueColumnOrder == 0 {
