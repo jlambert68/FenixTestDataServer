@@ -858,13 +858,59 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCur
 	tempdbData, valueExits := dbDataMap[memDBClientUuidType(testDataClientGuid)]
 
 	// Get the data
-	if valueExits == true {
+	if valueExits == true && len(tempdbData.serverData.testDataRowItems) > 0 {
 		testDataRowItems = tempdbData.serverData.testDataRowItems
 	} else {
-		testDataRowItems = []cloudDBTestDataRowItemCurrentStruct{}
+
+		// Load Client's TestDataMerkleHashes from CloudDB
+		var tempMemDBTestDataRowItems []cloudDBTestDataRowItemCurrentStruct
+		err := fenixTestDataSyncServerObject.loadAllTestDataRowItemsForClientFromCloudDB(testDataClientGuid, &tempMemDBTestDataRowItems)
+		if err != nil {
+			fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+				"Id":    "bac0347f-c066-4a0f-9132-2ae1175a795c",
+				"error": err,
+			}).Error("Problem when executing: 'loadAllTestDataRowItemsForClientFromCloudDB()'")
+
+			fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+				"Id": "8b84863d-f18f-4db6-9d91-904971fec6b3",
+			}).Info("Switching: 'stateProcessIncomingAndOutgoingMessage = false'")
+
+			fenixTestDataSyncServerObject.stateProcessIncomingAndOutgoingMessage = false
+			testDataRowItems = []cloudDBTestDataRowItemCurrentStruct{}
+
+		} else {
+			// Save RowsItems in memDB
+			tempdbData.serverData.testDataRowItems = tempMemDBTestDataRowItems
+
+			// Prepare for returning of RowsItems found in CloudDB
+			testDataRowItems = tempMemDBTestDataRowItems
+		}
 	}
 
 	return testDataRowItems
+
+}
+
+// Get current ChildNodeHashes to be removed from TestDataRows
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCurrentChildNodeHashesToBeRemovedForServer(testDataClientGuid string) (leafNodeHashesThatNoLongerExist []string) {
+
+	// Get pointer to data for Client_UUID
+	tempdbData, valueExits := dbDataMap[memDBClientUuidType(testDataClientGuid)]
+
+	// Get the data
+	if valueExits == true && len(tempdbData.serverData.merkleTreeNodesChildHashesThatNoLongerExist) > 0 {
+		leafNodeHashesThatNoLongerExist = tempdbData.serverData.merkleTreeNodesChildHashesThatNoLongerExist
+	} else {
+
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"Id": "3aee5180-1dad-418d-afc5-140d408477d3",
+		}).Fatalln("'merkleTreeNodesChildHashesThatNoLongerExist' shouldn't be empty")
+
+		fenixTestDataSyncServerObject.stateProcessIncomingAndOutgoingMessage = false
+	}
+
+	return leafNodeHashesThatNoLongerExist
+
 }
 
 // Get current Client TestDataRows
@@ -874,10 +920,11 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCur
 	tempdbData, valueExits := dbDataMap[memDBClientUuidType(testDataClientGuid)]
 
 	// Get the data
-	if valueExits == true {
+	if valueExits == true && len(tempdbData.clientData.testDataRowItems) > 0 {
 		testDataRowItems = tempdbData.clientData.testDataRowItems
 	} else {
-		testDataRowItems = []cloudDBTestDataRowItemCurrentStruct{}
+		testDataRowItems = fenixTestDataSyncServerObject.getCurrentTestDataRowItemsForServer(testDataClientGuid)
+		//testDataRowItems = []cloudDBTestDataRowItemCurrentStruct{}
 	}
 
 	return testDataRowItems
@@ -979,31 +1026,34 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) remove
 		leafNodesHashes = append(leafNodesHashes, MerkleTreeNode.nodeChildHash)
 	}
 
+	// Get pointer to server data
+	serverData := tempdbData.serverData
+
 	// Get the TestData to process
-	clientTestData := clientData.testDataRowItems
+	serverTestData := serverData.testDataRowItems
 
 	// Filter out what should be kept and what should be removed
-	var clientTestDataToKeep []cloudDBTestDataRowItemCurrentStruct
-	var leafNodeHashesToRemove []string
+	var serverTestDataToKeep []cloudDBTestDataRowItemCurrentStruct
+	var leafNodeHashesToRemoveFromServer []string
 
 	// Loop over existing data and process each item
-	for _, testDataItem := range clientTestData {
+	for _, testDataItem := range serverTestData {
 		if existsValueInStringArray(testDataItem.leafNodeHash, leafNodesHashes) == true {
 			// Row should be kept
-			clientTestDataToKeep = append(clientTestDataToKeep, testDataItem)
+			serverTestDataToKeep = append(serverTestDataToKeep, testDataItem)
 
 		} else {
 			// LeafNodeHashes to be removed
-			leafNodeHashesToRemove = append(leafNodeHashesToRemove, testDataItem.leafNodeHash)
+			leafNodeHashesToRemoveFromServer = append(leafNodeHashesToRemoveFromServer, testDataItem.leafNodeHash)
 
 		}
 	}
 
 	// Save rows to be kept in memoryDB
-	clientData.testDataRowItems = clientTestDataToKeep
+	serverData.testDataRowItems = serverTestDataToKeep
 
 	// Save the leafNodeHashes to be removed
-	clientData.merkleTreeNodesChildHashesThatNoLongerExist = leafNodeHashesToRemove
+	serverData.merkleTreeNodesChildHashesThatNoLongerExist = leafNodeHashesToRemoveFromServer
 
 	return true
 }

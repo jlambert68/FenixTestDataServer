@@ -445,7 +445,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 
 	sqlToExecute := ""
 	sqlToExecute = sqlToExecute + "SELECT tdri.* "
-	sqlToExecute = sqlToExecute + "public.testdata_row_items_current tdri "
+	sqlToExecute = sqlToExecute + "FROM public.testdata_row_items_current tdri "
 	sqlToExecute = sqlToExecute + "WHERE tdri.client_uuid::text = '" + clientUuid + "';"
 
 	// Query DB
@@ -463,6 +463,9 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 
 	// Variables to used when extract data from result set
 	var testDataRowItem cloudDBTestDataRowItemCurrentStruct
+	var tempTimeStamp time.Time
+	var timeStampAsString string
+	timeStampLayOut := "2006-01-02 15:04:05.000000" //milliseconds
 
 	// Extract data from DB result set
 	for rows.Next() {
@@ -470,7 +473,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 			&testDataRowItem.clientUuid,
 			&testDataRowItem.rowHash,
 			&testDataRowItem.testdataValueAsString,
-			&testDataRowItem.updatedTimeStamp,
+			&tempTimeStamp, //&testDataRowItem.updatedTimeStamp,
 			&testDataRowItem.leafNodeName,
 			&testDataRowItem.leafNodePath,
 			&testDataRowItem.leafNodeHash,
@@ -480,6 +483,11 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 		if err != nil {
 			return err
 		}
+
+		// Convert timestamp into string representation and add to  extracted data
+		timeStampAsString = tempTimeStamp.Format(timeStampLayOut)
+		testDataRowItem.updatedTimeStamp = timeStampAsString
+
 		// Add values to the object that is pointed to by variable in function
 		*testDataRowItems = append(*testDataRowItems, testDataRowItem)
 

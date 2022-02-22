@@ -236,7 +236,7 @@ func (s *FenixTestDataGrpcServicesServer) SendMerkleTree(_ context.Context, merk
 		// MerkleTree is the same, 'nothing to see'
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 			"id": "94273c83-cfe4-415d-96bb-2890ea917116",
-		}).Debug("MerkleHash from MerkleTree is the same as in memroyDB for Client: " + callingClientUuid)
+		}).Debug("MerkleHash from MerkleTree is the same as in memoryDB for Client: " + callingClientUuid)
 
 	}
 

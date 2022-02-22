@@ -169,7 +169,9 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveTe
 
 	// Create Delete Statement for removing current TestDataRow-data for Client
 	sqlToExecute = sqlToExecute + "DELETE FROM public.testdata_row_items_current "
-	sqlToExecute = sqlToExecute + "WHERE client_uuid = '" + currentUserUuid + "'; "
+	sqlToExecute = sqlToExecute + "WHERE client_uuid = '" + currentUserUuid + "' "
+	sqlToExecute = sqlToExecute + "AND "
+	sqlToExecute = sqlToExecute + "public.testdata_row_items_current.leaf_node_hash IN " + fenixTestDataSyncServerObject.generateSQLINArray(fenixTestDataSyncServerObject.getCurrentChildNodeHashesToBeRemovedForServer(currentUserUuid))
 
 	// Create Delete Statement for removing current MerkleTree-data for Client
 	sqlToExecute = sqlToExecute + "DELETE FROM public.testdata_merkletrees "
@@ -490,6 +492,29 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) genera
 			}
 
 		}
+
+	}
+
+	return sqlInsertValuesString
+}
+
+// Generates incoming values in the following form:  "['monkey', 'tiger'. 'fish']"
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) generateSQLINArray(testdata []string) (sqlInsertValuesString string) {
+
+	sqlInsertValuesString = "["
+
+	// Loop over both rows and values
+	for counter, value := range testdata {
+
+		if counter == 0 {
+			// Only used for first row
+			sqlInsertValuesString = sqlInsertValuesString + "'" + value + "'"
+
+		} else {
+
+			sqlInsertValuesString = sqlInsertValuesString + ", '" + value + "'"
+		}
+		sqlInsertValuesString = sqlInsertValuesString + "] "
 
 	}
 

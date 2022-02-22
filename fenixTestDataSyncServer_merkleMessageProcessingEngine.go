@@ -285,17 +285,17 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) concat
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"id": "5716a1e8-11dc-4c70-9579-94d7d177689b",
-	}).Debug("New rows to add to existing rows are '"+strconv.Itoa(len(testdataToBeAdded))+"' for Client: ", testDataClientGuid)
+	}).Debug("New TestDataRowsItems to add to existing TestDataRowsItems are '"+strconv.Itoa(len(testdataToBeAdded))+"' for Client: ", testDataClientGuid)
 
-	// Get testdatarows from memoryDB
-	testDataRowItemsForClientInMemDB := fenixTestDataSyncServerObject.getCurrentTestDataRowItemsForClient(testDataClientGuid)
+	// Get TestDataRowsItems from memoryDB
+	testDataRowItemsForServerInMemDB := fenixTestDataSyncServerObject.getCurrentTestDataRowItemsForServer(testDataClientGuid)
 	//concatenatedTestdata = fenixTestDataSyncServerObject.getCurrentTestDataRowItemsForClient(testDataClientGuid)
 
-	if len(testDataRowItemsForClientInMemDB) == 0 {
+	if len(testDataRowItemsForServerInMemDB) == 0 {
 
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 			"id": "a98bf92e-ec7d-4968-b8fa-b72e47fef830",
-		}).Debug("There are no TestDataRows in memDB for so returning new Rows to work with, Client: ", testDataClientGuid)
+		}).Debug("There are no TestDataRowsItems in memDB for so returning new TestDataRowsItems to work with, Client: ", testDataClientGuid)
 
 		return testdataToBeAdded
 
@@ -303,15 +303,15 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) concat
 
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 			"id": "c8385ebf-53e1-4449-8171-f0c5bc2bdd68",
-		}).Debug("Existing number of rows are '"+strconv.Itoa(len(concatenatedTestdata))+"' for Client: ", testDataClientGuid)
+		}).Debug("Existing number of TestDataRowsItems are '"+strconv.Itoa(len(testDataRowItemsForServerInMemDB))+"' for Client: ", testDataClientGuid)
 
 		//headerKeys := testdataToBeAdded.Names()
 		//concatenatedTestdata = concatenatedTestdata.Concat(testdataToBeAdded) //, headerKeys...)
-		concatenatedTestdata = append(testDataRowItemsForClientInMemDB, testdataToBeAdded...)
+		concatenatedTestdata = append(testDataRowItemsForServerInMemDB, testdataToBeAdded...)
 
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 			"id": "85138c62-28a8-4669-a701-590c29fb4de1",
-		}).Debug("Concatenated number of rows are '"+strconv.Itoa(len(concatenatedTestdata))+"' for Client: ", testDataClientGuid)
+		}).Debug("Concatenated number of TestDataRowsItems are '"+strconv.Itoa(len(concatenatedTestdata))+"' for Client: ", testDataClientGuid)
 
 	}
 
