@@ -510,3 +510,33 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) conver
 	return testdataAsDataFrame, nil
 
 }
+
+// Convert memDB-MerkleTree message into a DataFrame object
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) convertMemDBMerkleTreeMessageToDataframe(merkleTreeMessage []cloudDBTestDataMerkleTreeStruct) dataframe.DataFrame {
+
+	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"id": "72f59758-5101-4117-8368-cb14acf4368b",
+	}).Debug("Incoming gRPC 'convertmemDBMerkleTreeMessageToDataframe'")
+
+	defer fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"id": "7a910fb5-f6a2-4704-ad38-da5ac0153cf2",
+	}).Debug("Outgoing gRPC 'convertmemDBMerkleTreeMessageToDataframe'")
+
+	var myMerkleTree []MerkletreeStruct
+
+	// Loop all MerkleTreeNodes and create a DataFrame for the data
+	for _, merkleTreeNode := range merkleTreeMessage {
+		myMerkleTreeRow := MerkletreeStruct{
+			MerkleLevel:     int(merkleTreeNode.nodeLevel),
+			MerklePath:      merkleTreeNode.nodeName,
+			MerkleHash:      merkleTreeNode.nodeHash,
+			MerkleChildHash: merkleTreeNode.nodeChildHash,
+		}
+		myMerkleTree = append(myMerkleTree, myMerkleTreeRow)
+
+	}
+
+	df := dataframe.LoadStructs(myMerkleTree)
+
+	return df
+}

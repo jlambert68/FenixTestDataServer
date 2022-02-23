@@ -6,6 +6,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"io"
+	"log"
+	"os"
 )
 
 // *********************************************************************
@@ -225,7 +227,7 @@ func (s *FenixTestDataGrpcServicesServer) SendMerkleTree(_ context.Context, merk
 			defer fenixTestDataSyncServerObject.AskClientToSendAllTestDataRows(callingClientUuid)
 		} else {
 			// Remove TestDataRows that is not represented in current client MerkleTree
-			fenixTestDataSyncServerObject.removeTestDataRowItemsInMemoryDBThatIsNotRepresentedInClientsNewMerkleTree(callingClientUuid)
+			fenixTestDataSyncServerObject.removeMerkleTreeNodeItemsInMemoryDBThatIsNotRepresentedInClientsNewMerkleTree(callingClientUuid)
 
 			// Ask for the rows that is missing
 			fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
@@ -505,9 +507,6 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataRows(stream fenixTestDataS
 	//	callingClientUuid,
 	//	cloudDBTestDataRowItemsMessage)
 
-	// Get calling Client's MerkleFilterPath
-	merkleFilterPath := fenixTestDataSyncServerObject.getCurrentMerkleFilterPathForClient(callingClientUuid)
-
 	// Generate RowHashToMerkleChildNodeHashMap for TestData Rows and return map of type; "MAP[<RowHash>]=<MerkleChildNodeHash>" - 'MAP[string]string')
 	rowHashToLeafNodeHashMap := fenixTestDataSyncServerObject.generateRowHashToMerkleChildNodeHashMap(
 		cloudDBTestDataRowItemsMessage, //concatenatedTestDataRows,
@@ -521,27 +520,33 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataRows(stream fenixTestDataS
 	//testDataRowsIncludingLeafNodeHashesAsDataFrame, returnMessage := fenixTestDataSyncServerObject.convertCloudDBTestDataRowItemsMessageToDataFrame(
 	//	testDataRowsIncludingLeafNodeHashes)
 	//if returnMessage != nil {
-		// Something got wrong
+	// Something got wrong
 	//	return stream.SendAndClose(returnMessage)
 	//}
 
-	// Load all 'LeafNodeHashes'+'NodeNames' from CloudDB-TestDataRows
-	leafNodeHashToNodeNameMap := make(map[string]string)
-	leafNodeHashToNodeNameMap = fenixTestDataSyncServerObject.loadAllLeafNodeHashAndNodeNameItemsFromCLoudDB(callingClientUuid)
+	// Get the Server MerkleTree
+	currentMerkleTreeNodesForServer := fenixTestDataSyncServerObject.getCurrentMerkleTreeNodesForServer(callingClientUuid)
+
+	// Add LeafNodes that is referenced in incoming TestDataRows
+	1) UseClientMerkleTree istället för ServerMerkleTree och bara spara ner
+	2) Verifiera att Inkommande rader genererar de LeadNodeHashes som efterfrågas
+	3) Läs upp alla LeadNodeNames & LeafNodeHAshes för att säkerställa att [DB - "de som ska bort" + "De nya"] är samma som i Nya ClientMerkleTree
+// Convert MerkleTreeNodes into Dataframe-object
+	currentMerkleTreeNodesForServerAsDataFrame := fenixTestDataSyncServerObject.convertMemDBMerkleTreeMessageToDataframe(currentMerkleTreeNodesForServer)
+	f, err := os.Create("currentMerkleTreeNodesForServerAsDataFrame.csv")
+	if err != nil {
+		log.Fatal(err)
+	}
+	currentMerkleTreeNodesForServerAsDataFrame.WriteCSV(f)
+	f.Close()
+
 	// Create MerkleHash and MerkleTree from LeafNodeHashes
-	computedMerkleHash, merkleTree := fenixTestDataSyncServerObject fenixSyncShared.CreateMerkleTreeFromLeafNodeHashAndNodeNameItems(leafNodeHashToNodeNameMap)
+	computedMerkleHash := fenixSyncShared.CalculateMerkleHashFromMerkleTree(currentMerkleTreeNodesForServerAsDataFrame)
 
 	// Recreate MerkleHash from All testdata rows, both existing rows for Server and new from Client
 	//computedMerkleHash, _, _ := fenixSyncShared.CreateMerkleTreeFromDataFrame(
 	//	testDataRowsIncludingLeafNodeHashesAsDataFrame,
 	//	merkleFilterPath)
-
-	Antingen så läser man in alla TestdataRader och plockar bort de som ska bort.
-		Alternativt så kontrolooerar man MerkleHash genom att läsa in alla  (LeafNodeHashes+NodeName)  för att generera MerkleRoot och kontrollera
-	Jag tror alternativ 2 är bäst
-
-
-
 
 	//Compare 'computedMerkleHash' with MerkleHash from Client
 	clientMerkleHash := fenixTestDataSyncServerObject.getCurrentMerkleHashForClient(callingClientUuid)

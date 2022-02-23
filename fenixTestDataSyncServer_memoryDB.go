@@ -683,6 +683,39 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCur
 
 }
 
+// Retrieve the LeafNodes from the MerkleTree
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCurrentMerkleTreeLeafNodeHashesForServer(testDataClientGuid string) (merkleTreeLeafNodeHashes []string) {
+
+	var currentMerkleTreeNodesForServer []cloudDBTestDataMerkleTreeStruct
+	var hightNodeLevel = -1
+
+	// Get the Server MerkleTree
+	currentMerkleTreeNodesForServer = fenixTestDataSyncServerObject.getCurrentMerkleTreeNodesForServer(testDataClientGuid)
+
+	// If there are no MerkleTreeNodes then return empty slice
+	if len(currentMerkleTreeNodesForServer) == 0 {
+		return []string{}
+	}
+
+	// Get Highest NodelLevel, which are the LeafeNodes
+	for _, merkleTreeNodeItem := range currentMerkleTreeNodesForServer {
+		if merkleTreeNodeItem.nodeLevel > hightNodeLevel {
+			hightNodeLevel = merkleTreeNodeItem.nodeLevel
+		}
+	}
+
+	for _, merkleTreeNodeItem := range currentMerkleTreeNodesForServer {
+
+		// Only process LeafNodes
+		if merkleTreeNodeItem.nodeLevel == hightNodeLevel {
+			merkleTreeLeafNodeHashes = append(merkleTreeLeafNodeHashes, merkleTreeNodeItem.nodeChildHash)
+		}
+	}
+
+	return merkleTreeLeafNodeHashes
+
+}
+
 // Save current TestData-MerkleTree for Server
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveCurrentMerkleTreeNodesForServer(testDataClientGuid string, merkleTreeNodes []cloudDBTestDataMerkleTreeStruct) bool {
 
@@ -1027,16 +1060,16 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) exists
 */
 
 // Remove the rows that don't is represented in the Clients MerkleTree
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) removeTestDataRowItemsInMemoryDBThatIsNotRepresentedInClientsNewMerkleTree(callingClientUuid string) bool {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) removeMerkleTreeNodeItemsInMemoryDBThatIsNotRepresentedInClientsNewMerkleTree(callingClientUuid string) bool {
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"Id": "2712573d-354a-4fb9-a510-39b3844fe95d",
-	}).Debug("Entering: 'removeTestDataRowItemsInMemoryDBThatIsNotRepresentedInClientsNewMerkleTree'")
+	}).Debug("Entering: 'removeMerkleTreeNodeItemsInMemoryDBThatIsNotRepresentedInClientsNewMerkleTree'")
 
 	defer func() {
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 			"Id": "0fcc0362-263a-4945-a400-6e22baf53240",
-		}).Debug("Exiting: 'removeTestDataRowItemsInMemoryDBThatIsNotRepresentedInClientsNewMerkleTree'")
+		}).Debug("Exiting: 'removeMerkleTreeNodeItemsInMemoryDBThatIsNotRepresentedInClientsNewMerkleTree'")
 	}()
 
 	// Get pointer to data for Client_UUID
