@@ -527,9 +527,35 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataRows(stream fenixTestDataS
 	// Get the Server MerkleTree
 	currentMerkleTreeNodesForServer := fenixTestDataSyncServerObject.getCurrentMerkleTreeNodesForServer(callingClientUuid)
 
-	// Add LeafNodes that is referenced in incoming TestDataRows
+	//
 	1) UseClientMerkleTree istället för ServerMerkleTree och bara spara ner
 	2) Verifiera att Inkommande rader genererar de LeadNodeHashes som efterfrågas
+
+
+	// Get Server and Clients version of the MerkleTree
+	serverCopyMerkleTree := fenixTestDataSyncServerObject.getCurrentMerkleTreeNodesForServer(callingClientUuid)
+	clientsNewMerkleTree := fenixTestDataSyncServerObject.getCurrentMerkleTreeNodesForClient(callingClientUuid)
+
+	// Extract the LeafNodes from ServerMerkleTree and ClientMerkleTree
+	serverCopyMerkleTreeLeafNodeItems := fenixTestDataSyncServerObject.extractLeafNodeItemsFromMerkleTree(serverCopyMerkleTree)
+	clientsNewMerkleTreeLeafNodeItems := fenixTestDataSyncServerObject.extractLeafNodeItemsFromMerkleTree(clientsNewMerkleTree)
+
+	// Extract LeafNodeItems that is in Client but not i Server, will use 'Not(Server) Intersecting Client'
+	newMerkleTreeLeafNodeItemsFromClient := fenixTestDataSyncServerObject.notAIntersectingBOnMerkleTreeItems(serverCopyMerkleTreeLeafNodeItems, clientsNewMerkleTreeLeafNodeItems)
+
+	// Verify that New Rows from client will generate ALL LeafNodesHashes found in 'newMerkleTreeLeafNodeItemsFromClient'
+	returnMessage := fenixTestDataSyncServerObject.verifyThatRowHashesMatchesLeafNodeHashes(cloudDBTestDataRowItemsMessage, newMerkleTreeLeafNodeItemsFromClient)
+	if returnMessage != nil {
+		// RowHashes didn't generate expected MerkleLeafNodeHashes
+		return returnMessage, nil
+	}
+	// Extract all NodeNames to request from client
+	merkleNodeNamesToRequest := missedPathsToRetrieveFromClient(serverCopyMerkleTree, clientsNewMerkleTree)
+
+	// Create LeafNodes from RowItems
+	merkleTreeLeafNodesItems := fenixTestDataSyncServerObject.extractLeafNodeItemsFromMerkleTree(testDataRowsIncludingLeafNodeHashes)
+
+	//
 	3) Läs upp alla LeadNodeNames & LeafNodeHAshes för att säkerställa att [DB - "de som ska bort" + "De nya"] är samma som i Nya ClientMerkleTree
 // Convert MerkleTreeNodes into Dataframe-object
 	currentMerkleTreeNodesForServerAsDataFrame := fenixTestDataSyncServerObject.convertMemDBMerkleTreeMessageToDataframe(currentMerkleTreeNodesForServer)

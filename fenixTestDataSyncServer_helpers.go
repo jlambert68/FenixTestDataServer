@@ -583,9 +583,9 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) addMer
 		if existsRowHash == false {
 			// It didn't exist which should not happen
 			fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
-				"id":                      "570afc75-196a-45b9-996d-d68646611b95",
-				"testDataRowItem.rowHash": testDataRowItem.rowHash,
-			}).Fatal("RowHash is missing in MAP which is not expected")
+				"id":                           "598f7326-37cc-4bdb-80dc-997235219d83",
+				"testDataRowItem.leafNodeName": testDataRowItem.leafNodeName,
+			}).Fatal("LeafNodeName is missing in 'leafNodeNameToLeafNodeHashMap' which never should happen")
 
 		} else {
 
@@ -595,4 +595,184 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) addMer
 	}
 
 	return testDataRowItems
+}
+
+// Get all LeafNodeItems for Server from memoryDB
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) extractLeafNodeItemsFromMerkleTree(merkleTreeNodeItems []cloudDBTestDataMerkleTreeStruct) (leafNodeItems []cloudDBTestDataMerkleTreeStruct) {
+
+	highestLeafNodeLevel := fenixTestDataSyncServerObject.getMerkleLeafNodeLevel(merkleTreeNodeItems)
+
+	if highestLeafNodeLevel == -1 {
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"id": "ce63654f-c3ff-4236-aad9-18bf684236f2",
+		}).Fatal("Didn't find any LeafNodes among MerkleTreeNodeItems. This should not not happen")
+	}
+
+	// Loop MerkleTree and extract all LeafNodes
+	for _, merkleNodeItem := range merkleTreeNodeItems {
+		if merkleNodeItem.nodeLevel == highestLeafNodeLevel {
+			leafNodeItems = append(leafNodeItems, merkleNodeItem)
+		}
+	}
+
+	return leafNodeItems
+}
+
+// Find the NodeLevel for LeafNodes in MerkleTree
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getMerkleLeafNodeLevel(merkleTreeNodeItems []cloudDBTestDataMerkleTreeStruct) (highestLeafNodeLevel int) {
+
+	highestLeafNodeLevel = -1
+
+	// Get highest LeafNodeLevel for 'merkleTreeNodeItems'
+	for _, leafNode := range merkleTreeNodeItems {
+		if leafNode.nodeLevel > highestLeafNodeLevel {
+			highestLeafNodeLevel = leafNode.nodeLevel
+		}
+	}
+
+	return highestLeafNodeLevel
+}
+
+// Processes two sets of MerkleTreeNodeItems, A and B, by doing 'Not(A) Intersecting B'.
+// THis givs you all MerkleTreeItems that exist in B but not in A
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) notAIntersectingBOnMerkleTreeItems(merkleTreeLeafNodeItemsA []cloudDBTestDataMerkleTreeStruct, merkleTreeLeafNodeItemsB []cloudDBTestDataMerkleTreeStruct) (merkleTreeNodeItemsToBeReturned []cloudDBTestDataMerkleTreeStruct) {
+
+	var foundNodeBInMerkleTreeA bool
+
+	// Loop over all MerkleTreeItems for 'B'
+	for _, merkleTreeNodeForB := range merkleTreeLeafNodeItemsB {
+
+		foundNodeBInMerkleTreeA = false
+
+		// Loop over all MerkleTreeItems for 'A'
+		for _, merkleTreeNodeForA := range merkleTreeLeafNodeItemsA {
+
+			// only process node when NodeLevel ==  'highestLeafNodeLevel'
+			if merkleTreeNodeForB.nodeHash == merkleTreeNodeForA.merkleHash {
+				foundNodeBInMerkleTreeA = true
+				break
+			}
+		}
+
+		// If NodeB was not found in MerkleTreeA, then that Node should bes saved
+		if foundNodeBInMerkleTreeA == false {
+			merkleTreeNodeItemsToBeReturned = append(merkleTreeNodeItemsToBeReturned, merkleTreeNodeForB)
+		}
+	}
+
+	return merkleTreeNodeItemsToBeReturned
+}
+
+//
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) verifyThatRowHashesMatchesLeafNodeHashes(callingClientUuid string, testDataRowItems []cloudDBTestDataRowItemCurrentStruct, merkleTreeLeafNodeItems []cloudDBTestDataMerkleTreeStruct) (returnMessage *fenixTestDataSyncServerGrpcApi.AckNackResponse) {
+
+	// Secure that we only operate on LeafNodes
+	highestLeafNodeLevel := fenixTestDataSyncServerObject.getMerkleLeafNodeLevel(merkleTreeLeafNodeItems)
+
+	if highestLeafNodeLevel == -1 {
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"id": "72437862-186d-411a-850c-4aa076f5731b",
+		}).Fatal("Didn't find any LeafNodes among MerkleTreeNodeItems. This should not not happen")
+	}
+
+	// Map to hold RowHashes for each NodeName
+	rowHashMap := make(map[string][]string) //map[<NodeName>][]<RowHash>
+
+	// Generate the map for NodeNames and RowHashes
+	for _, testDataRowItem := range testDataRowItems {
+
+		// Only process on 'column = 0' because all columns on same row have the same RowHash
+		if testDataRowItem.valueColumnOrder == 0 {
+
+			// Check if LeafNodeName already is added
+			_, valueExits := rowHashMap[testDataRowItem.leafNodeName]
+
+			// Add RowHash to array
+			if valueExits == false {
+				// Get existing array to add to
+				arrayOfRowHashes := rowHashMap[testDataRowItem.leafNodeName]
+				arrayOfRowHashes = append(arrayOfRowHashes, testDataRowItem.rowHash)
+
+				rowHashMap[testDataRowItem.leafNodeName] = arrayOfRowHashes
+			} else {
+				// Create new empty array to add to
+				arrayOfRowHashes := []string{testDataRowItem.rowHash}
+
+				rowHashMap[testDataRowItem.leafNodeName] = arrayOfRowHashes
+			}
+		}
+	}
+
+	// Map to hold LeafNodeHashes which are calculated from RowHashes group by NodeNames
+	leafNodeHashesMap := make(map[string]string) //map[<NodeName>]<LeafNodeHash>
+
+	// Loop over NodeNames and calculate LeafNodeHashes
+	for nodeName, rowHashes := range rowHashMap {
+
+		// Hash all RowHashes
+		hashedValues := fenixSyncShared.HashValues(rowHashes, false)
+
+		// Add value to map
+		leafNodeHashesMap[nodeName] = hashedValues
+	}
+
+	// Verify that each calculated LeafNodeHash exists among the MerkleTreeItems
+	var numberOfMissedLeafHashes = 0
+	//var numberOfNodeHashesThatDidNotHaveAnyLeafNode = 0
+	//var currentNodeHashWasFound bool
+
+	// Loop all LeafNodes with calculated LeafNodeHashes
+	for nodeName, nodeHash := range leafNodeHashesMap {
+
+		// Loop all MerkleTreeNodeItems
+		for _, merkleTreeLeafNodeItem := range merkleTreeLeafNodeItems {
+
+			//currentNodeHashWasFound = false
+
+			if nodeName == merkleTreeLeafNodeItem.nodeName {
+
+				// If calculate Hash is not the same as the Hash in MerkleTree then we have something 'fishy'
+				if nodeHash != merkleTreeLeafNodeItem.nodeHash {
+					numberOfMissedLeafHashes = numberOfMissedLeafHashes + 1
+					//currentNodeHashWasFound = true
+
+					break
+				}
+
+			}
+
+		}
+
+		//numberOfNodeHashesThatDidNotHaveAnyLeafNode = numberOfNodeHashesThatDidNotHaveAnyLeafNode + 1
+	}
+
+	lägg till något så man inte missar något
+
+	// Verify that there are no missed hashes
+	if numberOfMissedLeafHashes > 0 {
+
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"id": "4f26d271-56e9-4b15-ae5f-b00dab679c95",
+		}).Error("RowsHashes from TestDataRows did not recreated expected LeafNodeHashes")
+
+		// Set Error codes to return message
+		var errorCodes []fenixTestDataSyncServerGrpcApi.ErrorCodesEnum
+		var errorCode fenixTestDataSyncServerGrpcApi.ErrorCodesEnum
+
+		errorCode = fenixTestDataSyncServerGrpcApi.ErrorCodesEnum_ERROR_ROWHASH_NOT_CORRECT_CALCULATED
+		errorCodes = append(errorCodes, errorCode)
+
+		// Create Return message
+		returnMessage = &fenixTestDataSyncServerGrpcApi.AckNackResponse{
+			AckNack:    false,
+			Comments:   "When recreating missed LeafNodeHashes from RowHashes all LeafNodeHashes could not be created",
+			ErrorCodes: errorCodes,
+		}
+
+		return returnMessage
+
+	}
+
+	return nil
+
 }
