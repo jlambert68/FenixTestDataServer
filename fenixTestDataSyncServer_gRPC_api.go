@@ -6,8 +6,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"io"
-	"log"
-	"os"
 )
 
 // *********************************************************************
@@ -525,13 +523,27 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataRows(stream fenixTestDataS
 	//}
 
 	// Get the Server MerkleTree
-	currentMerkleTreeNodesForServer := fenixTestDataSyncServerObject.getCurrentMerkleTreeNodesForServer(callingClientUuid)
-
-	//
-	1) UseClientMerkleTree istället för ServerMerkleTree och bara spara ner
-	2) Verifiera att Inkommande rader genererar de LeadNodeHashes som efterfrågas
-
-
+	//currentMerkleTreeNodesForServer := fenixTestDataSyncServerObject.getCurrentMerkleTreeNodesForServer(callingClientUuid)
+	/*
+		//
+		1) UseClientMerkleTree
+		istället
+		för
+		ServerMerkleTree
+		och
+		bara
+		spara
+		ner
+		2) Verifiera
+		att
+		Inkommande
+		rader
+		genererar
+		de
+		LeadNodeHashes
+		som
+		efterfrågas
+	*/
 	// Get Server and Clients version of the MerkleTree
 	serverCopyMerkleTree := fenixTestDataSyncServerObject.getCurrentMerkleTreeNodesForServer(callingClientUuid)
 	clientsNewMerkleTree := fenixTestDataSyncServerObject.getCurrentMerkleTreeNodesForClient(callingClientUuid)
@@ -543,106 +555,120 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataRows(stream fenixTestDataS
 	// Extract LeafNodeItems that is in Client but not i Server, will use 'Not(Server) Intersecting Client'
 	newMerkleTreeLeafNodeItemsFromClient := fenixTestDataSyncServerObject.notAIntersectingBOnMerkleTreeItems(serverCopyMerkleTreeLeafNodeItems, clientsNewMerkleTreeLeafNodeItems)
 
-	// Verify that New Rows from client will generate ALL LeafNodesHashes found in 'newMerkleTreeLeafNodeItemsFromClient'
-	returnMessage := fenixTestDataSyncServerObject.verifyThatRowHashesMatchesLeafNodeHashes(cloudDBTestDataRowItemsMessage, newMerkleTreeLeafNodeItemsFromClient)
+	// Verify that New Rows from client will generate LeafNodesHashes found in 'newMerkleTreeLeafNodeItemsFromClient'
+	returnMessage = fenixTestDataSyncServerObject.verifyThatRowHashesMatchesLeafNodeHashes(callingClientUuid, cloudDBTestDataRowItemsMessage, newMerkleTreeLeafNodeItemsFromClient)
 	if returnMessage != nil {
 		// RowHashes didn't generate expected MerkleLeafNodeHashes
-		return returnMessage, nil
+		return stream.SendAndClose(returnMessage)
 	}
-	// Extract all NodeNames to request from client
-	merkleNodeNamesToRequest := missedPathsToRetrieveFromClient(serverCopyMerkleTree, clientsNewMerkleTree)
 
-	// Create LeafNodes from RowItems
-	merkleTreeLeafNodesItems := fenixTestDataSyncServerObject.extractLeafNodeItemsFromMerkleTree(testDataRowsIncludingLeafNodeHashes)
+	requestedLeafNodeNames := fenixTestDataSyncServerObject.getCurrentRequestedMerkleNodeNamesFromClient(callingClientUuid)
 
-	//
-	3) Läs upp alla LeadNodeNames & LeafNodeHAshes för att säkerställa att [DB - "de som ska bort" + "De nya"] är samma som i Nya ClientMerkleTree
-// Convert MerkleTreeNodes into Dataframe-object
-	currentMerkleTreeNodesForServerAsDataFrame := fenixTestDataSyncServerObject.convertMemDBMerkleTreeMessageToDataframe(currentMerkleTreeNodesForServer)
-	f, err := os.Create("currentMerkleTreeNodesForServerAsDataFrame.csv")
-	if err != nil {
-		log.Fatal(err)
+	// Verify that all requested NodesNames is found among TestDataRows
+	returnMessage = fenixTestDataSyncServerObject.verifyThatRequestedLeafNodeNamesAreFoundAmongReceivedTestDataRows(callingClientUuid, cloudDBTestDataRowItemsMessage, requestedLeafNodeNames)
+	if returnMessage != nil {
+		// RowHashes didn't generate expected MerkleLeafNodeHashes
+		return stream.SendAndClose(returnMessage)
 	}
-	currentMerkleTreeNodesForServerAsDataFrame.WriteCSV(f)
-	f.Close()
+
+	/*
+			// Extract all NodeNames to request from client
+			merkleNodeNamesToRequest := missedPathsToRetrieveFromClient(serverCopyMerkleTree, clientsNewMerkleTree)
+
+			// Create LeafNodes from RowItems
+			merkleTreeLeafNodesItems := fenixTestDataSyncServerObject.extractLeafNodeItemsFromMerkleTree(testDataRowsIncludingLeafNodeHashes)
+
+			//
+			3) Läs upp alla LeadNodeNames & LeafNodeHAshes för att säkerställa att [DB - "de som ska bort" + "De nya"] är samma som i Nya ClientMerkleTree
+		// Convert MerkleTreeNodes into Dataframe-object
+			currentMerkleTreeNodesForServerAsDataFrame := fenixTestDataSyncServerObject.convertMemDBMerkleTreeMessageToDataframe(currentMerkleTreeNodesForServer)
+			f, err := os.Create("currentMerkleTreeNodesForServerAsDataFrame.csv")
+			if err != nil {
+				log.Fatal(err)
+			}
+			currentMerkleTreeNodesForServerAsDataFrame.WriteCSV(f)
+			f.Close()
+
+	*/
 
 	// Create MerkleHash and MerkleTree from LeafNodeHashes
-	computedMerkleHash := fenixSyncShared.CalculateMerkleHashFromMerkleTree(currentMerkleTreeNodesForServerAsDataFrame)
+	//computedMerkleHash := fenixSyncShared.CalculateMerkleHashFromMerkleTree(currentMerkleTreeNodesForServerAsDataFrame)
 
 	// Recreate MerkleHash from All testdata rows, both existing rows for Server and new from Client
 	//computedMerkleHash, _, _ := fenixSyncShared.CreateMerkleTreeFromDataFrame(
 	//	testDataRowsIncludingLeafNodeHashesAsDataFrame,
 	//	merkleFilterPath)
+	/*
+		//Compare 'computedMerkleHash' with MerkleHash from Client
+		clientMerkleHash := fenixTestDataSyncServerObject.getCurrentMerkleHashForClient(callingClientUuid)
 
-	//Compare 'computedMerkleHash' with MerkleHash from Client
-	clientMerkleHash := fenixTestDataSyncServerObject.getCurrentMerkleHashForClient(callingClientUuid)
+		if computedMerkleHash != clientMerkleHash {
+			// Computed MerkleHash is not the same as the one sent by the Client
 
-	if computedMerkleHash != clientMerkleHash {
-		// Computed MerkleHash is not the same as the one sent by the Client
-
-		// Set Error codes to return message
-		var errorCodes []fenixTestDataSyncServerGrpcApi.ErrorCodesEnum
-		var errorCode fenixTestDataSyncServerGrpcApi.ErrorCodesEnum
-
-		errorCode = fenixTestDataSyncServerGrpcApi.ErrorCodesEnum_ERROR_MERKLEHASH_NOT_CORRECT_CALCULATED
-		errorCodes = append(errorCodes, errorCode)
-
-		// Create Return message
-		returnMessage := &fenixTestDataSyncServerGrpcApi.AckNackResponse{
-			AckNack:    false,
-			Comments:   "MerkleRoot hash is not the same as sent to server. Got " + clientMerkleHash + ", but recalculated to " + computedMerkleHash + " from testdata",
-			ErrorCodes: errorCodes,
-		}
-
-		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
-			"id": "e9b43ac4-ed89-41ef-9762-bc7406633906",
-		}).Info("MerkleRoot hash is not the same as sent to server. Got " + clientMerkleHash + ", but recalculated to " + computedMerkleHash + " from testdata  Client: " + callingClientUuid)
-
-		return stream.SendAndClose(returnMessage)
-
-	} else {
-
-		// Convert gRPC-RowsMessage into cloudDBTestDataRowItems-message
-		//cloudDBTestDataRowItemMessage := fenixTestDataSyncServerObject.convertgRpcTestDataRowsMessageToCloudDBTestDataRowItems(
-		//	testdataRowsMessages)
-
-		// Save TestDataRows to MemoryDB
-		_ = fenixTestDataSyncServerObject.saveCurrentTestDataRowItemsForClient(
-			callingClientUuid, testDataRowsIncludingLeafNodeHashes) //cloudDBTestDataRowItemMessage)
-
-		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
-			"id": "9aa8379e-5d5c-4eb4-9b18-d52da4291795",
-		}).Debug("The TestDataRows were saved for Client: " + callingClientUuid)
-
-		// Move Client-data to Server-data in MemoryDB for client
-		success := fenixTestDataSyncServerObject.moveCurrentTestDataAndMerkleTreeFromClientToServer(callingClientUuid)
-
-		if success == true {
-			fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
-				"id": "601150cd-856f-49db-acc5-779004e7701b",
-			}).Debug("The TestDataRows were copied from Client to Server for Client: " + callingClientUuid)
-
-			return stream.SendAndClose(&fenixTestDataSyncServerGrpcApi.AckNackResponse{AckNack: true, Comments: ""})
-
-		} else {
 			// Set Error codes to return message
 			var errorCodes []fenixTestDataSyncServerGrpcApi.ErrorCodesEnum
 			var errorCode fenixTestDataSyncServerGrpcApi.ErrorCodesEnum
 
-			errorCode = fenixTestDataSyncServerGrpcApi.ErrorCodesEnum_ERROR_TEMPORARY_STOP_IN_PROCESSING
+			errorCode = fenixTestDataSyncServerGrpcApi.ErrorCodesEnum_ERROR_MERKLEHASH_NOT_CORRECT_CALCULATED
 			errorCodes = append(errorCodes, errorCode)
 
 			// Create Return message
-			returnMessage = &fenixTestDataSyncServerGrpcApi.AckNackResponse{
+			returnMessage := &fenixTestDataSyncServerGrpcApi.AckNackResponse{
 				AckNack:    false,
-				Comments:   "Something went wrong",
-				ErrorCodes: nil,
+				Comments:   "MerkleRoot hash is not the same as sent to server. Got " + clientMerkleHash + ", but recalculated to " + computedMerkleHash + " from testdata",
+				ErrorCodes: errorCodes,
 			}
 
+			fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+				"id": "e9b43ac4-ed89-41ef-9762-bc7406633906",
+			}).Info("MerkleRoot hash is not the same as sent to server. Got " + clientMerkleHash + ", but recalculated to " + computedMerkleHash + " from testdata  Client: " + callingClientUuid)
+
 			return stream.SendAndClose(returnMessage)
+
+		} else {
+	*/
+	// Convert gRPC-RowsMessage into cloudDBTestDataRowItems-message
+	//cloudDBTestDataRowItemMessage := fenixTestDataSyncServerObject.convertgRpcTestDataRowsMessageToCloudDBTestDataRowItems(
+	//	testdataRowsMessages)
+
+	// Save TestDataRows to MemoryDB
+	_ = fenixTestDataSyncServerObject.saveCurrentTestDataRowItemsForClient(
+		callingClientUuid, testDataRowsIncludingLeafNodeHashes) //cloudDBTestDataRowItemMessage)
+
+	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"id": "9aa8379e-5d5c-4eb4-9b18-d52da4291795",
+	}).Debug("The TestDataRows were saved for Client: " + callingClientUuid)
+
+	// Move Client-data to Server-data in MemoryDB for client
+	success := fenixTestDataSyncServerObject.moveCurrentTestDataAndMerkleTreeFromClientToServer(callingClientUuid)
+
+	if success == true {
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"id": "601150cd-856f-49db-acc5-779004e7701b",
+		}).Debug("The TestDataRows were copied from Client to Server for Client: " + callingClientUuid)
+
+		return stream.SendAndClose(&fenixTestDataSyncServerGrpcApi.AckNackResponse{AckNack: true, Comments: ""})
+
+	} else {
+		// Set Error codes to return message
+		var errorCodes []fenixTestDataSyncServerGrpcApi.ErrorCodesEnum
+		var errorCode fenixTestDataSyncServerGrpcApi.ErrorCodesEnum
+
+		errorCode = fenixTestDataSyncServerGrpcApi.ErrorCodesEnum_ERROR_TEMPORARY_STOP_IN_PROCESSING
+		errorCodes = append(errorCodes, errorCode)
+
+		// Create Return message
+		returnMessage = &fenixTestDataSyncServerGrpcApi.AckNackResponse{
+			AckNack:    false,
+			Comments:   "Something went wrong",
+			ErrorCodes: nil,
 		}
+
+		return stream.SendAndClose(returnMessage)
 	}
 }
+
+//}
 
 // *********************************************************************
 

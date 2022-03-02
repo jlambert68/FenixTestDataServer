@@ -663,7 +663,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) notAIn
 	return merkleTreeNodeItemsToBeReturned
 }
 
-//
+// Verify that when recreating NodeHashes from RowHashes they should be found among MerkleTreeLeafeNodes for Client
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) verifyThatRowHashesMatchesLeafNodeHashes(callingClientUuid string, testDataRowItems []cloudDBTestDataRowItemCurrentStruct, merkleTreeLeafNodeItems []cloudDBTestDataMerkleTreeStruct) (returnMessage *fenixTestDataSyncServerGrpcApi.AckNackResponse) {
 
 	// Secure that we only operate on LeafNodes
@@ -746,13 +746,12 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) verify
 		//numberOfNodeHashesThatDidNotHaveAnyLeafNode = numberOfNodeHashesThatDidNotHaveAnyLeafNode + 1
 	}
 
-	lägg till något så man inte missar något
-
 	// Verify that there are no missed hashes
 	if numberOfMissedLeafHashes > 0 {
 
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
-			"id": "4f26d271-56e9-4b15-ae5f-b00dab679c95",
+			"id":                       "4f26d271-56e9-4b15-ae5f-b00dab679c95",
+			"numberOfMissedLeafHashes": numberOfMissedLeafHashes,
 		}).Error("RowsHashes from TestDataRows did not recreated expected LeafNodeHashes")
 
 		// Set Error codes to return message
@@ -766,6 +765,66 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) verify
 		returnMessage = &fenixTestDataSyncServerGrpcApi.AckNackResponse{
 			AckNack:    false,
 			Comments:   "When recreating missed LeafNodeHashes from RowHashes all LeafNodeHashes could not be created",
+			ErrorCodes: errorCodes,
+		}
+
+		return returnMessage
+
+	}
+
+	return nil
+
+}
+
+// Verify that the requested LeafNodeNames are found among the received TestDataRows
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) verifyThatRequestedLeafNodeNamesAreFoundAmongReceivedTestDataRows(callingClientUuid string, cloudDBTestDataRowItemsMessage []cloudDBTestDataRowItemCurrentStruct, requestedLeafNodeNames []string) (returnMessage *fenixTestDataSyncServerGrpcApi.AckNackResponse) {
+
+	var numberOfMissedLeafNodeNames int
+	var currentNodeNameWasFound bool
+
+	// Verify that each LeafNodeName exists among the TestDataRows
+	numberOfMissedLeafNodeNames = 0
+
+	// Loop all TestDataRows
+	for _, testDataRowItem := range cloudDBTestDataRowItemsMessage {
+
+		currentNodeNameWasFound = false
+		// Loop all MerkleTreeNodeItems
+		for _, leafNodeName := range requestedLeafNodeNames {
+
+			if leafNodeName == testDataRowItem.leafNodeName {
+				currentNodeNameWasFound = true
+				break
+			}
+
+		}
+		// LeafNodeName was not found so add counte
+		if currentNodeNameWasFound == false {
+			numberOfMissedLeafNodeNames = numberOfMissedLeafNodeNames + 1
+
+		}
+
+	}
+
+	// Verify that there are no missed hashes
+	if numberOfMissedLeafNodeNames > 0 {
+
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"id":                          "e9a51e1b-d848-4b56-a383-621e7a1aeabc",
+			"numberOfMissedLeafNodeNames": numberOfMissedLeafNodeNames,
+		}).Error("Didn't found all Requested LeafNodeNames among TestDataRows")
+
+		// Set Error codes to return message
+		var errorCodes []fenixTestDataSyncServerGrpcApi.ErrorCodesEnum
+		var errorCode fenixTestDataSyncServerGrpcApi.ErrorCodesEnum
+
+		errorCode = fenixTestDataSyncServerGrpcApi.ErrorCodesEnum_ERROR_ROWHASH_NOT_CORRECT_CALCULATED
+		errorCodes = append(errorCodes, errorCode)
+
+		// Create Return message
+		returnMessage = &fenixTestDataSyncServerGrpcApi.AckNackResponse{
+			AckNack:    false,
+			Comments:   "Didn't found all Requested LeafNodeNames among TestDataRows",
 			ErrorCodes: errorCodes,
 		}
 

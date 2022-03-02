@@ -29,6 +29,7 @@ type tempDBDataStruct struct {
 	//merkleTree           dataframe.DataFrame
 	merkleTreeNodes                             []cloudDBTestDataMerkleTreeStruct
 	merkleTreeNodesChildHashesThatNoLongerExist []string
+	requestedMerkleNodeNamesFromClient          []string
 	MerkleFilterPath                            string
 	MerkleFilterPathHash                        string
 	headerHash                                  string
@@ -280,6 +281,47 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveCu
 		tempDBStructInitiated.clientData.merkleHash = merkleHash
 
 		dbDataMap[memDBClientUuidType(testDataClientUuid)] = &tempDBStructInitiated
+	}
+
+	return true
+}
+
+// Retrieve current TestData-requestedMerkleNodeNamesFromClient for Client
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCurrentRequestedMerkleNodeNamesFromClient(testDataClientGuid string) (currentRequestedMerkleNodeNamesFromClient []string) {
+
+	// Get pointer to data for Client_UUID
+	tempdbData, valueExits := dbDataMap[memDBClientUuidType(testDataClientGuid)]
+
+	// Get the data
+	if valueExits == true {
+		currentRequestedMerkleNodeNamesFromClient = tempdbData.clientData.requestedMerkleNodeNamesFromClient
+	} else {
+		currentRequestedMerkleNodeNamesFromClient = []string{}
+	}
+
+	return currentRequestedMerkleNodeNamesFromClient
+}
+
+// Save current TestData-requestedMerkleNodeNamesFromClient for Client
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveCurrentRequestedMerkleNodeNamesFromClient(callingClientUuid string, currentRequestedMerkleNodeNamesFromClient []string) bool {
+
+	// Get pointer to data for Client_UUID
+	tempdbData, valueExits := dbDataMap[memDBClientUuidType(callingClientUuid)]
+
+	if valueExits == true {
+		// Get pointer to client data
+		clientData := tempdbData.clientData
+
+		// MerkleFilterPathHash
+		clientData.requestedMerkleNodeNamesFromClient = currentRequestedMerkleNodeNamesFromClient
+
+	} else {
+
+		// Initiate data structure for client
+		tempDBStructInitiated := fenixTestDataSyncServerObject.initiateTempDBStruct()
+		tempDBStructInitiated.clientData.requestedMerkleNodeNamesFromClient = currentRequestedMerkleNodeNamesFromClient
+
+		dbDataMap[memDBClientUuidType(callingClientUuid)] = &tempDBStructInitiated
 	}
 
 	return true

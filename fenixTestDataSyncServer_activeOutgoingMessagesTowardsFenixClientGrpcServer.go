@@ -275,6 +275,9 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) AskCli
 	// Extract all NodeNames to request from client
 	merkleNodeNamesToRequest := missedPathsToRetrieveFromClient(serverCopyMerkleTree, clientsNewMerkleTree)
 
+	// Save the Requested NodesNames for the Client
+	_ = fenixTestDataSyncServerObject.saveCurrentRequestedMerkleNodeNamesFromClient(testDataClientGuid, merkleNodeNamesToRequest)
+
 	// Set up connection to Client-server
 	fenixTestDataSyncServerObject.SetConnectionToFenixClientTestDataSyncServer()
 
