@@ -505,3 +505,69 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 	return nil
 
 }
+
+// ****************************************************************************************************************
+// Load all MerkleNodesHashes from CloudDB
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAllTestDataLeafNodeHashesForClientFromCloudDB(clientUuid string, merkleTreeNodesHashes *[][]string) (err error) {
+
+	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"Id": "0e7263db-a55a-45bb-a34b-9588f5ba6ee4",
+	}).Debug("Entering: loadAllMerkleTreeNodesHashesForClientFromCloudDB()")
+
+	defer func() {
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"Id": "7cd71d24-68ab-4ffd-98eb-1e6d9e0be55b",
+		}).Debug("Exiting: loadAllMerkleTreeNodesHashesForClientFromCloudDB()")
+	}()
+
+	sqlToExecute := ""
+	sqlToExecute = sqlToExecute + "SELECT DISTINCT public.testdata_row_items_current.leaf_node_hash, public.testdata_row_items_current.leaf_node_name "
+	sqlToExecute = sqlToExecute + "FROM public.testdata_row_items_current "
+	sqlToExecute = sqlToExecute + "WHERE value_column_order = 0 AND client_uuid::text = '" + clientUuid + "';"
+
+	// Query DB
+	rows, err := fenixSyncShared.DbPool.Query(context.Background(), sqlToExecute)
+
+	if err != nil {
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"Id":           "889143b8-2a8d-4182-b539-60daa46dc939",
+			"Error":        err,
+			"sqlToExecute": sqlToExecute,
+		}).Error("Something went wrong when executing SQL")
+
+		return err
+	}
+
+	// Variables to used when extract data from result set
+	var leafNodeHash string
+	var leafNodeName string
+	var leafNodeData []string
+	//var leafNodesData [][]string
+
+	// Extract data from DB result set
+	for rows.Next() {
+
+		err := rows.Scan(
+			&leafNodeHash, &leafNodeName)
+
+		if err != nil {
+			return err
+		}
+
+		// Create LeafNodeData to be added
+		leafNodeData = nil
+		leafNodeData = append(leafNodeData, leafNodeHash)
+		leafNodeData = append(leafNodeData, leafNodeName)
+
+		// Add value to array
+		*merkleTreeNodesHashes = append(*merkleTreeNodesHashes, leafNodeData)
+
+	}
+
+	// Copy 'leafNodesData' to pointer reference
+	//merkleTreeNodesHashes = &leafNodesData
+
+	// No errors occurred
+	return nil
+
+}

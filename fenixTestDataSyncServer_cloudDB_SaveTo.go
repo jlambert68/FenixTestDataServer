@@ -174,6 +174,13 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveTe
 	sqlToExecute = sqlToExecute + "public.testdata_row_items_current.leaf_node_hash IN " + fenixTestDataSyncServerObject.generateSQLINArray(fenixTestDataSyncServerObject.getCurrentChildNodeHashesToBeRemovedForServer(currentUserUuid))
 	sqlToExecute = sqlToExecute + "; "
 
+	// Make copy of  'current' TestDataRows
+	sqlToExecute = sqlToExecute + "CREATE TABLE public.testdata_row_items_current_temp "
+	sqlToExecute = sqlToExecute + "AS TABLE public.testdata_row_items_current; "
+
+	// Delete all 'current' TestDataRows
+	sqlToExecute = sqlToExecute + "TRUNCATE TABLE public.testdata_row_items_current; "
+
 	// Create Delete Statement for removing current MerkleTree-data for Client
 	sqlToExecute = sqlToExecute + "DELETE FROM public.testdata_merkletrees "
 	sqlToExecute = sqlToExecute + "WHERE client_uuid = '" + currentUserUuid + "'; "
@@ -227,7 +234,13 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveTe
 	sqlToExecute = sqlToExecute + fenixTestDataSyncServerObject.generateSQLInsertValues(dataRowsToBeInsertedMultiType)
 	sqlToExecute = sqlToExecute + ";"
 
-	// Create Insert Statement for current TestDataRows-data for Client
+	// Copy TestDataRows from 'Temp Table'
+	sqlToExecute = sqlToExecute + "INSERT INTO public.testdata_row_items_current (SELECT * FROM public.testdata_row_items_current_temp); "
+
+	// Delete 'Temp Table' for TestDataRows
+	sqlToExecute = sqlToExecute + "DROP table testdata_row_items_current_temp; "
+
+	// Create Insert Statement for new current TestDataRows-data for Client
 	// Data to be inserted in the DB-table
 	dataRowsToBeInsertedMultiType = nil
 	testDataRowItems := dbDataMap[memDBClientUuidType(currentUserUuid)].serverData.testDataRowItems
@@ -257,7 +270,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveTe
 	sqlToExecute = sqlToExecute + fenixTestDataSyncServerObject.generateSQLInsertValues(dataRowsToBeInsertedMultiType)
 	sqlToExecute = sqlToExecute + ";"
 
-	// Create Insert Statement for History TestDataRows-data for Client
+	// Create Insert Statement for new History TestDataRows-data for Client
 	// Data to be inserted in the DB-table
 	dataRowsToBeInsertedMultiType = nil
 	testDataRowItems = dbDataMap[memDBClientUuidType(currentUserUuid)].serverData.testDataRowItems

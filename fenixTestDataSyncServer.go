@@ -49,7 +49,10 @@ func FenixServerMain() {
 	fenixSyncShared.ConnectToDB()
 
 	// Set up BackendObject
-	fenixTestDataSyncServerObject = &fenixTestDataSyncServerObjectStruct{stateProcessIncomingAndOutgoingMessage: true}
+	fenixTestDataSyncServerObject = &fenixTestDataSyncServerObjectStruct{
+		stateProcessIncomingAndOutgoingMessage: true,
+		currentTestDataState:                   CurrenStateMerkleHash,
+	}
 
 	// Init logger
 	fenixTestDataSyncServerObject.InitLogger("")

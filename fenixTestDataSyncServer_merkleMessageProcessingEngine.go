@@ -8,6 +8,7 @@ import (
 	fenixSyncShared "github.com/jlambert68/FenixSyncShared"
 	"github.com/sirupsen/logrus"
 	"strconv"
+	"strings"
 )
 
 /*
@@ -54,6 +55,49 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) conver
 			MerklePath:      merkleTreeNode.NodeName,
 			MerkleHash:      merkleTreeNode.NodeHash,
 			MerkleChildHash: merkleTreeNode.NodeChildHash,
+		}
+		myMerkleTree = append(myMerkleTree, myMerkleTreeRow)
+
+	}
+
+	df := dataframe.LoadStructs(myMerkleTree)
+
+	return df
+}
+
+// Convert leafNodeHash and LeafNodeName message into a MerkleTree DataFrame object
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) convertLeafNodeMessagesToDataframe(leafNodesMessage [][]string) dataframe.DataFrame {
+	// leafNodesMessage[n] = 'leafNode'
+	// leafNode[0] = 'LeafNodeHash'
+	// leafNode[1] = 'LeafNodeName'
+
+	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"id": "c0b9dd6c-2431-4b71-b476-9d71eebf6d29",
+	}).Debug("Incoming gRPC 'convertLeafNodeMessagesToDataframe'")
+
+	defer fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"id": "ce67d061-777b-4cc6-9672-d0cfdf3f2c83",
+	}).Debug("Outgoing gRPC 'convertLeafNodeMessagesToDataframe'")
+
+	var myMerkleTree []MerkletreeStruct
+
+	// Number of MerkleLevels for MerkleTree
+	var numberOfMerkleLevels = 0
+
+	// Loop all MerkleTreeNodes and create a DataFrame for the data
+	for _, leafNode := range leafNodesMessage {
+
+		// Get number of MerkleLevels for MerkleTree
+		if numberOfMerkleLevels == 0 {
+			numberOfMerkleLevels = strings.Count(leafNode[1], "/")
+		}
+
+		// Create row and add to MerkleTree
+		myMerkleTreeRow := MerkletreeStruct{
+			MerkleLevel:     numberOfMerkleLevels,
+			MerklePath:      leafNode[1],
+			MerkleHash:      leafNode[0],
+			MerkleChildHash: "1", // Set '1', doesn't matter
 		}
 		myMerkleTree = append(myMerkleTree, myMerkleTreeRow)
 

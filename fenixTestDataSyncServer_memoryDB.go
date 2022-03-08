@@ -1120,10 +1120,12 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) remove
 	// Get pointer to client data
 	clientData := tempdbData.clientData
 
-	// Extract the hashes for all leaf nodes from MerkleTree
+	//highestLeafNodeLevel := fenixTestDataSyncServerObject.getMerkleLeafNodeLevel(clientData.merkleTreeNodes)
+
+	// Extract the hashes for all leaf nodes from Client MerkleTree
 	var clientsNewLeafNodesHashes []string
 	for _, MerkleTreeNode := range clientData.merkleTreeNodes {
-		clientsNewLeafNodesHashes = append(clientsNewLeafNodesHashes, MerkleTreeNode.nodeChildHash)
+		clientsNewLeafNodesHashes = append(clientsNewLeafNodesHashes, MerkleTreeNode.nodeHash)
 	}
 
 	// Get pointer to server data
@@ -1149,13 +1151,13 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) remove
 
 		// Only process LeafNodes
 		if serverMerkleTreeNodeItem.nodeLevel == highestNodeLevel {
-			if existsValueInStringArray(serverMerkleTreeNodeItem.nodeChildHash, clientsNewLeafNodesHashes) == true {
+			if existsValueInStringArray(serverMerkleTreeNodeItem.nodeHash, clientsNewLeafNodesHashes) == true {
 				// MerkleTreeRow that should be kept
 				serverTestDataToKeep = append(serverTestDataToKeep, serverMerkleTreeNodeItem)
 
 			} else {
 				// LeafNodeHashes to be removed
-				leafNodeHashesToRemoveFromServer = append(leafNodeHashesToRemoveFromServer, serverMerkleTreeNodeItem.nodeChildHash)
+				leafNodeHashesToRemoveFromServer = append(leafNodeHashesToRemoveFromServer, serverMerkleTreeNodeItem.nodeHash)
 
 			}
 		}
@@ -1164,8 +1166,18 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) remove
 	// Save MerkleTreeRows to be kept in memoryDB
 	serverData.merkleTreeNodes = serverTestDataToKeep
 
+	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"Id":                   "bfdbc46f-963a-427e-96bc-f949f76c6d62",
+		"serverTestDataToKeep": serverTestDataToKeep,
+	}).Debug("MerkleTreeRows to be kept in memoryDB for Client: " + callingClientUuid)
+
 	// Save the leafNodeHashes to be removed
 	serverData.merkleTreeNodesChildHashesThatNoLongerExist = leafNodeHashesToRemoveFromServer
+
+	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"Id": "6e8f00c5-881c-471c-bc02-984c73326c06",
+		"serverData.merkleTreeNodesChildHashesThatNoLongerExist": serverData.merkleTreeNodesChildHashesThatNoLongerExist,
+	}).Debug("LeafNodeHashes to be removed for Client: " + callingClientUuid)
 
 	return true
 }

@@ -6,6 +6,9 @@ import (
 	fenixTestDataSyncServerGrpcApi "github.com/jlambert68/FenixGrpcApi/Fenix/fenixTestDataSyncServerGrpcApi/go_grpc_api"
 	fenixSyncShared "github.com/jlambert68/FenixSyncShared"
 	"github.com/sirupsen/logrus"
+	"log"
+	"os"
+	"strconv"
 )
 
 // ********************************************************************************************************************
@@ -36,6 +39,42 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) isTher
 
 	} else {
 		return nil
+	}
+
+}
+
+// ********************************************************************************************************************
+// Check if the system is in correct TestDataState and return next expected state
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) isSystemInCorrectTestDataRowsState(currentCallingUser string, expectedTestDataState executionStateTypeType) (returnMessage *fenixTestDataSyncServerGrpcApi.AckNackResponse, nextExpectedState executionStateTypeType) {
+
+	// Verify that the system is in correct TestDataState
+	if expectedTestDataState != fenixTestDataSyncServerObject.currentTestDataState {
+
+		// Set Error codes to return message
+		var errorCodes []fenixTestDataSyncServerGrpcApi.ErrorCodesEnum
+		var errorCode fenixTestDataSyncServerGrpcApi.ErrorCodesEnum
+
+		errorCode = fenixTestDataSyncServerGrpcApi.ErrorCodesEnum_ERROR_TEMPORARY_STOP_IN_PROCESSING // TODO Have correct Error code
+		errorCodes = append(errorCodes, errorCode)
+
+		// Create Return message
+		returnMessage = &fenixTestDataSyncServerGrpcApi.AckNackResponse{
+			AckNack:    false,
+			Comments:   "Expected State for TestDataServer is " + strconv.FormatInt(int64(expectedTestDataState), 10) + " but current State is " + strconv.FormatInt(int64(fenixTestDataSyncServerObject.currentTestDataState), 10),
+			ErrorCodes: errorCodes,
+		}
+
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"id": "e903390a-421a-4d16-976d-08a464424385",
+		}).Error("Expected State for TestDataServer is " + strconv.FormatInt(int64(expectedTestDataState), 10) + " but current State is " + strconv.FormatInt(int64(fenixTestDataSyncServerObject.currentTestDataState), 10) + " for Client: " + currentCallingUser)
+
+		return returnMessage, CurrenStateMerkleHash
+
+	} else {
+
+		nextExpectedState = nextTestDataStateMap[expectedTestDataState]
+
+		return nil, nextExpectedState
 	}
 
 }
@@ -506,7 +545,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) conver
 }
 
 // Generate relations between LeafNodeName, LeafNodeHash and TestDataRowHash
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) generateRowHashToMerkleChildNodeHashMap(OldServerDataRowItemsAndNewClientDataRowItems []cloudDBTestDataRowItemCurrentStruct, clientsNewMerkleTreeRowItems []cloudDBTestDataMerkleTreeStruct) (rowHashToLeafNodeHashMap map[string]string) {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) generateRowHashToNodeHashMap(OldServerDataRowItemsAndNewClientDataRowItems []cloudDBTestDataRowItemCurrentStruct, clientsNewMerkleTreeRowItems []cloudDBTestDataMerkleTreeStruct) (rowHashToLeafNodeHashMap map[string]string) {
 
 	rowHashToLeafNodeHashMap = make(map[string]string)       //map[<rowHash>]<leafNodeHash>
 	leafNodeNameToLeafNodeHashMap := make(map[string]string) //map[<leafNodeName>]<leafNodHash>
@@ -535,10 +574,15 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) genera
 			}
 
 			// Add relation to map
-			leafNodeNameToLeafNodeHashMap[merkleTreeRowItem.nodeName] = merkleTreeRowItem.nodeChildHash
+			leafNodeNameToLeafNodeHashMap[merkleTreeRowItem.nodeName] = merkleTreeRowItem.nodeHash
 
 		}
 	}
+
+	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"id":                            "b0986c76-932e-43ad-89e8-78773d43cc4c",
+		"leafNodeNameToLeafNodeHashMap": leafNodeNameToLeafNodeHashMap,
+	}).Debug("Map for 'leafNodeNameToLeafNodeHashMap'")
 
 	// Loop all TestDataItems and create relation RowHash -> LeafNodeHash
 	for _, testDataRowItem := range OldServerDataRowItemsAndNewClientDataRowItems {
@@ -546,7 +590,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) genera
 		// Only need to process for first column because all columns, in same row, have same rowHash and LeafNode
 		if testDataRowItem.valueColumnOrder == 0 {
 
-			// Check if RowHah already exist in Map
+			// Check if RowHash already exist in Map
 			_, rowHashExist := rowHashToLeafNodeHashMap[testDataRowItem.rowHash]
 			if rowHashExist == false {
 
@@ -568,13 +612,25 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) genera
 		}
 	}
 
+	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"id":                       "d383195f-07ff-4396-bbc8-3d9a400377da",
+		"rowHashToLeafNodeHashMap": rowHashToLeafNodeHashMap,
+	}).Debug("Map for 'rowHashToLeafNodeHashMap'")
+
 	return rowHashToLeafNodeHashMap
 }
 
 // Add MerkleLeafNodeHashes to TestDataRowItems
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) addMerkleLeafNodeHashesToTestDataRowItems(testDataRowItems []cloudDBTestDataRowItemCurrentStruct, rowHashToLeafNodeHashMap map[string]string) []cloudDBTestDataRowItemCurrentStruct {
 
-	// Loop all TestDataRowItems and add the ChildNodeHash to it
+	/*
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"id":               "0ca4b60a-a5a2-4edd-8716-b854878b13d6",
+			"testDataRowItems": testDataRowItems,
+		}).Debug("testDataRowItems before processing 'addMerkleLeafNodeHashesToTestDataRowItems'")
+	*/
+
+	// Loop all TestDataRowItems and add the NodeHash to it
 	for testDataRowItemPosition, testDataRowItem := range testDataRowItems {
 
 		// Verify that value exist
@@ -594,11 +650,18 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) addMer
 		}
 	}
 
+	/*
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"id":               "7856b33f-27b7-4d1d-b91f-be74c01f29bf",
+			"testDataRowItems": testDataRowItems,
+		}).Debug("testDataRowItems after processing 'addMerkleLeafNodeHashesToTestDataRowItems'")
+	*/
+
 	return testDataRowItems
 }
 
 // Get all LeafNodeItems for Server from memoryDB
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) extractLeafNodeItemsFromMerkleTree(merkleTreeNodeItems []cloudDBTestDataMerkleTreeStruct) (leafNodeItems []cloudDBTestDataMerkleTreeStruct) {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) extractLeafNodeItemsFromMerkleTree(merkleTreeNodeItems []cloudDBTestDataMerkleTreeStruct, serverHasNoPreviousClientData bool) (leafNodeItems []cloudDBTestDataMerkleTreeStruct) {
 
 	highestLeafNodeLevel := fenixTestDataSyncServerObject.getMerkleLeafNodeLevel(merkleTreeNodeItems)
 
@@ -688,7 +751,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) verify
 			_, valueExits := rowHashMap[testDataRowItem.leafNodeName]
 
 			// Add RowHash to array
-			if valueExits == false {
+			if valueExits == true {
 				// Get existing array to add to
 				arrayOfRowHashes := rowHashMap[testDataRowItem.leafNodeName]
 				arrayOfRowHashes = append(arrayOfRowHashes, testDataRowItem.rowHash)
@@ -779,6 +842,11 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) verify
 // Verify that the requested LeafNodeNames are found among the received TestDataRows
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) verifyThatRequestedLeafNodeNamesAreFoundAmongReceivedTestDataRows(callingClientUuid string, cloudDBTestDataRowItemsMessage []cloudDBTestDataRowItemCurrentStruct, requestedLeafNodeNames []string) (returnMessage *fenixTestDataSyncServerGrpcApi.AckNackResponse) {
 
+	// When 'requestedLeafNodeNames' is empty then all rows are requested and we can't do this verification
+	if len(requestedLeafNodeNames) == 0 {
+		return nil
+	}
+
 	var numberOfMissedLeafNodeNames int
 	var currentNodeNameWasFound bool
 
@@ -831,6 +899,97 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) verify
 		return returnMessage
 
 	}
+
+	return nil
+
+}
+
+// Verify that saved TestDataLeafNodeHashes recreates MerkleHash
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) verifyThatMerkleLeafNodeHashesReCreatesMerkleHash(callingClientUuid string) (returnMessage *fenixTestDataSyncServerGrpcApi.AckNackResponse) {
+
+	var leafNodeHashes [][]string
+
+	// Load TestDataLeafNodeHashes from CLoudDBleafNodeHash
+	err := fenixTestDataSyncServerObject.loadAllTestDataLeafNodeHashesForClientFromCloudDB(callingClientUuid, &leafNodeHashes)
+
+	if err != nil {
+
+		// Problem executing SQL
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"id":  "dd5e92e7-fd09-4745-b64c-b8020b3ae04a",
+			"err": err,
+		}).Error("Problem executing SQL for Client: " + callingClientUuid)
+
+		// Stop processing in- and outgoing messages
+		fenixTestDataSyncServerObject.stateProcessIncomingAndOutgoingMessage = false
+
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"id": "6e391cda-959d-417b-92eb-7cf20d90822e",
+		}).Error("Stop processing in- and outgoing messages for Client: " + callingClientUuid)
+
+		// Set Error codes to return message
+		var errorCodes []fenixTestDataSyncServerGrpcApi.ErrorCodesEnum
+		var errorCode fenixTestDataSyncServerGrpcApi.ErrorCodesEnum
+
+		errorCode = fenixTestDataSyncServerGrpcApi.ErrorCodesEnum_ERROR_TEMPORARY_STOP_IN_PROCESSING
+		errorCodes = append(errorCodes, errorCode)
+
+		// Create Return message
+		returnMessage = &fenixTestDataSyncServerGrpcApi.AckNackResponse{
+			AckNack:    false,
+			Comments:   "Problem when executing SQL",
+			ErrorCodes: errorCodes,
+		}
+
+		return returnMessage
+	}
+
+	// Verify that there are some rows in CLoudDB
+	if len(leafNodeHashes) == 0 {
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"id": "6903f33f-78ed-4ab6-847f-681a3f32fcec",
+		}).Fatal("Didn't expect zero rows when reading CloudDB for Client: " + callingClientUuid)
+	}
+
+	// Convert LeafNode-data into MerkleTree-DataFrame
+	leafNodeMerkleTree := fenixTestDataSyncServerObject.convertLeafNodeMessagesToDataframe(leafNodeHashes)
+
+	// XXX
+	f, err := os.Create("leafNodeMerkleTree.csv")
+	if err != nil {
+		log.Fatal(err)
+	}
+	leafNodeMerkleTree.WriteCSV(f)
+	f.Close()
+
+	// Calculate MerkleHash from MerkleTree
+	reCalculatedMerkleHash := fenixSyncShared.CalculateMerkleHashFromMerkleTree(leafNodeMerkleTree)
+
+	if reCalculatedMerkleHash == "-1" {
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"id": "a23734b2-fbdd-470d-88b8-9699a3637404",
+		}).Fatal("Something went from when calculating MerkleHash for Client: " + callingClientUuid)
+
+	}
+
+	currentMerkleHashInMemDB := fenixTestDataSyncServerObject.getCurrentMerkleHashForServer(callingClientUuid)
+
+	// Verify that 'reCalculatedMerkleHash' == 'currentMerkleHashInMemDB'
+	if reCalculatedMerkleHash != currentMerkleHashInMemDB {
+
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"id":                       "4f26d271-56e9-4b15-ae5f-b00dab679c95",
+			"reCalculatedMerkleHash":   reCalculatedMerkleHash,
+			"currentMerkleHashInMemDB": currentMerkleHashInMemDB,
+		}).Fatal("'reCalculatedMerkleHash' is not the same as 'currentMerkleHashInMemDB' for Client: " + currentMerkleHashInMemDB)
+
+	}
+
+	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"id":                       "fdeade26-544e-436d-bf59-55d91614230f",
+		"reCalculatedMerkleHash":   reCalculatedMerkleHash,
+		"currentMerkleHashInMemDB": currentMerkleHashInMemDB,
+	}).Debug("'reCalculatedMerkleHash' from TestData-rows in CloudDB is the same as 'currentMerkleHashInMemDB' for Client: " + currentMerkleHashInMemDB)
 
 	return nil
 

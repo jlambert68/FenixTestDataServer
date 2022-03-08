@@ -6,6 +6,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"io"
+	"log"
+	"os"
 )
 
 // *********************************************************************
@@ -49,8 +51,21 @@ func (s *FenixTestDataGrpcServicesServer) SendMerkleHash(_ context.Context, merk
 	// Get calling client
 	callingClientUuid := merkleHashMessage.TestDataClientUuid
 
+	// When leaving set the next allowed state
+	var nextTestDataState = CurrenStateMerkleHash //Will be used if not changed
+	defer func() {
+		fenixTestDataSyncServerObject.currentTestDataState = nextTestDataState
+	}()
+
+	// Verify that system is in expected State
+	returnMessage, nextExpectedState := fenixTestDataSyncServerObject.isSystemInCorrectTestDataRowsState(callingClientUuid, CurrenStateMerkleHash)
+	if returnMessage != nil {
+		// System is in wrong state
+		return returnMessage, nil
+	}
+
 	// Check if Client is using correct proto files version
-	returnMessage := fenixTestDataSyncServerObject.isClientUsingCorrectTestDataProtoFileVersion(merkleHashMessage.GetTestDataClientUuid(), merkleHashMessage.ProtoFileVersionUsedByClient)
+	returnMessage = fenixTestDataSyncServerObject.isClientUsingCorrectTestDataProtoFileVersion(merkleHashMessage.GetTestDataClientUuid(), merkleHashMessage.ProtoFileVersionUsedByClient)
 	if returnMessage != nil {
 		// Not the correct proto-file version is used
 		return returnMessage, nil
@@ -125,6 +140,9 @@ func (s *FenixTestDataGrpcServicesServer) SendMerkleHash(_ context.Context, merk
 
 	}
 
+	// When all processing went well set next TestDataState to be expected
+	nextTestDataState = nextExpectedState
+
 	return &fenixTestDataSyncServerGrpcApi.AckNackResponse{AckNack: true, Comments: ""}, nil
 }
 
@@ -145,8 +163,21 @@ func (s *FenixTestDataGrpcServicesServer) SendMerkleTree(_ context.Context, merk
 	// Get calling client
 	callingClientUuid := merkleTreeMessage.TestDataClientUuid
 
+	// When leaving set the next allowed state
+	var nextTestDataState = CurrenStateMerkleHash //Will be used if not changed
+	defer func() {
+		fenixTestDataSyncServerObject.currentTestDataState = nextTestDataState
+	}()
+
+	// Verify that system is in expected State
+	returnMessage, nextExpectedState := fenixTestDataSyncServerObject.isSystemInCorrectTestDataRowsState(callingClientUuid, CurrenStateMerkleTree)
+	if returnMessage != nil {
+		// System is in wrong state
+		return returnMessage, nil
+	}
+
 	// Check if Client is using correct proto files version
-	returnMessage := fenixTestDataSyncServerObject.isClientUsingCorrectTestDataProtoFileVersion(merkleTreeMessage.GetTestDataClientUuid(), merkleTreeMessage.ProtoFileVersionUsedByClient)
+	returnMessage = fenixTestDataSyncServerObject.isClientUsingCorrectTestDataProtoFileVersion(merkleTreeMessage.GetTestDataClientUuid(), merkleTreeMessage.ProtoFileVersionUsedByClient)
 	if returnMessage != nil {
 		// Not correct proto-file version is used
 		return returnMessage, nil
@@ -168,6 +199,14 @@ func (s *FenixTestDataGrpcServicesServer) SendMerkleTree(_ context.Context, merk
 
 	// Convert the merkleTree into a DataFrame object
 	merkleTreeAsDataFrame := fenixTestDataSyncServerObject.convertgRpcMerkleTreeMessageToDataframe(*merkleTreeMessage)
+
+	// XXX
+	f, err := os.Create("incomingMerkleTree.csv")
+	if err != nil {
+		log.Fatal(err)
+	}
+	merkleTreeAsDataFrame.WriteCSV(f)
+	f.Close()
 
 	// Verify MerkleTree
 	clientsMerkleRootHash := fenixSyncShared.ExtractMerkleRootHashFromMerkleTree(merkleTreeAsDataFrame)
@@ -242,6 +281,9 @@ func (s *FenixTestDataGrpcServicesServer) SendMerkleTree(_ context.Context, merk
 		}).Debug("MerkleHash from MerkleTree is the same as in memoryDB for Client: " + callingClientUuid)
 
 	}
+
+	// When all processing went well set next TestDataState to be expected
+	nextTestDataState = nextExpectedState
 
 	return &fenixTestDataSyncServerGrpcApi.AckNackResponse{AckNack: true, Comments: ""}, nil
 }
@@ -453,6 +495,19 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataRows(stream fenixTestDataS
 	// Get calling client
 	callingClientUuid := testdataRowsMessages.TestDataClientUuid
 
+	// When leaving set the next allowed state
+	var nextTestDataState = CurrenStateMerkleHash //Will be used if not changed
+	defer func() {
+		fenixTestDataSyncServerObject.currentTestDataState = nextTestDataState
+	}()
+
+	// Verify that system is in expected State
+	returnMessage, nextExpectedState := fenixTestDataSyncServerObject.isSystemInCorrectTestDataRowsState(callingClientUuid, CurrenStateTestData)
+	if returnMessage != nil {
+		// System is in wrong state
+		return stream.SendAndClose(returnMessage)
+	}
+
 	// Check if Client is using correct proto files version
 	returnMessage = fenixTestDataSyncServerObject.isClientUsingCorrectTestDataProtoFileVersion(
 		testdataRowsMessages.TestDataClientUuid,
@@ -506,7 +561,7 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataRows(stream fenixTestDataS
 	//	cloudDBTestDataRowItemsMessage)
 
 	// Generate RowHashToMerkleChildNodeHashMap for TestData Rows and return map of type; "MAP[<RowHash>]=<MerkleChildNodeHash>" - 'MAP[string]string')
-	rowHashToLeafNodeHashMap := fenixTestDataSyncServerObject.generateRowHashToMerkleChildNodeHashMap(
+	rowHashToLeafNodeHashMap := fenixTestDataSyncServerObject.generateRowHashToNodeHashMap(
 		cloudDBTestDataRowItemsMessage, //concatenatedTestDataRows,
 		fenixTestDataSyncServerObject.getCurrentMerkleTreeNodesForClient(callingClientUuid))
 
@@ -548,9 +603,25 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataRows(stream fenixTestDataS
 	serverCopyMerkleTree := fenixTestDataSyncServerObject.getCurrentMerkleTreeNodesForServer(callingClientUuid)
 	clientsNewMerkleTree := fenixTestDataSyncServerObject.getCurrentMerkleTreeNodesForClient(callingClientUuid)
 
-	// Extract the LeafNodes from ServerMerkleTree and ClientMerkleTree
-	serverCopyMerkleTreeLeafNodeItems := fenixTestDataSyncServerObject.extractLeafNodeItemsFromMerkleTree(serverCopyMerkleTree)
-	clientsNewMerkleTreeLeafNodeItems := fenixTestDataSyncServerObject.extractLeafNodeItemsFromMerkleTree(clientsNewMerkleTree)
+	var serverHasPreviousDataForCLient bool
+	if len(serverCopyMerkleTree) == 0 {
+		serverHasPreviousDataForCLient = false
+	} else {
+		serverHasPreviousDataForCLient = true
+	}
+
+	// Extract the LeafNodes from ServerMerkleTree
+	// If Server has no previous data from client then set to nil
+	var serverCopyMerkleTreeLeafNodeItems []cloudDBTestDataMerkleTreeStruct
+	if serverHasPreviousDataForCLient == true {
+		serverCopyMerkleTreeLeafNodeItems = fenixTestDataSyncServerObject.extractLeafNodeItemsFromMerkleTree(serverCopyMerkleTree, serverHasPreviousDataForCLient)
+
+	} else {
+		serverCopyMerkleTreeLeafNodeItems = nil
+	}
+
+	// Extract the LeafNodes from ClientMerkleTree
+	clientsNewMerkleTreeLeafNodeItems := fenixTestDataSyncServerObject.extractLeafNodeItemsFromMerkleTree(clientsNewMerkleTree, true)
 
 	// Extract LeafNodeItems that is in Client but not i Server, will use 'Not(Server) Intersecting Client'
 	newMerkleTreeLeafNodeItemsFromClient := fenixTestDataSyncServerObject.notAIntersectingBOnMerkleTreeItems(serverCopyMerkleTreeLeafNodeItems, clientsNewMerkleTreeLeafNodeItems)
@@ -646,6 +717,19 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataRows(stream fenixTestDataS
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 			"id": "601150cd-856f-49db-acc5-779004e7701b",
 		}).Debug("The TestDataRows were copied from Client to Server for Client: " + callingClientUuid)
+
+		// Verify that LeafNodes in DB recreates MerkleHash
+		returnMessage = fenixTestDataSyncServerObject.verifyThatMerkleLeafNodeHashesReCreatesMerkleHash(callingClientUuid)
+		if returnMessage != nil {
+			// MerkleHash not correct recreated
+			return stream.SendAndClose(returnMessage)
+		}
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"id": "b68303d6-6973-452b-9b8b-adaf724e5651",
+		}).Debug("Verified OK that LeafNodes in CloudDB recreated MerkleHash, Client: " + callingClientUuid)
+
+		// When all processing went well set next TestDataState to be expected
+		nextTestDataState = nextExpectedState
 
 		return stream.SendAndClose(&fenixTestDataSyncServerGrpcApi.AckNackResponse{AckNack: true, Comments: ""})
 

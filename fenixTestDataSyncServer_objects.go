@@ -15,9 +15,26 @@ import (
 //const LoggingLevel = logrus.InfoLevel
 const LoggingLevel = logrus.DebugLevel // InfoLevel
 
+type executionStateTypeType int
+
+// Constants used for handling which TestData-state the system is in
+const (
+	CurrenStateMerkleHash executionStateTypeType = iota
+	CurrenStateMerkleTree
+	CurrenStateTestData
+)
+
+// Allowed State Trasitions for TestData
+var nextTestDataStateMap = map[executionStateTypeType]executionStateTypeType{
+	CurrenStateMerkleHash: CurrenStateMerkleTree,
+	CurrenStateMerkleTree: CurrenStateTestData,
+	CurrenStateTestData:   CurrenStateMerkleHash,
+}
+
 type fenixTestDataSyncServerObjectStruct struct {
 	logger                                 *logrus.Logger
 	stateProcessIncomingAndOutgoingMessage bool
+	currentTestDataState                   executionStateTypeType
 }
 
 var fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct
