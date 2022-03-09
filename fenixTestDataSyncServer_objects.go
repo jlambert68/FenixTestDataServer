@@ -15,6 +15,7 @@ import (
 //const LoggingLevel = logrus.InfoLevel
 const LoggingLevel = logrus.DebugLevel // InfoLevel
 
+// Type definitions for State variables
 type executionStateTestDataTypeType int
 type executionStateTestDataHeaderTypeType int
 

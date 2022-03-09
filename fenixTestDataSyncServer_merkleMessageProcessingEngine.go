@@ -65,7 +65,10 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) conver
 	return df
 }
 
-// Convert leafNodeHash and LeafNodeName message into a MerkleTree DataFrame object
+//TODO Remove the below and use FenixShared instead
+x
+// Convert leafNodeHash and LeafNodeName message into a MerkleTree DataFrame object;
+// leafNodesMessage [][]string; [[<LeafNodeHash>, <LeafNodeName], [<>, <>]]
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) convertLeafNodeMessagesToDataframe(leafNodesMessage [][]string) dataframe.DataFrame {
 	// leafNodesMessage[n] = 'leafNode'
 	// leafNode[0] = 'LeafNodeHash'

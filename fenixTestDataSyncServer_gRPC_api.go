@@ -21,7 +21,7 @@ func (s *FenixTestDataGrpcServicesServer) AreYouAlive(_ context.Context, emptyPa
 	}).Debug("Incoming gRPC 'AreYouAlive'")
 
 	defer fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
-		"id": "9c7f0c3d-7e9f-4c91-934e-8d7a22926d84isClientUsingCorrectTestDataProtoFileVersion",
+		"id": "1762bfd6-d7f8-47ad-8651-1bc13b9bac32",
 	}).Debug("Outgoing gRPC 'AreYouAlive'")
 
 	// Check if Client is using correct proto files version
@@ -331,7 +331,7 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataHeaderHash(_ context.Conte
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"id": "c8e72834-338c-48be-885c-f083fe7951a6",
-	}).Debug("Incoming gRPC 'SendTestDataHeaders'")
+	}).Debug("Incoming gRPC 'SendTestDataHeaderHash'")
 
 	deferFunctions = append(deferFunctions, func() {
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{

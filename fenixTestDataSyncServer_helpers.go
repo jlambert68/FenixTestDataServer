@@ -54,7 +54,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) isSyst
 		var errorCodes []fenixTestDataSyncServerGrpcApi.ErrorCodesEnum
 		var errorCode fenixTestDataSyncServerGrpcApi.ErrorCodesEnum
 
-		errorCode = fenixTestDataSyncServerGrpcApi.ErrorCodesEnum_ERROR_TEMPORARY_STOP_IN_PROCESSING // TODO Have correct Error code
+		errorCode = fenixTestDataSyncServerGrpcApi.ErrorCodesEnum_ERROR_TESTDATASERVER_INTERNAL_STATE_NOT_MATCHING_GRPC_CALL
 		errorCodes = append(errorCodes, errorCode)
 
 		// Create Return message
@@ -120,7 +120,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) isSyst
 		var errorCodes []fenixTestDataSyncServerGrpcApi.ErrorCodesEnum
 		var errorCode fenixTestDataSyncServerGrpcApi.ErrorCodesEnum
 
-		errorCode = fenixTestDataSyncServerGrpcApi.ErrorCodesEnum_ERROR_TEMPORARY_STOP_IN_PROCESSING // TODO Have correct Error code
+		errorCode = fenixTestDataSyncServerGrpcApi.ErrorCodesEnum_ERROR_TESTDATASERVER_INTERNAL_STATE_NOT_MATCHING_GRPC_CALL
 		errorCodes = append(errorCodes, errorCode)
 
 		// Create Return message

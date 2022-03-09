@@ -46,6 +46,7 @@ func FenixServerMain() {
 	a, b = dbDataMap[("Hej")]
 	fmt.Println(a, b)
 
+	// Connect to CloudDB
 	fenixSyncShared.ConnectToDB()
 
 	// Set up BackendObject

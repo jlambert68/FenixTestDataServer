@@ -305,7 +305,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 
 	var tempTimeStamp time.Time
 	var timeStampAsString string
-	timeStampLayOut := "2006-01-02 15:04:05.000000" //milliseconds
+	timeStampLayOut := fenixSyncShared.TimeStampLayOut //"2006-01-02 15:04:05.000000" //milliseconds
 
 	// Extract data from DB result set
 	for rows.Next() {
@@ -387,7 +387,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 	var testDataMerkleTree cloudDBTestDataMerkleTreeStruct
 	var tempTimeStamp time.Time
 	var timeStampAsString string
-	timeStampLayOut := "2006-01-02 15:04:05.000000" //milliseconds
+	timeStampLayOut := fenixSyncShared.TimeStampLayOut // "2006-01-02 15:04:05.000000" //milliseconds
 
 	// Extract data from DB result set
 	for rows.Next() {
@@ -473,7 +473,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 	var testDataRowItem cloudDBTestDataRowItemCurrentStruct
 	var tempTimeStamp time.Time
 	var timeStampAsString string
-	timeStampLayOut := "2006-01-02 15:04:05.000000" //milliseconds
+	timeStampLayOut := fenixSyncShared.TimeStampLayOut //"2006-01-02 15:04:05.000000" //milliseconds
 
 	// Extract data from DB result set
 	for rows.Next() {
