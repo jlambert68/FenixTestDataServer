@@ -45,7 +45,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) isTher
 
 // ********************************************************************************************************************
 // Check if the system is in correct TestDataState and return next expected state
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) isSystemInCorrectTestDataRowsState(currentCallingUser string, expectedTestDataState executionStateTypeType) (returnMessage *fenixTestDataSyncServerGrpcApi.AckNackResponse, nextExpectedState executionStateTypeType) {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) isSystemInCorrectTestDataRowsState(currentCallingUser string, expectedTestDataState executionStateTestDataTypeType) (returnMessage *fenixTestDataSyncServerGrpcApi.AckNackResponse, nextExpectedState executionStateTestDataTypeType) {
 
 	// Verify that the system is in correct TestDataState
 	if expectedTestDataState != fenixTestDataSyncServerObject.currentTestDataState {
@@ -60,19 +60,85 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) isSyst
 		// Create Return message
 		returnMessage = &fenixTestDataSyncServerGrpcApi.AckNackResponse{
 			AckNack:    false,
-			Comments:   "Expected State for TestDataServer is " + strconv.FormatInt(int64(expectedTestDataState), 10) + " but current State is " + strconv.FormatInt(int64(fenixTestDataSyncServerObject.currentTestDataState), 10),
+			Comments:   "Expected TestData-State for TestDataServer is " + strconv.FormatInt(int64(expectedTestDataState), 10) + " but current State is " + strconv.FormatInt(int64(fenixTestDataSyncServerObject.currentTestDataState), 10),
 			ErrorCodes: errorCodes,
 		}
 
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 			"id": "e903390a-421a-4d16-976d-08a464424385",
-		}).Error("Expected State for TestDataServer is " + strconv.FormatInt(int64(expectedTestDataState), 10) + " but current State is " + strconv.FormatInt(int64(fenixTestDataSyncServerObject.currentTestDataState), 10) + " for Client: " + currentCallingUser)
+		}).Error("Expected TestData-State for TestDataServer is " + strconv.FormatInt(int64(expectedTestDataState), 10) + " but current State is " + strconv.FormatInt(int64(fenixTestDataSyncServerObject.currentTestDataState), 10) + " for Client: " + currentCallingUser)
 
 		return returnMessage, CurrenStateMerkleHash
 
 	} else {
 
 		nextExpectedState = nextTestDataStateMap[expectedTestDataState]
+
+		return nil, nextExpectedState
+	}
+
+}
+
+// ********************************************************************************************************************
+// Change TestData-state
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) changeTestDataState(currentCallingUser string, nextTestDataState *executionStateTestDataTypeType) {
+
+	//TODO Change from .Info to .Debug
+	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"id":                "aada4adf-8795-4189-a720-518cf68354e5",
+		"Old TestDataState": fenixTestDataSyncServerObject.currentTestDataState,
+		"New TestDataState": *nextTestDataState,
+	}).Info("Change 'ChangeTestDataState' for Client: " + currentCallingUser)
+
+	fenixTestDataSyncServerObject.currentTestDataState = *nextTestDataState
+
+}
+
+// ********************************************************************************************************************
+// Change TestDataHeader-state
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) changeTestDataHeaderState(currentCallingUser string, nextTestDataHeaderState *executionStateTestDataHeaderTypeType) {
+
+	//TODO Change from .Info to .Debug
+	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"id":                      "47925769-4f29-4333-93ce-f07d7e442cb7",
+		"Old TestDataHeaderState": fenixTestDataSyncServerObject.currentTestDataHeaderState,
+		"New TestDataHeaderState": *nextTestDataHeaderState,
+	}).Info("Change 'ChangeTestDataHeaderState' for Client: " + currentCallingUser)
+
+	fenixTestDataSyncServerObject.currentTestDataHeaderState = *nextTestDataHeaderState
+
+}
+
+// ********************************************************************************************************************
+// Check if the system is in correct TestDataHeaderState and return next expected state
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) isSystemInCorrectTestDataHeaderState(currentCallingUser string, expectedTestDataHeaderState executionStateTestDataHeaderTypeType) (returnMessage *fenixTestDataSyncServerGrpcApi.AckNackResponse, nextExpectedState executionStateTestDataHeaderTypeType) {
+
+	// Verify that the system is in correct TestDataState
+	if expectedTestDataHeaderState != fenixTestDataSyncServerObject.currentTestDataHeaderState {
+
+		// Set Error codes to return message
+		var errorCodes []fenixTestDataSyncServerGrpcApi.ErrorCodesEnum
+		var errorCode fenixTestDataSyncServerGrpcApi.ErrorCodesEnum
+
+		errorCode = fenixTestDataSyncServerGrpcApi.ErrorCodesEnum_ERROR_TEMPORARY_STOP_IN_PROCESSING // TODO Have correct Error code
+		errorCodes = append(errorCodes, errorCode)
+
+		// Create Return message
+		returnMessage = &fenixTestDataSyncServerGrpcApi.AckNackResponse{
+			AckNack:    false,
+			Comments:   "Expected Header-State for TestDataServer is " + strconv.FormatInt(int64(expectedTestDataHeaderState), 10) + " but current State is " + strconv.FormatInt(int64(fenixTestDataSyncServerObject.currentTestDataState), 10),
+			ErrorCodes: errorCodes,
+		}
+
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"id": "e903390a-421a-4d16-976d-08a464424385",
+		}).Info("Expected Header-State for TestDataServer is " + strconv.FormatInt(int64(expectedTestDataHeaderState), 10) + " but current State is " + strconv.FormatInt(int64(fenixTestDataSyncServerObject.currentTestDataState), 10) + " for Client: " + currentCallingUser)
+
+		return returnMessage, CurrenStateTestDataHeaderHash
+
+	} else {
+
+		nextExpectedState = nextTestDataHeaderStateMap[expectedTestDataHeaderState]
 
 		return nil, nextExpectedState
 	}
@@ -101,7 +167,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) isTher
 
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 			"id": "2e45c69b-a8c5-4b20-b40b-8a3e4025ed4c",
-		}).Debug("There is a temporary stop in processing any ingoing or outgoing messages at Fenix TestSync-server")
+		}).Info("There is a temporary stop in processing any ingoing or outgoing messages at Fenix TestSync-server")
 
 		return returnMessage
 
@@ -579,10 +645,12 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) genera
 		}
 	}
 
-	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
-		"id":                            "b0986c76-932e-43ad-89e8-78773d43cc4c",
-		"leafNodeNameToLeafNodeHashMap": leafNodeNameToLeafNodeHashMap,
-	}).Debug("Map for 'leafNodeNameToLeafNodeHashMap'")
+	/*
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"id":                            "b0986c76-932e-43ad-89e8-78773d43cc4c",
+			"leafNodeNameToLeafNodeHashMap": leafNodeNameToLeafNodeHashMap,
+		}).Debug("Map for 'leafNodeNameToLeafNodeHashMap'")
+	*/
 
 	// Loop all TestDataItems and create relation RowHash -> LeafNodeHash
 	for _, testDataRowItem := range OldServerDataRowItemsAndNewClientDataRowItems {
@@ -612,10 +680,12 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) genera
 		}
 	}
 
-	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
-		"id":                       "d383195f-07ff-4396-bbc8-3d9a400377da",
-		"rowHashToLeafNodeHashMap": rowHashToLeafNodeHashMap,
-	}).Debug("Map for 'rowHashToLeafNodeHashMap'")
+	/*
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"id":                       "d383195f-07ff-4396-bbc8-3d9a400377da",
+			"rowHashToLeafNodeHashMap": rowHashToLeafNodeHashMap,
+		}).Debug("Map for 'rowHashToLeafNodeHashMap'")
+	*/
 
 	return rowHashToLeafNodeHashMap
 }
@@ -993,4 +1063,18 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) verify
 
 	return nil
 
+}
+
+// *********************************************************************
+
+// Creates a Defer function that process the function in FIFO way instead of standard defer LIFO way
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) reversedDefer(deferFunctions *[]func()) {
+
+	// Loop all defer-functions and execute them in FIFO way
+	for _, functionToCall := range *deferFunctions {
+		functionToCall()
+	}
+
+	// Clear slice for functions
+	deferFunctions = nil
 }

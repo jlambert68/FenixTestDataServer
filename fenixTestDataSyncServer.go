@@ -52,6 +52,7 @@ func FenixServerMain() {
 	fenixTestDataSyncServerObject = &fenixTestDataSyncServerObjectStruct{
 		stateProcessIncomingAndOutgoingMessage: true,
 		currentTestDataState:                   CurrenStateMerkleHash,
+		currentTestDataHeaderState:             CurrenStateTestDataHeaderHash,
 	}
 
 	// Init logger

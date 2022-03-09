@@ -15,26 +15,40 @@ import (
 //const LoggingLevel = logrus.InfoLevel
 const LoggingLevel = logrus.DebugLevel // InfoLevel
 
-type executionStateTypeType int
+type executionStateTestDataTypeType int
+type executionStateTestDataHeaderTypeType int
 
 // Constants used for handling which TestData-state the system is in
 const (
-	CurrenStateMerkleHash executionStateTypeType = iota
+	CurrenStateMerkleHash executionStateTestDataTypeType = iota
 	CurrenStateMerkleTree
 	CurrenStateTestData
 )
 
-// Allowed State Trasitions for TestData
-var nextTestDataStateMap = map[executionStateTypeType]executionStateTypeType{
+// Constants used for handling which TestDataHeader-state the system is in
+const (
+	CurrenStateTestDataHeaderHash executionStateTestDataHeaderTypeType = iota
+	CurrenStateTestDataHeaders
+)
+
+// Allowed State Transitions for TestData-stuff
+var nextTestDataStateMap = map[executionStateTestDataTypeType]executionStateTestDataTypeType{
 	CurrenStateMerkleHash: CurrenStateMerkleTree,
 	CurrenStateMerkleTree: CurrenStateTestData,
 	CurrenStateTestData:   CurrenStateMerkleHash,
 }
 
+// Allowed State Transitions for TestDataHeader-stuff
+var nextTestDataHeaderStateMap = map[executionStateTestDataHeaderTypeType]executionStateTestDataHeaderTypeType{
+	CurrenStateTestDataHeaderHash: CurrenStateTestDataHeaders,
+	CurrenStateTestDataHeaders:    CurrenStateTestDataHeaderHash,
+}
+
 type fenixTestDataSyncServerObjectStruct struct {
 	logger                                 *logrus.Logger
 	stateProcessIncomingAndOutgoingMessage bool
-	currentTestDataState                   executionStateTypeType
+	currentTestDataState                   executionStateTestDataTypeType
+	currentTestDataHeaderState             executionStateTestDataHeaderTypeType
 }
 
 var fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct

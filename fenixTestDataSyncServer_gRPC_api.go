@@ -35,27 +35,33 @@ func (s *FenixTestDataGrpcServicesServer) AreYouAlive(_ context.Context, emptyPa
 }
 
 // *********************************************************************
-
 // SendMerkleHash :
 // Fenix client can send TestData MerkleHash to Fenix Testdata sync server with this service
 func (s *FenixTestDataGrpcServicesServer) SendMerkleHash(_ context.Context, merkleHashMessage *fenixTestDataSyncServerGrpcApi.MerkleHashMessage) (*fenixTestDataSyncServerGrpcApi.AckNackResponse, error) {
+
+	// Set up slice of functions to be processed when leaving using ReversedDeferOrder, FIFO
+	var deferFunctions []func()
+	defer fenixTestDataSyncServerObject.reversedDefer(&deferFunctions)
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"id": "a55f9c82-1d74-44a5-8662-058b8bc9e48f",
 	}).Debug("Incoming gRPC 'SendMerkleHash'")
 
-	defer fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
-		"id": "27fb45fe-3266-41aa-a6af-958513977e28",
-	}).Debug("Outgoing gRPC 'SendMerkleHash'")
+	exitLogMessageDeferFunction := func() {
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"id": "27fb45fe-3266-41aa-a6af-958513977e28",
+		}).Debug("Outgoing gRPC 'SendMerkleHash'")
+	}
+	deferFunctions = append(deferFunctions, exitLogMessageDeferFunction)
 
 	// Get calling client
 	callingClientUuid := merkleHashMessage.TestDataClientUuid
 
 	// When leaving set the next allowed state
-	var nextTestDataState = CurrenStateMerkleHash //Will be used if not changed
-	defer func() {
-		fenixTestDataSyncServerObject.currentTestDataState = nextTestDataState
-	}()
+	var nextTestDataState = CurrenStateMerkleHash //Will be used if not changed, when stuff goes wrong
+	deferFunctions = append(deferFunctions, func() {
+		fenixTestDataSyncServerObject.changeTestDataState(callingClientUuid, &nextTestDataState)
+	})
 
 	// Verify that system is in expected State
 	returnMessage, nextExpectedState := fenixTestDataSyncServerObject.isSystemInCorrectTestDataRowsState(callingClientUuid, CurrenStateMerkleHash)
@@ -130,13 +136,21 @@ func (s *FenixTestDataGrpcServicesServer) SendMerkleHash(_ context.Context, merk
 			"id": "cd30f2ae-6f79-4a0a-a8d8-a78d32dd6c71",
 		}).Debug("There is different in MerkleHash or/and MerkleFilterHash, so ask client for MerkleTree for Client: " + callingClientUuid)
 
-		defer fenixTestDataSyncServerObject.AskClientToSendMerkleTree(callingClientUuid)
+		// Add to ReversedDefer to call when leaving this function
+		deferFunctions = append(deferFunctions, func() {
+			fenixTestDataSyncServerObject.AskClientToSendMerkleTree(callingClientUuid)
+		})
 	} else {
 
 		// MerkleHash and MerkleFilterHash is already  in memDB, so just return that everthing is 'OK'
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 			"id": "e09b2a3f-82f4-43a4-8ebd-c169557714e7",
 		}).Debug("MerkleHash and MerkleFilterHash is already  in memDB, so just return that everything is 'OK' for Client: " + callingClientUuid)
+
+		// No Change in State is needed
+		nextTestDataState = CurrenStateMerkleHash
+
+		return &fenixTestDataSyncServerGrpcApi.AckNackResponse{AckNack: true, Comments: ""}, nil
 
 	}
 
@@ -152,22 +166,28 @@ func (s *FenixTestDataGrpcServicesServer) SendMerkleHash(_ context.Context, merk
 // Fenix client can send TestData MerkleTree to Fenix Testdata sync server with this service
 func (s *FenixTestDataGrpcServicesServer) SendMerkleTree(_ context.Context, merkleTreeMessage *fenixTestDataSyncServerGrpcApi.MerkleTreeMessage) (*fenixTestDataSyncServerGrpcApi.AckNackResponse, error) {
 
+	// Set up slice of functions to be processed when leaving using ReversedDeferOrder, FIFO
+	var deferFunctions []func()
+	defer fenixTestDataSyncServerObject.reversedDefer(&deferFunctions)
+
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"id": "cffc25f0-b0e6-407a-942a-71fc74f831ac",
 	}).Debug("Incoming gRPC 'SendMerkleTree'")
 
-	defer fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
-		"id": "61e2c28d-b091-442a-b7f8-d2502d9547cf",
-	}).Debug("Outgoing gRPC 'SendMerkleTree'")
+	deferFunctions = append(deferFunctions, func() {
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"id": "61e2c28d-b091-442a-b7f8-d2502d9547cf",
+		}).Debug("Outgoing gRPC 'SendMerkleTree'")
+	})
 
 	// Get calling client
 	callingClientUuid := merkleTreeMessage.TestDataClientUuid
 
 	// When leaving set the next allowed state
-	var nextTestDataState = CurrenStateMerkleHash //Will be used if not changed
-	defer func() {
-		fenixTestDataSyncServerObject.currentTestDataState = nextTestDataState
-	}()
+	var nextTestDataState = CurrenStateMerkleHash //Will be used if not changed, when stuff goes wrong
+	deferFunctions = append(deferFunctions, func() {
+		fenixTestDataSyncServerObject.changeTestDataState(callingClientUuid, &nextTestDataState)
+	})
 
 	// Verify that system is in expected State
 	returnMessage, nextExpectedState := fenixTestDataSyncServerObject.isSystemInCorrectTestDataRowsState(callingClientUuid, CurrenStateMerkleTree)
@@ -261,7 +281,10 @@ func (s *FenixTestDataGrpcServicesServer) SendMerkleTree(_ context.Context, merk
 				"id": "e011e854-7854-425f-9592-dcfc785203cf",
 			}).Debug("No previous MerkleHash in DB then ask for all TestDataRow (MerkleTree was different) Client: " + callingClientUuid)
 
-			defer fenixTestDataSyncServerObject.AskClientToSendAllTestDataRows(callingClientUuid)
+			// Add to ReversedDefer to call when leaving this function
+			deferFunctions = append(deferFunctions, func() {
+				fenixTestDataSyncServerObject.AskClientToSendAllTestDataRows(callingClientUuid)
+			})
 		} else {
 			// Remove TestDataRows that is not represented in current client MerkleTree
 			fenixTestDataSyncServerObject.removeMerkleTreeNodeItemsInMemoryDBThatIsNotRepresentedInClientsNewMerkleTree(callingClientUuid)
@@ -271,7 +294,10 @@ func (s *FenixTestDataGrpcServicesServer) SendMerkleTree(_ context.Context, merk
 				"id": "f0aa86c1-0179-4cb4-a891-60d55fdce84c",
 			}).Debug("Different in MerkleHash(MerkleTree was different) then ask client for TestData-rows that the Server hasn't got. Client: " + callingClientUuid)
 
-			defer fenixTestDataSyncServerObject.AskClientToSendTestDataRows(callingClientUuid)
+			// Add to ReversedDefer to call when leaving this function
+			deferFunctions = append(deferFunctions, func() {
+				fenixTestDataSyncServerObject.AskClientToSendTestDataRows(callingClientUuid)
+			})
 		}
 	} else {
 
@@ -279,6 +305,11 @@ func (s *FenixTestDataGrpcServicesServer) SendMerkleTree(_ context.Context, merk
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 			"id": "94273c83-cfe4-415d-96bb-2890ea917116",
 		}).Debug("MerkleHash from MerkleTree is the same as in memoryDB for Client: " + callingClientUuid)
+
+		// When all processing went well set next TestDataState to be expected
+		nextTestDataState = CurrenStateMerkleHash
+
+		return &fenixTestDataSyncServerGrpcApi.AckNackResponse{AckNack: true, Comments: ""}, nil
 
 	}
 
@@ -294,19 +325,38 @@ func (s *FenixTestDataGrpcServicesServer) SendMerkleTree(_ context.Context, merk
 // Fenix client can send TestDataHeaders to Fenix Testdata sync server with this service
 func (s *FenixTestDataGrpcServicesServer) SendTestDataHeaderHash(_ context.Context, testDataHeaderHashMessageMessage *fenixTestDataSyncServerGrpcApi.TestDataHeaderHashMessage) (*fenixTestDataSyncServerGrpcApi.AckNackResponse, error) {
 
+	// Set up slice of functions to be processed when leaving using ReversedDeferOrder, FIFO
+	var deferFunctions []func()
+	defer fenixTestDataSyncServerObject.reversedDefer(&deferFunctions)
+
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"id": "c8e72834-338c-48be-885c-f083fe7951a6",
 	}).Debug("Incoming gRPC 'SendTestDataHeaders'")
 
-	defer fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
-		"id": "b3576bdc-ac11-44cd-9fa2-cd7065f1253d",
-	}).Debug("Outgoing gRPC 'SendTestDataHeaderHash'")
+	deferFunctions = append(deferFunctions, func() {
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"id": "6d5c99c6-8b73-4b17-9c01-474d4e12538c",
+		}).Debug("Outgoing gRPC 'SendTestDataHeaderHash'")
+	})
 
 	// Get calling client
 	callingClientUuid := testDataHeaderHashMessageMessage.TestDataClientUuid
 
+	// When leaving set the next allowed state
+	var nextTestDataState = CurrenStateTestDataHeaderHash //Will be used if not changed, when stuff goes wrong
+	deferFunctions = append(deferFunctions, func() {
+		fenixTestDataSyncServerObject.changeTestDataHeaderState(callingClientUuid, &nextTestDataState)
+	})
+
+	// Verify that system is in expected State
+	returnMessage, nextExpectedState := fenixTestDataSyncServerObject.isSystemInCorrectTestDataHeaderState(callingClientUuid, CurrenStateTestDataHeaderHash)
+	if returnMessage != nil {
+		// System is in wrong state
+		return returnMessage, nil
+	}
+
 	// Check if Client is using correct proto files version
-	returnMessage := fenixTestDataSyncServerObject.isClientUsingCorrectTestDataProtoFileVersion(testDataHeaderHashMessageMessage.GetTestDataClientUuid(), testDataHeaderHashMessageMessage.ProtoFileVersionUsedByClient)
+	returnMessage = fenixTestDataSyncServerObject.isClientUsingCorrectTestDataProtoFileVersion(testDataHeaderHashMessageMessage.GetTestDataClientUuid(), testDataHeaderHashMessageMessage.ProtoFileVersionUsedByClient)
 	if returnMessage != nil {
 		// Not correct proto-file version is used
 		return returnMessage, nil
@@ -353,9 +403,15 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataHeaderHash(_ context.Conte
 		}).Debug("Server Header hash is not the same as Client Header Hash, Ask Client for all Headers, Client: " + callingClientUuid)
 
 		// Ask Client for all Headers
-		defer fenixTestDataSyncServerObject.AskClientToSendTestDataHeaders(callingClientUuid)
+		// Add to ReversedDefer to call when leaving this function
+		deferFunctions = append(deferFunctions, func() {
+			fenixTestDataSyncServerObject.AskClientToSendTestDataHeaders(callingClientUuid)
+		})
 
 	}
+
+	// When all processing went well set next TestDataHeaderState to be expected
+	nextTestDataState = nextExpectedState
 
 	return &fenixTestDataSyncServerGrpcApi.AckNackResponse{AckNack: true, Comments: ""}, nil
 
@@ -367,19 +423,38 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataHeaderHash(_ context.Conte
 // Fenix client can send TestDataHeaders to Fenix Testdata sync server with this service
 func (s *FenixTestDataGrpcServicesServer) SendTestDataHeaders(_ context.Context, testDataHeaderMessage *fenixTestDataSyncServerGrpcApi.TestDataHeadersMessage) (*fenixTestDataSyncServerGrpcApi.AckNackResponse, error) {
 
+	// Set up slice of functions to be processed when leaving using ReversedDeferOrder, FIFO
+	var deferFunctions []func()
+	defer fenixTestDataSyncServerObject.reversedDefer(&deferFunctions)
+
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"id": "aee48999-12ad-4bb7-bc8a-96b62a8eeedf",
 	}).Debug("Incoming gRPC 'SendTestDataHeaders'")
 
-	defer fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
-		"id": "ca0b58a8-6d56-4392-8751-45906670e86b",
-	}).Debug("Outgoing gRPC 'SendTestDataHeaders'")
+	deferFunctions = append(deferFunctions, func() {
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"id": "ee0d6762-4db2-4432-8b0e-fd5ddba74f64",
+		}).Debug("Outgoing gRPC 'SendTestDataHeaders'")
+	})
 
 	// Get calling client
 	callingClientUuid := testDataHeaderMessage.TestDataClientUuid
 
+	// When leaving set the next allowed state
+	var nextTestDataState = CurrenStateTestDataHeaderHash //Will be used if not changed, when stuff goes wrong
+	deferFunctions = append(deferFunctions, func() {
+		fenixTestDataSyncServerObject.changeTestDataHeaderState(callingClientUuid, &nextTestDataState)
+	})
+
+	// Verify that system is in expected State
+	returnMessage, nextExpectedState := fenixTestDataSyncServerObject.isSystemInCorrectTestDataHeaderState(callingClientUuid, CurrenStateTestDataHeaders)
+	if returnMessage != nil {
+		// System is in wrong state
+		return returnMessage, nil
+	}
+
 	// Check if Client is using correct proto files version
-	returnMessage := fenixTestDataSyncServerObject.isClientUsingCorrectTestDataProtoFileVersion(testDataHeaderMessage.GetTestDataClientUuid(), testDataHeaderMessage.ProtoFileVersionUsedByClient)
+	returnMessage = fenixTestDataSyncServerObject.isClientUsingCorrectTestDataProtoFileVersion(testDataHeaderMessage.GetTestDataClientUuid(), testDataHeaderMessage.ProtoFileVersionUsedByClient)
 	if returnMessage != nil {
 		// Not correct proto-file version is used
 		return returnMessage, nil
@@ -453,6 +528,9 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataHeaders(_ context.Context,
 		"id": "6c90bc16-890a-402e-91b1-68fc060986c6",
 	}).Debug("Moved Headers data from Client to Server, for client: " + callingClientUuid)
 
+	// When all processing went well set next TestDataHeaderState to be expected
+	nextTestDataState = nextExpectedState
+
 	return &fenixTestDataSyncServerGrpcApi.AckNackResponse{AckNack: true, Comments: ""}, nil
 
 }
@@ -463,13 +541,19 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataHeaders(_ context.Context,
 // Fenix client can send TestData rows to Fenix Testdata sync server with this service
 func (s *FenixTestDataGrpcServicesServer) SendTestDataRows(stream fenixTestDataSyncServerGrpcApi.FenixTestDataGrpcServices_SendTestDataRowsServer) error { //(_ context.Context, testdataRowsMessages *fenixTestDataSyncServerGrpcApi.TestdataRowsMessages) (*fenixTestDataSyncServerGrpcApi.AckNackResponse, error) {
 
+	// Set up slice of functions to be processed when leaving using ReversedDeferOrder, FIFO
+	var deferFunctions []func()
+	defer fenixTestDataSyncServerObject.reversedDefer(&deferFunctions)
+
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"id": "2b1c8752-eb84-4c15-b8a7-22e2464e5168",
 	}).Debug("Incoming gRPC 'SendTestDataRows'")
 
-	defer fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
-		"id": "755e8b4f-f184-4277-ad41-e041714c2ca8",
-	}).Debug("Outgoing gRPC 'SendTestDataRows'")
+	deferFunctions = append(deferFunctions, func() {
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"id": "974ff435-8653-4ee7-9aeb-fe5c8bfd1716",
+		}).Debug("Outgoing gRPC 'SendTestDataRows'")
+	})
 
 	// Container to store all messages before process them
 	var testdataRowsMessagesStreamContainer []*fenixTestDataSyncServerGrpcApi.TestdataRowsMessages
@@ -496,10 +580,10 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataRows(stream fenixTestDataS
 	callingClientUuid := testdataRowsMessages.TestDataClientUuid
 
 	// When leaving set the next allowed state
-	var nextTestDataState = CurrenStateMerkleHash //Will be used if not changed
-	defer func() {
-		fenixTestDataSyncServerObject.currentTestDataState = nextTestDataState
-	}()
+	var nextTestDataState = CurrenStateMerkleHash //Will be used if not changed, when stuff goes wrong
+	deferFunctions = append(deferFunctions, func() {
+		fenixTestDataSyncServerObject.changeTestDataState(callingClientUuid, &nextTestDataState)
+	})
 
 	// Verify that system is in expected State
 	returnMessage, nextExpectedState := fenixTestDataSyncServerObject.isSystemInCorrectTestDataRowsState(callingClientUuid, CurrenStateTestData)
