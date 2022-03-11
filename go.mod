@@ -6,7 +6,7 @@ require (
 	github.com/go-gota/gota v0.12.0
 	github.com/jackc/pgx/v4 v4.15.0
 	github.com/jlambert68/FenixGrpcApi v0.0.0-20220309125838-a0fd771588a6
-	github.com/jlambert68/FenixSyncShared v0.0.0-20220309134529-853bb1ded044
+	github.com/jlambert68/FenixSyncShared v0.0.0-20220309201741-aa2c115e0cc1
 	github.com/sirupsen/logrus v1.8.1
 	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd
 	google.golang.org/grpc v1.44.0

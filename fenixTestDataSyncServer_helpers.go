@@ -1022,7 +1022,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) verify
 	}
 
 	// Convert LeafNode-data into MerkleTree-DataFrame
-	leafNodeMerkleTree := fenixTestDataSyncServerObject.convertLeafNodeMessagesToDataframe(leafNodeHashes)
+	leafNodeMerkleTree := fenixSyncShared.ConvertLeafNodeMessagesToDataframe(leafNodeHashes, fenixTestDataSyncServerObject.logger)
 
 	// XXX
 	f, err := os.Create("leafNodeMerkleTree.csv")
@@ -1033,6 +1033,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) verify
 	f.Close()
 
 	// Calculate MerkleHash from MerkleTree
+	//TODO In FenixShare then add Client_UUID instead of "" as starting value
 	reCalculatedMerkleHash := fenixSyncShared.CalculateMerkleHashFromMerkleTree(leafNodeMerkleTree)
 
 	if reCalculatedMerkleHash == "-1" {
@@ -1077,4 +1078,65 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) revers
 
 	// Clear slice for functions
 	deferFunctions = nil
+}
+
+// Save all components of the gRPCHeaderMessage into memoryDB
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveCurrentHeaderMessageDataForClient(testDataHeaderMessage *fenixTestDataSyncServerGrpcApi.TestDataHeadersMessage) bool {
+
+	var callingClientUuid string
+	var headerItemsHash string
+	var headerLabelsHash string
+
+	// Extract the calling clients unique id
+	callingClientUuid = testDataHeaderMessage.TestDataClientUuid
+
+	// Extract the HeaderHash
+	headerItemsHash = testDataHeaderMessage.HeaderLabelsHash
+
+	// Extract the HeaderLabelsHash
+	headerLabelsHash = testDataHeaderMessage.HeaderLabelsHash
+
+	// Extract TestDataHeaderItems
+	testDataHeaderItems := testDataHeaderMessage.TestDataHeaderItems
+
+	var cloudDBTestDataHeaderItems []cloudDBTestDataHeaderItemStruct
+
+	// Loop all TestDataHeaderItems and split different parts and Save to memoryDB Objects
+	for testDataHeaderItemCounter, testDataHeaderItem := range testDataHeaderItems {
+
+		cloudDBTestDataHeaderItem := cloudDBTestDataHeaderItemStruct{
+			headerItemsHash:      headerItemsHash,
+			headerItemHash:       testDataHeaderItem.TestDataHeaderItemMessageHash,
+			clientUuid:           callingClientUuid,
+			headerLabel:          testDataHeaderItem.HeaderLabel,
+			shouldBeUsedInFilter: testDataHeaderItem.HeaderShouldBeUsedForTestDataFilter,
+			isMandatoryInFilter:  testDataHeaderItem.HeaderIsMandatoryInTestDataFilter,
+			filterSelectionType:  int(testDataHeaderItem.HeaderSelectionType),
+			headerColumnOrder:    testDataHeaderItemCounter,
+		}
+
+		cloudDBTestDataHeaderItems = append(cloudDBTestDataHeaderItems, cloudDBTestDataHeaderItem)
+
+		// Extract Filter Values
+		var cloudDBTestDataHeaderFilterValues []cloudDBTestDataHeaderFilterValuesStruct
+
+		// Loop all Header Filter values
+		for headerFilterValueCounter, headerFilterValue := range testDataHeaderItem.HeaderFilterValues {
+			cloudDBTestDataHeaderFilterValue := cloudDBTestDataHeaderFilterValuesStruct{
+				headerItemHash:         testDataHeaderItem.TestDataHeaderItemMessageHash,
+				headerFilterValueOrder: headerFilterValueCounter,
+				headerFilterValue:      headerFilterValue.HeaderFilterValuesAsString,
+				clientUuid:             callingClientUuid,
+			}
+
+			cloudDBTestDataHeaderFilterValues = append(cloudDBTestDataHeaderFilterValues, cloudDBTestDataHeaderFilterValue)
+		}
+
+	}
+
+	// Save 'cloudDBTestDataHeaderItems' to memoryDB
+	x
+
+	// Save 'cloudDBTestDataHeaderFilterValues' to memoryDB
+	x
 }

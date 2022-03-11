@@ -379,7 +379,7 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataHeaderHash(_ context.Conte
 	// Convert gRPC-message into other 'format'
 	clientHeaderHash := testDataHeaderHashMessageMessage.TestDataHeaderItemsHash
 
-	// Get current client Header Hash
+	// Get current Server HeaderHash
 	currentClientHeaderHash := fenixTestDataSyncServerObject.getCurrentHeaderHashForClient(callingClientUuid)
 
 	// If Header Hash is already in DB then return OK
@@ -396,11 +396,11 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataHeaderHash(_ context.Conte
 
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 			"id": "2cdb17e4-95c8-4d56-b2cd-7f4c8829c735",
-		}).Debug("Saved Header hash to DB for Client: " + callingClientUuid)
+		}).Debug("Saved HeaderHash to memoryDB-client for Client: " + callingClientUuid)
 
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 			"id": "e4efabb7-eec6-4bb6-bbc2-f3447e14c15f",
-		}).Debug("Server Header hash is not the same as Client Header Hash, Ask Client for all Headers, Client: " + callingClientUuid)
+		}).Debug("Server HeaderHash is not the same as Client HeaderHash, Ask Client for all Headers, Client: " + callingClientUuid)
 
 		// Ask Client for all Headers
 		// Add to ReversedDefer to call when leaving this function
@@ -490,13 +490,19 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataHeaders(_ context.Context,
 	// Check if HeaderData already is saved
 	if currentClientHeaderHash != headerHash {
 
-		// Save the message
+		// Save the HeaderHash to memoryDB
 		_ = fenixTestDataSyncServerObject.saveCurrentHeaderHashForClient(callingClientUuid, headerHash)
-		//_ = fenixTestDataSyncServerObject.saveCurrentHeadersForClient(callingClientUuid, headerItems)
 
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
-			"id": "302ecd09-68a1-42df-ae63-7e4483ea62e1",
-		}).Debug("Saved Header hash to DB for client: " + callingClientUuid)
+			"id": "e7107232-d312-47e8-8e39-ec74d4ef9dd5",
+		}).Debug("Saved HeaderHash to memoryDB-client for client: " + callingClientUuid)
+
+		// Save testDataHeaderMessage to memoryDB
+		_ = fenixTestDataSyncServerObject.saveCurrentHeaderMessageDataForClient(*testDataHeaderMessage)
+
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"id": "e7107232-d312-47e8-8e39-ec74d4ef9dd5",
+		}).Debug("Saved HeaderHash to memoryDB-client for client: " + callingClientUuid)
 
 		// Replace Server version of Headers with Client version of Headers
 		_ = fenixTestDataSyncServerObject.moveCurrentHeaderDataFromClientToServer(callingClientUuid)

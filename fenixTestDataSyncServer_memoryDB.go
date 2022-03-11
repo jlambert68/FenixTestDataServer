@@ -32,10 +32,13 @@ type tempDBDataStruct struct {
 	requestedMerkleNodeNamesFromClient          []string
 	MerkleFilterPath                            string
 	MerkleFilterPathHash                        string
-	headerHash                                  string
-	headers                                     []string
+	//headerHash                                  string
+	headers []string
 	//testDataRows         dataframe.DataFrame //[]tempTestDataRowStruct
-	testDataRowItems []cloudDBTestDataRowItemCurrentStruct
+	testDataRowItems            []cloudDBTestDataRowItemCurrentStruct
+	testDataHeaderItemsHashes   cloudDBTestDataHeaderItemsHashesStruct
+	testDataHeaderItems         []cloudDBTestDataHeaderItemStruct
+	testDataHeadersFilterValues []cloudDBTestDataHeaderFilterValuesStruct
 }
 type tempDBStruct struct {
 	serverData *tempDBDataStruct
@@ -152,21 +155,37 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) initia
 			merkleHash:      "",
 			merkleTreeNodes: nil,
 			merkleTreeNodesChildHashesThatNoLongerExist: nil,
-			MerkleFilterPath:     "",
-			MerkleFilterPathHash: "",
-			headerHash:           "",
-			headers:              nil,
-			testDataRowItems:     nil,
+			requestedMerkleNodeNamesFromClient:          nil,
+			MerkleFilterPath:                            "",
+			MerkleFilterPathHash:                        "",
+			headers:                                     nil,
+			testDataRowItems:                            nil,
+			testDataHeaderItemsHashes: cloudDBTestDataHeaderItemsHashesStruct{
+				headerItemsHash:  "",
+				clientUuid:       "",
+				headerLabelsHash: "",
+				updatedTimeStamp: "",
+			},
+			testDataHeaderItems:         nil,
+			testDataHeadersFilterValues: nil,
 		},
 		clientData: &tempDBDataStruct{
 			merkleHash:      "",
 			merkleTreeNodes: nil,
 			merkleTreeNodesChildHashesThatNoLongerExist: nil,
-			MerkleFilterPath:     "",
-			MerkleFilterPathHash: "",
-			headerHash:           "",
-			headers:              nil,
-			testDataRowItems:     nil,
+			requestedMerkleNodeNamesFromClient:          nil,
+			MerkleFilterPath:                            "",
+			MerkleFilterPathHash:                        "",
+			headers:                                     nil,
+			testDataRowItems:                            nil,
+			testDataHeaderItemsHashes: cloudDBTestDataHeaderItemsHashesStruct{
+				headerItemsHash:  "",
+				clientUuid:       "",
+				headerLabelsHash: "",
+				updatedTimeStamp: "",
+			},
+			testDataHeaderItems:         nil,
+			testDataHeadersFilterValues: nil,
 		},
 	}
 
@@ -781,7 +800,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCur
 
 	// Get the data
 	if valueExits == true {
-		currentHeaderHashsForClient = tempdbData.clientData.headerHash
+		currentHeaderHashsForClient = tempdbData.clientData.testDataHeaderItemsHashes.headerItemsHash
 	} else {
 		currentHeaderHashsForClient = "#VALUE IS MISSING#"
 	}
@@ -799,7 +818,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveCu
 	clientData := tempdbData.clientData
 
 	// Save the data
-	clientData.headerHash = currentHeaderHashsForClient
+	clientData.testDataHeaderItemsHashes.headerItemsHash = currentHeaderHashsForClient
 
 	return true
 }
@@ -836,19 +855,35 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveCu
 }
 
 // Retrieve current TestData-HeaderHash for Server
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCurrentHeaderHashForServer(testDataClientGuid string) (currentHeaderHashsForServer string) {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCurrentHeaderHashForServer(testDataClientGuid string) (currentHeaderHashForServer string) {
 
 	// Get pointer to data for Client_UUID
 	tempdbData, valueExits := dbDataMap[memDBClientUuidType(testDataClientGuid)]
 
 	// Get the data
 	if valueExits == true {
-		currentHeaderHashsForServer = tempdbData.serverData.headerHash
+		currentHeaderHashForServer = tempdbData.serverData.testDataHeaderItemsHashes.headerItemsHash
 	} else {
-		currentHeaderHashsForServer = "#VALUE IS MISSING#"
+		currentHeaderHashForServer = "#VALUE IS MISSING#"
 	}
 
-	return currentHeaderHashsForServer
+	return currentHeaderHashForServer
+}
+
+// Retrieve current TestData-HeaderLabelHash for Server
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCurrentHeaderLabelHashForServer(testDataClientGuid string) (currentHeaderLabelHashForServer string) {
+
+	// Get pointer to data for Client_UUID
+	tempdbData, valueExits := dbDataMap[memDBClientUuidType(testDataClientGuid)]
+
+	// Get the data
+	if valueExits == true {
+		currentHeaderLabelHashForServer = tempdbData.serverData.testDataHeaderItemsHashes.headerLabelsHash
+	} else {
+		currentHeaderLabelHashForServer = "#VALUE IS MISSING#"
+	}
+
+	return currentHeaderLabelHashForServer
 }
 
 // Save current TestData-HeaderHash for Server
@@ -861,7 +896,37 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveCu
 	serverData := tempdbData.serverData
 
 	// Save the data
-	serverData.headerHash = currentHeaderHashForServer
+	serverData.testDataHeaderItemsHashes.headerItemsHash = currentHeaderHashForServer
+
+	return true
+}
+
+// Save current TestData-HeaderLabelHash for Server
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveCurrentHeaderLabelHashForServer(testDataClientGuid string, currentHeaderLabelHashForServer string) bool {
+
+	// Get pointer to data for Client_UUID
+	tempdbData := dbDataMap[memDBClientUuidType(testDataClientGuid)]
+
+	// Get pointer to server data
+	serverData := tempdbData.serverData
+
+	// Save the data
+	serverData.testDataHeaderItemsHashes.headerLabelsHash = currentHeaderLabelHashForServer
+
+	return true
+}
+
+// Save current TestData-HeaderLabelHash for Client
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveCurrentHeaderLabelHashForClient(testDataClientGuid string, currentHeaderLabelHashForClient string) bool {
+
+	// Get pointer to data for Client_UUID
+	tempdbData := dbDataMap[memDBClientUuidType(testDataClientGuid)]
+
+	// Get pointer to server data
+	clientData := tempdbData.clientData
+
+	// Save the data
+	clientData.testDataHeaderItemsHashes.headerLabelsHash = currentHeaderLabelHashForClient
 
 	return true
 }
@@ -912,8 +977,10 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) moveCu
 	tempdbData := dbDataMap[memDBClientUuidType(testDataClientGuid)]
 
 	// Move the data
-	tempdbData.serverData.headerHash = tempdbData.clientData.headerHash
+	tempdbData.serverData.testDataHeaderItemsHashes = tempdbData.clientData.testDataHeaderItemsHashes
 	tempdbData.serverData.headers = tempdbData.clientData.headers
+	tempdbData.serverData.testDataHeadersFilterValues = tempdbData.clientData.testDataHeadersFilterValues
+	tempdbData.serverData.testDataHeaderItems = tempdbData.clientData.testDataHeaderItems
 
 	return true
 }
@@ -1202,6 +1269,109 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) clearC
 
 	return true
 
+}
+
+// Clear current Server TestDataHeaderItemsHashes, TestDataHeaderItems, TestDataHeadersFilterValues andTestDataHeaderNames
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) clearCurrentHeaderDataForServer(testDataClientGuid string) bool {
+
+	// Clear current Server TestDataHeaderItemsHashes
+	_ = fenixTestDataSyncServerObject.clearCurrentTestDataHeaderItemsHashesForServer(testDataClientGuid)
+
+	// Clear current Server TestDataHeaderItems
+	_ = fenixTestDataSyncServerObject.clearCurrentTestDataHeaderItemsForServer(testDataClientGuid)
+
+	// Clear current Server MerkleFilterPath
+	_ = fenixTestDataSyncServerObject.clearCurrentTestDataHeadersFilterValuesForServer(testDataClientGuid)
+
+	// Clear current Server MerkleFilterPathHash
+	_ = fenixTestDataSyncServerObject.clearCurrentTestDataHeaderNamesForServer(testDataClientGuid)
+
+	return true
+
+}
+
+// Clear current Server TestDataHeaders, slice with the Header Names
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) clearCurrentTestDataHeaderNamesForServer(testDataClientGuid string) bool {
+
+	// Get pointer to data for Client_UUID
+	tempdbData, valueExits := dbDataMap[memDBClientUuidType(testDataClientGuid)]
+
+	// Validate that reference exists
+	if valueExits == true {
+		// Clear values
+		tempdbData.serverData.headers = []string{}
+
+	} else {
+		// This should not happen
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"Id": "a928cb53-71b8-47c8-9dfe-e7f6119d5d95",
+		}).Fatalln("Reference to Client in memoryDB should exist for Client: ", testDataClientGuid)
+	}
+
+	return true
+}
+
+// Clear current Server HeaderItemsHashes
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) clearCurrentTestDataHeaderItemsHashesForServer(testDataClientGuid string) bool {
+
+	// Get pointer to data for Client_UUID
+	tempdbData, valueExits := dbDataMap[memDBClientUuidType(testDataClientGuid)]
+
+	// Validate that reference exists
+	if valueExits == true {
+		// Clear values
+		tempdbData.serverData.testDataHeaderItemsHashes = cloudDBTestDataHeaderItemsHashesStruct{}
+
+	} else {
+		// This should not happen
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"Id": "72cbd468-abe0-4b3d-b3cb-54d203a72e6a",
+		}).Fatalln("Reference to Client in memoryDB should exist for Client: ", testDataClientGuid)
+	}
+
+	return true
+}
+
+// Clear current Server TestDataHeaderItems
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) clearCurrentTestDataHeaderItemsForServer(testDataClientGuid string) bool {
+
+	// Get pointer to data for Client_UUID
+	tempdbData, valueExits := dbDataMap[memDBClientUuidType(testDataClientGuid)]
+
+	// Validate that reference exists
+	if valueExits == true {
+		// Clear values
+		tempdbData.serverData.testDataHeaderItems = []cloudDBTestDataHeaderItemStruct{}
+
+	} else {
+		// This should not happen
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"Id": "07df1323-6727-4093-b223-83dda9594804",
+		}).Fatalln("Reference to Client in memoryDB should exist for Client: ", testDataClientGuid)
+	}
+
+	return true
+}
+
+// Clear current Server TestDataHeadersFilterValues
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) clearCurrentTestDataHeadersFilterValuesForServer(testDataClientGuid string) bool {
+
+	// Get pointer to data for Client_UUID
+	tempdbData, valueExits := dbDataMap[memDBClientUuidType(testDataClientGuid)]
+
+	// Validate that reference exists
+	if valueExits == true {
+		// Clear values
+		tempdbData.serverData.testDataHeadersFilterValues = []cloudDBTestDataHeaderFilterValuesStruct{}
+
+	} else {
+		// This should not happen
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"Id": "b7f024fb-dc11-4c5b-a0a3-f3b3fda2f45c",
+		}).Fatalln("Reference to Client in memoryDB should exist for Client: ", testDataClientGuid)
+	}
+
+	return true
 }
 
 // Clear current Server MerkleHash

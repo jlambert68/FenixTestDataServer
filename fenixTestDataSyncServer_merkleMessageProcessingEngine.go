@@ -8,7 +8,6 @@ import (
 	fenixSyncShared "github.com/jlambert68/FenixSyncShared"
 	"github.com/sirupsen/logrus"
 	"strconv"
-	"strings"
 )
 
 /*
@@ -66,7 +65,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) conver
 }
 
 //TODO Remove the below and use FenixShared instead
-x
+/*
 // Convert leafNodeHash and LeafNodeName message into a MerkleTree DataFrame object;
 // leafNodesMessage [][]string; [[<LeafNodeHash>, <LeafNodeName], [<>, <>]]
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) convertLeafNodeMessagesToDataframe(leafNodesMessage [][]string) dataframe.DataFrame {
@@ -111,6 +110,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) conver
 	return df
 }
 
+*/
 // Verify that HeaderHash is correct calculated
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) verifyThatHeaderItemsHashIsCorrectCalculated(testDataHeadersMessage fenixTestDataSyncServerGrpcApi.TestDataHeadersMessage) (returnMessage *fenixTestDataSyncServerGrpcApi.AckNackResponse) {
 

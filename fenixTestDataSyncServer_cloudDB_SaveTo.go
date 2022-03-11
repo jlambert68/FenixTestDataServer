@@ -147,7 +147,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveAl
 // ****************************************************************************************************************
 // Save data to CloudDB
 //
-// All TestDataMerkleHashes
+// All TestData-data-related (Not Header-data)
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveTestDataMerkleHashDataFromMemDBToCloudDB(dbTransaction pgx.Tx, currentUserUuid string) (err error) {
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
@@ -322,6 +322,131 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveTe
 
 }
 
+// All TestData-Header-data-related (Not TestData-rows-data)
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveTestDataHeaderDataFromMemDBToCloudDB(dbTransaction pgx.Tx, currentUserUuid string) (err error) {
+
+	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"Id": "9d4e401a-edbf-4a45-bd34-8d3c13eeaffb",
+	}).Debug("Entering: saveTestDataHeaderDataFromMemDBToCloudDB()")
+
+	defer func() {
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"Id": "e0f4ded9-c140-40cf-95a9-c366daa49e07",
+		}).Debug("Exiting: saveTestDataHeaderDataFromMemDBToCloudDB()")
+	}()
+
+	// Get a common dateTimeStamp to use
+	currentDataTimeStamp := fenixSyncShared.GenerateDatetimeTimeStampForDB()
+
+	var dataRowToBeInsertedMultiType []interface{}
+	var dataRowsToBeInsertedMultiType [][]interface{}
+	sqlToExecute := ""
+
+	// Create Delete Statement for removing Header-filter-data for Client
+	sqlToExecute = sqlToExecute + "DELETE FROM public.testdata_header_filtervalues "
+	sqlToExecute = sqlToExecute + "WHERE client_uuid = '" + currentUserUuid + "'; "
+
+	// Create Delete Statement for removing HeaderItems-data for Client
+	sqlToExecute = sqlToExecute + "DELETE FROM public.testdata_header_items "
+	sqlToExecute = sqlToExecute + "WHERE client_uuid = '" + currentUserUuid + "'; "
+
+	// Create Delete Statement for removing HeaderItemHashes-data for Client
+	sqlToExecute = sqlToExecute + "DELETE FROM public.\"testdata_headerItems_hashes\" "
+	sqlToExecute = sqlToExecute + "WHERE client_uuid = '" + currentUserUuid + "'; "
+
+	// Create Insert Statement for current HeaderHash-data for Client
+	// Data to be inserted in the DB-table
+	dataRowsToBeInsertedMultiType = nil
+	dataRowToBeInsertedMultiType = nil
+
+	dataRowToBeInsertedMultiType = append(dataRowToBeInsertedMultiType, currentUserUuid)
+	dataRowToBeInsertedMultiType = append(dataRowToBeInsertedMultiType, fenixTestDataSyncServerObject.getCurrentHeaderHashForServer(currentUserUuid))
+	dataRowToBeInsertedMultiType = append(dataRowToBeInsertedMultiType, currentDataTimeStamp)
+	dataRowToBeInsertedMultiType = append(dataRowToBeInsertedMultiType, fenixTestDataSyncServerObject.getCurrentHeaderLabelHashForServer(currentUserUuid))
+
+	dataRowsToBeInsertedMultiType = append(dataRowsToBeInsertedMultiType, dataRowToBeInsertedMultiType)
+
+	sqlToExecute = sqlToExecute + "INSERT INTO public.\"testdata_headerItems_hashes\" "
+	sqlToExecute = sqlToExecute + "(client_uuid, header_items_hash, header_labels_hash, updated_timestamp) "
+	sqlToExecute = sqlToExecute + fenixTestDataSyncServerObject.generateSQLInsertValues(dataRowsToBeInsertedMultiType)
+	sqlToExecute = sqlToExecute + ";"
+
+	// Create Insert Statement for current HeaderItems-data for Client
+	// Data to be inserted in the DB-table
+	dataRowsToBeInsertedMultiType = nil
+	testDataHeaderItems := dbDataMap[memDBClientUuidType(currentUserUuid)].serverData.testDataHeaderItems
+
+	for _, testDataHeaderItem := range testDataHeaderItems {
+
+		dataRowToBeInsertedMultiType = nil
+
+		dataRowToBeInsertedMultiType = append(dataRowToBeInsertedMultiType, currentUserUuid)
+		dataRowToBeInsertedMultiType = append(dataRowToBeInsertedMultiType, currentDataTimeStamp)
+		dataRowToBeInsertedMultiType = append(dataRowToBeInsertedMultiType, testDataHeaderItem.headerItemHash)
+		dataRowToBeInsertedMultiType = append(dataRowToBeInsertedMultiType, testDataHeaderItem.headerLabel)
+		dataRowToBeInsertedMultiType = append(dataRowToBeInsertedMultiType, testDataHeaderItem.shouldBeUsedInFilter)
+		dataRowToBeInsertedMultiType = append(dataRowToBeInsertedMultiType, testDataHeaderItem.isMandatoryInFilter)
+		dataRowToBeInsertedMultiType = append(dataRowToBeInsertedMultiType, testDataHeaderItem.filterSelectionType)
+		dataRowToBeInsertedMultiType = append(dataRowToBeInsertedMultiType, testDataHeaderItem.headerColumnOrder)
+		dataRowToBeInsertedMultiType = append(dataRowToBeInsertedMultiType, testDataHeaderItem.headerItemsHash)
+
+		dataRowsToBeInsertedMultiType = append(dataRowsToBeInsertedMultiType, dataRowToBeInsertedMultiType)
+	}
+
+	sqlToExecute = sqlToExecute + "INSERT INTO public.testdata_header_items "
+	sqlToExecute = sqlToExecute + "(client_uuid, updated_timestamp, header_item_hash, header_label, should_be_used_in_filter, "
+	sqlToExecute = sqlToExecute + "is_mandatory_in_filter, filter_selection_type, header_column_order, header_items_hash) "
+	sqlToExecute = sqlToExecute + fenixTestDataSyncServerObject.generateSQLInsertValues(dataRowsToBeInsertedMultiType)
+	sqlToExecute = sqlToExecute + ";"
+
+	// Create Insert Statement for current HeaderFilterValue-data for Client
+	// Data to be inserted in the DB-table
+	dataRowsToBeInsertedMultiType = nil
+	testDataHeadersFilterValues := dbDataMap[memDBClientUuidType(currentUserUuid)].serverData.testDataHeadersFilterValues
+
+	for _, testDataHeadersFilterValue := range testDataHeadersFilterValues {
+
+		dataRowToBeInsertedMultiType = nil
+
+		dataRowToBeInsertedMultiType = append(dataRowToBeInsertedMultiType, testDataHeadersFilterValue.headerItemHash)
+		dataRowToBeInsertedMultiType = append(dataRowToBeInsertedMultiType, testDataHeadersFilterValue.headerFilterValue)
+		dataRowToBeInsertedMultiType = append(dataRowToBeInsertedMultiType, currentUserUuid)
+		dataRowToBeInsertedMultiType = append(dataRowToBeInsertedMultiType, testDataHeadersFilterValue.headerFilterValueOrder)
+		dataRowToBeInsertedMultiType = append(dataRowToBeInsertedMultiType, testDataHeadersFilterValue.headerFilterValuesHash)
+		dataRowToBeInsertedMultiType = append(dataRowToBeInsertedMultiType, currentDataTimeStamp)
+
+		dataRowsToBeInsertedMultiType = append(dataRowsToBeInsertedMultiType, dataRowToBeInsertedMultiType)
+	}
+
+	sqlToExecute = sqlToExecute + "INSERT INTO public.testdata_header_items "
+	sqlToExecute = sqlToExecute + "(client_uuid, updated_timestamp, header_item_hash, header_label, should_be_used_in_filter, "
+	sqlToExecute = sqlToExecute + "is_mandatory_in_filter, filter_selection_type, header_column_order, header_items_hash) "
+	sqlToExecute = sqlToExecute + fenixTestDataSyncServerObject.generateSQLInsertValues(dataRowsToBeInsertedMultiType)
+	sqlToExecute = sqlToExecute + ";"
+
+	// Execute Query CloudDB
+	comandTag, err := dbTransaction.Exec(context.Background(), sqlToExecute)
+
+	if err != nil {
+		return err
+	}
+
+	// Log response from CloudDB
+	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"Id":                       "dcb110c2-822a-4dde-8bc6-9ebbe9fcbdb0",
+		"comandTag.Insert()":       comandTag.Insert(),
+		"comandTag.Delete()":       comandTag.Delete(),
+		"comandTag.Select()":       comandTag.Select(),
+		"comandTag.Update()":       comandTag.Update(),
+		"comandTag.RowsAffected()": comandTag.RowsAffected(),
+		"comandTag.String()":       comandTag.String(),
+	}).Debug("Return data for SQL executed in database")
+
+	// No errors occurred
+	return nil
+
+}
+
 // ****************************************************************************************************************
 // Save data to CloudDB
 //
@@ -415,6 +540,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveAl
 
 }
 
+// Save MerkleHash, MerkleTree and all TestDataRow-values in CloudDB
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveMerkleHashMerkleTreeAndTestDataRowsToCloudDB(currentClientUuid string) (err error) {
 
 	// Begin SQL Transaction
@@ -432,7 +558,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveMe
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 			"id":    "07b91f77-db17-484f-8448-e53375df94ce",
 			"error": err,
-		}).Error("Couldn't Save MerkleHash-data in database for Client: ", currentClientUuid)
+		}).Error("Couldn't Save TestData-data in CloudDB for Client: ", currentClientUuid)
 
 		// Stop process in and outgoing messages
 		fenixTestDataSyncServerObject.stateProcessIncomingAndOutgoingMessage = true
@@ -449,6 +575,49 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveMe
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 			"id": "1557cc22-c291-45f7-b85b-008b38e60b0b",
 		}).Error("Clearing memoryDB for Server, regarding MerkleHash, MerkleTree and TestDataRows")
+
+		return err
+
+	}
+
+	return nil
+}
+
+// Save HeaderHashdata, HeaderItems and all HeaderFilter-values in CloudDB
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveHeaderHashHeaderItemsHeaderFilterValuesToCloudDB(currentClientUuid string) (err error) {
+
+	// Begin SQL Transaction
+	txn, err := fenixSyncShared.DbPool.Begin(context.Background())
+	if err != nil {
+		fmt.Println("err: ", err)
+		return
+	}
+	defer txn.Commit(context.Background())
+
+	// Save all header-data
+	err = fenixTestDataSyncServerObject.saveTestDataHeaderDataFromMemDBToCloudDB(txn, currentClientUuid)
+	if err != nil {
+
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"id":    "ea3df3e3-b829-4652-bdc7-174c1c0ecaed",
+			"error": err,
+		}).Error("Couldn't Save Headers-data in CloudDB for Client: ", currentClientUuid)
+
+		// Stop process in and outgoing messages
+		fenixTestDataSyncServerObject.stateProcessIncomingAndOutgoingMessage = true
+
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"id": "7fd2b84f-069b-4b95-a48b-1df4a35449b2",
+		}).Error("Stop process in and outgoing messages")
+
+		// Rollback any SQL transactions
+		txn.Rollback(context.Background())
+
+		// Clear memoryDB for Server
+		_ = fenixTestDataSyncServerObject.clearCurrentHeaderDataForServer(currentClientUuid)
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"id": "1557cc22-c291-45f7-b85b-008b38e60b0b",
+		}).Error("Clearing memoryDB for Server, regarding Header-data")
 
 		return err
 
@@ -512,7 +681,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) genera
 	return sqlInsertValuesString
 }
 
-// Generates incoming values in the following form:  "['monkey', 'tiger'. 'fish']"
+// Generates incoming values in the following form:  "('monkey', 'tiger'. 'fish')"
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) generateSQLINArray(testdata []string) (sqlInsertValuesString string) {
 
 	// Create a list with '' as only element if there are no elements in array
