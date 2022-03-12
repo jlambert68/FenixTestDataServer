@@ -498,7 +498,7 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataHeaders(_ context.Context,
 		}).Debug("Saved HeaderHash to memoryDB-client for client: " + callingClientUuid)
 
 		// Save testDataHeaderMessage to memoryDB
-		_ = fenixTestDataSyncServerObject.saveCurrentHeaderMessageDataForClient(*testDataHeaderMessage)
+		_ = fenixTestDataSyncServerObject.saveCurrentHeaderMessageDataForClient(testDataHeaderMessage)
 
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 			"id": "e7107232-d312-47e8-8e39-ec74d4ef9dd5",
@@ -520,6 +520,7 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataHeaders(_ context.Context,
 
 	}
 
+	fundera på denna...
 	// Save the Headers message --**** Not the solution I want because it saves it evan if nothing is changed ***
 	_ = fenixTestDataSyncServerObject.saveCurrentHeadersForClient(callingClientUuid, headerItems)
 

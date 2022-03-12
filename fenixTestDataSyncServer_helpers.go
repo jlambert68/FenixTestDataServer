@@ -1085,7 +1085,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveCu
 
 	var callingClientUuid string
 	var headerItemsHash string
-	var headerLabelsHash string
+	//var headerLabelsHash string
 
 	// Extract the calling clients unique id
 	callingClientUuid = testDataHeaderMessage.TestDataClientUuid
@@ -1094,12 +1094,13 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveCu
 	headerItemsHash = testDataHeaderMessage.HeaderLabelsHash
 
 	// Extract the HeaderLabelsHash
-	headerLabelsHash = testDataHeaderMessage.HeaderLabelsHash
+	//headerLabelsHash = testDataHeaderMessage.HeaderLabelsHash
 
 	// Extract TestDataHeaderItems
 	testDataHeaderItems := testDataHeaderMessage.TestDataHeaderItems
 
 	var cloudDBTestDataHeaderItems []cloudDBTestDataHeaderItemStruct
+	var cloudDBTestDataHeaderFilterValues []cloudDBTestDataHeaderFilterValuesStruct
 
 	// Loop all TestDataHeaderItems and split different parts and Save to memoryDB Objects
 	for testDataHeaderItemCounter, testDataHeaderItem := range testDataHeaderItems {
@@ -1118,7 +1119,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveCu
 		cloudDBTestDataHeaderItems = append(cloudDBTestDataHeaderItems, cloudDBTestDataHeaderItem)
 
 		// Extract Filter Values
-		var cloudDBTestDataHeaderFilterValues []cloudDBTestDataHeaderFilterValuesStruct
+		cloudDBTestDataHeaderFilterValues = []cloudDBTestDataHeaderFilterValuesStruct{}
 
 		// Loop all Header Filter values
 		for headerFilterValueCounter, headerFilterValue := range testDataHeaderItem.HeaderFilterValues {
@@ -1131,12 +1132,13 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveCu
 
 			cloudDBTestDataHeaderFilterValues = append(cloudDBTestDataHeaderFilterValues, cloudDBTestDataHeaderFilterValue)
 		}
-
 	}
 
 	// Save 'cloudDBTestDataHeaderItems' to memoryDB
-	x
+	_ = fenixTestDataSyncServerObject.saveCurrentHeaderItemsToClient(callingClientUuid, cloudDBTestDataHeaderItems)
 
 	// Save 'cloudDBTestDataHeaderFilterValues' to memoryDB
-	x
+	_ = fenixTestDataSyncServerObject.saveCurrentHeaderFilterValuesToClient(callingClientUuid, cloudDBTestDataHeaderFilterValues)
+
+	return true
 }

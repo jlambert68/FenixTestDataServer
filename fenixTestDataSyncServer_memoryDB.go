@@ -962,6 +962,36 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveCu
 	return true
 }
 
+// Save current TestDataHeaderItems for Client
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveCurrentHeaderItemsToClient(testDataClientGuid string, cloudDBTestDataHeaderItems []cloudDBTestDataHeaderItemStruct) bool {
+
+	// Get pointer to data for Client_UUID
+	tempdbData := dbDataMap[memDBClientUuidType(testDataClientGuid)]
+
+	// Get pointer to server data
+	clientData := tempdbData.clientData
+
+	// Save the data
+	clientData.testDataHeaderItems = cloudDBTestDataHeaderItems
+
+	return true
+}
+
+// Save current TestDataHeaderFilterValues for Client
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveCurrentHeaderFilterValuesToClient(testDataClientGuid string, cloudDBTestDataHeaderFilterValues []cloudDBTestDataHeaderFilterValuesStruct) bool {
+
+	// Get pointer to data for Client_UUID
+	tempdbData := dbDataMap[memDBClientUuidType(testDataClientGuid)]
+
+	// Get pointer to server data
+	clientData := tempdbData.clientData
+
+	// Save the data
+	clientData.testDataHeadersFilterValues = cloudDBTestDataHeaderFilterValues
+
+	return true
+}
+
 // Transfer TestDataHeader from Client to Server
 func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) moveCurrentHeaderDataFromClientToServer(testDataClientGuid string) bool {
 
