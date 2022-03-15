@@ -809,7 +809,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) getCur
 }
 
 // Save current TestData-HeaderHash for client
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveCurrentHeaderHashForClient(testDataClientGuid string, currentHeaderHashsForClient string) bool {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveCurrentHeaderHashForClient(testDataClientGuid string, currentHeaderHashForClient string) bool {
 
 	// Get pointer to data for Client_UUID
 	tempdbData := dbDataMap[memDBClientUuidType(testDataClientGuid)]
@@ -818,7 +818,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveCu
 	clientData := tempdbData.clientData
 
 	// Save the data
-	clientData.testDataHeaderItemsHashes.headerItemsHash = currentHeaderHashsForClient
+	clientData.testDataHeaderItemsHashes.headerItemsHash = currentHeaderHashForClient
 
 	return true
 }

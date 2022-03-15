@@ -144,19 +144,19 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) verify
 		var errorCodes []fenixTestDataSyncServerGrpcApi.ErrorCodesEnum
 		var errorCode fenixTestDataSyncServerGrpcApi.ErrorCodesEnum
 
-		errorCode = fenixTestDataSyncServerGrpcApi.ErrorCodesEnum_ERROR_HEADERLABELHASH_NOT_CORRECT_CALCULATED
+		errorCode = fenixTestDataSyncServerGrpcApi.ErrorCodesEnum_ERROR_UNSPECIFIED // TODO Add error code for HeaderHash-error
 		errorCodes = append(errorCodes, errorCode)
 
 		// Create Return message
 		returnMessage = &fenixTestDataSyncServerGrpcApi.AckNackResponse{
 			AckNack:    false,
-			Comments:   "HeaderItemsHash is not correct calculated. Expected '" + headerHash + "', but got '" + headerHash + "'",
+			Comments:   "HeaderItemsHash is not correct calculated. Expected '" + reHashedHeaderItemMessageHash + "', but got '" + headerHash + "'",
 			ErrorCodes: errorCodes,
 		}
 
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 			"Id": "785424d8-2d82-4581-b8ce-4ac49650666c",
-		}).Info("HeaderItemsHash is not correct calculated. Expected '" + headerHash + "', but got '" + headerHash + "'")
+		}).Info("HeaderItemsHash is not correct calculated. Expected '" + reHashedHeaderItemMessageHash + "', but got '" + headerHash + "'")
 
 		// Exit function Respond back to client when hash error
 		return returnMessage
@@ -166,7 +166,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) verify
 }
 
 // Convert gRPC-Header message into string and string array objects
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) convertgRpcHeaderMessageToStringArray(testDataHeadersMessage fenixTestDataSyncServerGrpcApi.TestDataHeadersMessage) (headerHash string, headersItems []string) {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) convertgRpcHeaderMessageToStringArray(testDataHeadersMessage fenixTestDataSyncServerGrpcApi.TestDataHeadersMessage) (headerHash string, headerLabelHash string, headersItems []string) {
 
 	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 		"id": "aa1d5eb1-7503-467f-9336-1927fa5529f2",
@@ -179,6 +179,9 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) conver
 	// Extract  HeaderHash
 	headerHash = testDataHeadersMessage.TestDataHeaderItemsHash
 
+	// Extract  HeaderHash
+	headerLabelHash = testDataHeadersMessage.HeaderLabelsHash
+
 	//dbCurrentMerkleTreeForClient = merkleTreeMessage.MerkleTreeNodes
 	testDataHeaderItems := testDataHeadersMessage.TestDataHeaderItems
 
@@ -188,7 +191,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) conver
 
 	}
 
-	return headerHash, headersItems
+	return headerHash, headerLabelHash, headersItems
 }
 
 // Convert TestDataRow message into TestData dataframe object

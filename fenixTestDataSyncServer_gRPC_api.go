@@ -380,10 +380,10 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataHeaderHash(_ context.Conte
 	clientHeaderHash := testDataHeaderHashMessageMessage.TestDataHeaderItemsHash
 
 	// Get current Server HeaderHash
-	currentClientHeaderHash := fenixTestDataSyncServerObject.getCurrentHeaderHashForClient(callingClientUuid)
+	currentServerHeaderHash := fenixTestDataSyncServerObject.getCurrentHeaderHashForServer(callingClientUuid)
 
 	// If Header Hash is already in DB then return OK
-	if currentClientHeaderHash == clientHeaderHash {
+	if currentServerHeaderHash == clientHeaderHash {
 		return &fenixTestDataSyncServerGrpcApi.AckNackResponse{AckNack: true, Comments: ""}, nil
 	}
 
@@ -408,6 +408,10 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataHeaderHash(_ context.Conte
 			fenixTestDataSyncServerObject.AskClientToSendTestDataHeaders(callingClientUuid)
 		})
 
+	} else {
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"id": "761dd864-dd92-483e-bd68-41edbff54007",
+		}).Debug("The HeaderHash is the same HeaderHash in memoryDB, for calling Client: " + callingClientUuid)
 	}
 
 	// When all processing went well set next TestDataHeaderState to be expected
@@ -482,16 +486,19 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataHeaders(_ context.Context,
 	}
 
 	// Convert gRPC-message into other 'format'
-	headerHash, headerItems := fenixTestDataSyncServerObject.convertgRpcHeaderMessageToStringArray(*testDataHeaderMessage)
+	headerHash, headerLabelHash, headerItems := fenixTestDataSyncServerObject.convertgRpcHeaderMessageToStringArray(*testDataHeaderMessage)
 
-	// Get current HeaderHash for the Client
-	currentClientHeaderHash := fenixTestDataSyncServerObject.getCurrentHeaderHashForClient(callingClientUuid)
+	// Get current HeaderHash for the Server
+	currentServerHeaderHash := fenixTestDataSyncServerObject.getCurrentHeaderHashForServer(callingClientUuid)
 
 	// Check if HeaderData already is saved
-	if currentClientHeaderHash != headerHash {
+	if currentServerHeaderHash != headerHash {
 
 		// Save the HeaderHash to memoryDB
 		_ = fenixTestDataSyncServerObject.saveCurrentHeaderHashForClient(callingClientUuid, headerHash)
+
+		// Save the HeaderLabelHash to memoryDB
+		_ = fenixTestDataSyncServerObject.saveCurrentHeaderLabelHashForClient(callingClientUuid, headerLabelHash)
 
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 			"id": "e7107232-d312-47e8-8e39-ec74d4ef9dd5",
@@ -505,36 +512,46 @@ func (s *FenixTestDataGrpcServicesServer) SendTestDataHeaders(_ context.Context,
 		}).Debug("Saved HeaderHash to memoryDB-client for client: " + callingClientUuid)
 
 		// Replace Server version of Headers with Client version of Headers
-		_ = fenixTestDataSyncServerObject.moveCurrentHeaderDataFromClientToServer(callingClientUuid)
+		//_ = fenixTestDataSyncServerObject.moveCurrentHeaderDataFromClientToServer(callingClientUuid)
 
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
 			"id": "6c90bc16-890a-402e-91b1-68fc060986c6",
 		}).Debug("Moved HeaderHash from Client to Server, for client: " + callingClientUuid)
 
-		// The Headers are change, so we must ask client to send the MerkleHash
+		// The Headers are change, so we must ask client to send the MerkleHash-- TODO Should tthis be used????
+		//fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		//	"id": "ab857f2e-95dc-46d3-b065-71cdd38ea97b",
+		//}).Debug("The Headers are change, so we must ask client to send the MerkleHash; Client: " + callingClientUuid)
+
+		// When Headers are changed one might want to check the MerkleHash -- TODO Should tthis be used????
+		//deferFunctions = append(deferFunctions, func() {
+		//	fenixTestDataSyncServerObject.AskClientToSendMerkleHash(callingClientUuid)
+		//})
+
+		// Save the Headers message
+		_ = fenixTestDataSyncServerObject.saveCurrentHeadersForClient(callingClientUuid, headerItems)
+
 		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
-			"id": "ab857f2e-95dc-46d3-b065-71cdd38ea97b",
-		}).Debug("The Headers are change, so we must ask client to send the MerkleHash; Client: " + callingClientUuid)
+			"id": "1c99aec3-48b0-4ad2-be98-ec3dda32c4bd",
+		}).Debug("Saved Headers data to DB for client: " + callingClientUuid)
 
-		fenixTestDataSyncServerObject.AskClientToSendMerkleHash(callingClientUuid)
+		// Replace Server version of Headers with Client version of Headers
+		_ = fenixTestDataSyncServerObject.moveCurrentHeaderDataFromClientToServer(callingClientUuid)
 
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"id": "6c90bc16-890a-402e-91b1-68fc060986c6",
+		}).Debug("Moved Headers data from Client to Server, for client: " + callingClientUuid)
+
+		// Save the Header-data to CloudDB
+		returnMessage = fenixTestDataSyncServerObject.saveHeaderHashHeaderItemsHeaderFilterValuesToCloudDB(callingClientUuid)
+		if returnMessage != nil {
+			// Couldn't save to CloudDB
+			return returnMessage, nil
+		}
+
+		// Verify that saved header data to cloudDB recreates HeaderHash
+		//TODO fenixTestDataSyncServerObject.verifyHeaderHashFromCloudDBdata(callingClientUuid)
 	}
-
-	fundera på denna...
-	// Save the Headers message --**** Not the solution I want because it saves it evan if nothing is changed ***
-	_ = fenixTestDataSyncServerObject.saveCurrentHeadersForClient(callingClientUuid, headerItems)
-
-	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
-		"id": "1c99aec3-48b0-4ad2-be98-ec3dda32c4bd",
-	}).Debug("Saved Headers data to DB for client: " + callingClientUuid)
-
-	// Replace Server version of Headers with Client version of Headers
-	_ = fenixTestDataSyncServerObject.moveCurrentHeaderDataFromClientToServer(callingClientUuid)
-
-	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
-		"id": "6c90bc16-890a-402e-91b1-68fc060986c6",
-	}).Debug("Moved Headers data from Client to Server, for client: " + callingClientUuid)
-
 	// When all processing went well set next TestDataHeaderState to be expected
 	nextTestDataState = nextExpectedState
 

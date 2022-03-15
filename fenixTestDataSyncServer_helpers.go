@@ -433,8 +433,11 @@ func createTestDataHeaderItemMessageHash(testDataHeaderItemMessage *fenixTestDat
 	valuesToHash = append(valuesToHash, valueToHash)
 
 	// HeaderFilterValues - An array thar is added
-	valueToHash = testDataHeaderItemMessage.HeaderLabel
-	valuesToHash = append(valuesToHash, valueToHash)
+	// HeaderFilterValues - An array thar is added
+	for _, headerFilterValue := range testDataHeaderItemMessage.HeaderFilterValues {
+		headerFilterValueToAdd := headerFilterValue.String()
+		valuesToHash = append(valuesToHash, headerFilterValueToAdd)
+	}
 
 	// Hash all values in the array
 	testDataHeaderItemMessageHash = fenixSyncShared.HashValues(valuesToHash, true)
@@ -1091,7 +1094,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveCu
 	callingClientUuid = testDataHeaderMessage.TestDataClientUuid
 
 	// Extract the HeaderHash
-	headerItemsHash = testDataHeaderMessage.HeaderLabelsHash
+	headerItemsHash = testDataHeaderMessage.TestDataHeaderItemsHash
 
 	// Extract the HeaderLabelsHash
 	//headerLabelsHash = testDataHeaderMessage.HeaderLabelsHash
@@ -1141,4 +1144,61 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveCu
 	_ = fenixTestDataSyncServerObject.saveCurrentHeaderFilterValuesToClient(callingClientUuid, cloudDBTestDataHeaderFilterValues)
 
 	return true
+}
+
+// Verify that Header-data in CloudDB recreates HeaderHash that is found in MemoryDB-Server
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) verifyHeaderHashFromCloudDbData(callingClientUuid string) (returnMessage *fenixTestDataSyncServerGrpcApi.AckNackResponse) {
+
+	// Variables to store data from CloudDB
+	var cloudDBTestDataHeaderItemsHashes cloudDBTestDataHeaderItemsHashesStruct
+	var cloudDBTestDataHeaderItems []cloudDBTestDataHeaderItemStruct
+	var cloudDBTestDataHeaderFilterValues []cloudDBTestDataHeaderFilterValuesStruct
+
+	// Load TestDataHeaderItemsHashesClientFromCloudDB
+	err := fenixTestDataSyncServerObject.loadAllTestDataHeaderItemsHashesForClientFromCloudDB(callingClientUuid, &cloudDBTestDataHeaderItemsHashes)
+
+	if err != nil {
+		// Load TestDataHeaderItemsForClientFromCloudDB
+		err = fenixTestDataSyncServerObject.loadAllTestDataHeaderItemsForClientFromCloudDB(callingClientUuid, &cloudDBTestDataHeaderItems)
+
+	}
+
+	if err != nil {
+		// Load TestDataHeaderFilterValuesForClientFromCloudDB
+		err = fenixTestDataSyncServerObject.loadAllTestDataHeaderFilterValuesForClientFromCloudDB(callingClientUuid, &cloudDBTestDataHeaderFilterValues)
+
+	}
+
+	// Check if there were any CLoudDB-errors
+	if err != nil {
+		// Problem reading CloudDB
+
+		// Set Error codes to return message
+		var errorCodes []fenixTestDataSyncServerGrpcApi.ErrorCodesEnum
+		var errorCode fenixTestDataSyncServerGrpcApi.ErrorCodesEnum
+
+		errorCode = fenixTestDataSyncServerGrpcApi.ErrorCodesEnum_ERROR_TEMPORARY_STOP_IN_PROCESSING
+		errorCodes = append(errorCodes, errorCode)
+
+		// Create Return message
+		returnMessage = &fenixTestDataSyncServerGrpcApi.AckNackResponse{
+			AckNack:    false,
+			Comments:   "Temporary stop in processing in and outgoing messages",
+			ErrorCodes: errorCodes,
+		}
+
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"id":  "0a41f1fc-0940-4e88-831e-fcd0aba8a772",
+			"err": err,
+		}).Error("Problem when accessing CloudDB")
+
+		return returnMessage
+	}
+
+	// Recreate HeaderItemsHash from cloudDB-data to verify that save-process is correct
+	//TODO xxx
+	//TODO verifyThatHeaderItemsHashIsCorrectCalculated
+
+	return nil
+
 }

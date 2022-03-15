@@ -31,6 +31,9 @@ func cleanup() {
 
 func FenixServerMain() {
 
+	//TODO lägg även till i State-hanteringen att man kontrollerar per Client samt att en Client inte tillåts skjuta på fler meddelanden innan tidigare är färdigprocesserat
+	// fundera på denna...
+
 	// Init variables
 	dbDataMap = make(map[memDBClientUuidType]*tempDBStruct)
 

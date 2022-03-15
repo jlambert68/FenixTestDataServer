@@ -4,6 +4,7 @@ import (
 	"context"
 	fenixSyncShared "github.com/jlambert68/FenixSyncShared"
 	"github.com/sirupsen/logrus"
+	"strconv"
 	"time"
 )
 
@@ -566,6 +567,78 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAl
 
 	// Copy 'leafNodesData' to pointer reference
 	//merkleTreeNodesHashes = &leafNodesData
+
+	// No errors occurred
+	return nil
+
+}
+
+// ****************************************************************************************************************
+// Load all TestDataHeaderItemsHashes from CloudDB
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) loadAllTestDataHeaderItemsHashesForClientFromCloudDB(clientUuid string, cloudDBTestDataHeaderItemsHashes *cloudDBTestDataHeaderItemsHashesStruct) (err error) {
+
+	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"Id": "4175a60c-6b18-421b-be27-492a96e179a4",
+	}).Debug("Entering: loadAllTestDataHeaderItemsHashesForClientFromCloudDB()")
+
+	defer func() {
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"Id": "e7d1bdbf-4cd8-481c-90cc-f7442337ba7e",
+		}).Debug("Exiting: loadAllTestDataHeaderItemsHashesForClientFromCloudDB()")
+	}()
+
+	sqlToExecute := ""
+	sqlToExecute = sqlToExecute + "SELECT client_uuid, header_items_hash, header_labels_hash, updated_timestamp "
+	sqlToExecute = sqlToExecute + "FROM public.\"testdata_headerItems_hashes\" "
+	sqlToExecute = sqlToExecute + "WHERE client_uuid::text = '" + clientUuid + "';"
+
+	// Query DB
+	rows, err := fenixSyncShared.DbPool.Query(context.Background(), sqlToExecute)
+
+	if err != nil {
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"Id":           "8dcfc9d3-04c6-4c47-9be2-278e091a47c2",
+			"Error":        err,
+			"sqlToExecute": sqlToExecute,
+		}).Error("Something went wrong when executing SQL")
+
+		return err
+	}
+
+	// Variables to used when extract data from result set
+	var tempTimeStamp time.Time
+	var timeStampAsString string
+	timeStampLayOut := fenixSyncShared.TimeStampLayOut
+
+	var rowCounter = 0
+
+	// Extract data from DB result set
+	for rows.Next() {
+
+		rowCounter = rowCounter + 1
+
+		err := rows.Scan(
+			cloudDBTestDataHeaderItemsHashes.clientUuid,
+			cloudDBTestDataHeaderItemsHashes.headerItemsHash,
+			cloudDBTestDataHeaderItemsHashes.headerLabelsHash,
+			&timeStampAsString)
+
+		if err != nil {
+			return err
+		}
+
+		// Convert timestamp into string representation and add to  extracted data
+		timeStampAsString = tempTimeStamp.Format(timeStampLayOut)
+		cloudDBTestDataHeaderItemsHashes.updatedTimeStamp = timeStampAsString
+
+	}
+
+	// Exact ONE row should be found in CloudDB
+	if rowCounter != 1 {
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"Id": "3eb40d8d-e916-4e60-aa5c-65872955fcb1",
+		}).Fatal("Expected exact ONE row from CloudDB, but got " + strconv.FormatInt(int64(rowCounter), 10) + " rows.")
+	}
 
 	// No errors occurred
 	return nil

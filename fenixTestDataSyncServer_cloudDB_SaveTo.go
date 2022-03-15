@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/jackc/pgx/v4"
+	fenixTestDataSyncServerGrpcApi "github.com/jlambert68/FenixGrpcApi/Fenix/fenixTestDataSyncServerGrpcApi/go_grpc_api"
 	fenixSyncShared "github.com/jlambert68/FenixSyncShared"
 	"github.com/sirupsen/logrus"
 )
@@ -361,8 +362,8 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveTe
 
 	dataRowToBeInsertedMultiType = append(dataRowToBeInsertedMultiType, currentUserUuid)
 	dataRowToBeInsertedMultiType = append(dataRowToBeInsertedMultiType, fenixTestDataSyncServerObject.getCurrentHeaderHashForServer(currentUserUuid))
-	dataRowToBeInsertedMultiType = append(dataRowToBeInsertedMultiType, currentDataTimeStamp)
 	dataRowToBeInsertedMultiType = append(dataRowToBeInsertedMultiType, fenixTestDataSyncServerObject.getCurrentHeaderLabelHashForServer(currentUserUuid))
+	dataRowToBeInsertedMultiType = append(dataRowToBeInsertedMultiType, currentDataTimeStamp)
 
 	dataRowsToBeInsertedMultiType = append(dataRowsToBeInsertedMultiType, dataRowToBeInsertedMultiType)
 
@@ -418,9 +419,8 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveTe
 		dataRowsToBeInsertedMultiType = append(dataRowsToBeInsertedMultiType, dataRowToBeInsertedMultiType)
 	}
 
-	sqlToExecute = sqlToExecute + "INSERT INTO public.testdata_header_items "
-	sqlToExecute = sqlToExecute + "(client_uuid, updated_timestamp, header_item_hash, header_label, should_be_used_in_filter, "
-	sqlToExecute = sqlToExecute + "is_mandatory_in_filter, filter_selection_type, header_column_order, header_items_hash) "
+	sqlToExecute = sqlToExecute + "INSERT INTO testdata_header_filtervalues "
+	sqlToExecute = sqlToExecute + "(header_item_hash, header_filter_value, client_uuid, header_filter_value_order, header_filter_values_hash, updated_timestamp) "
 	sqlToExecute = sqlToExecute + fenixTestDataSyncServerObject.generateSQLInsertValues(dataRowsToBeInsertedMultiType)
 	sqlToExecute = sqlToExecute + ";"
 
@@ -584,7 +584,7 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveMe
 }
 
 // Save HeaderHashdata, HeaderItems and all HeaderFilter-values in CloudDB
-func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveHeaderHashHeaderItemsHeaderFilterValuesToCloudDB(currentClientUuid string) (err error) {
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveHeaderHashHeaderItemsHeaderFilterValuesToCloudDB(currentClientUuid string) (returnMessage *fenixTestDataSyncServerGrpcApi.AckNackResponse) {
 
 	// Begin SQL Transaction
 	txn, err := fenixSyncShared.DbPool.Begin(context.Background())
@@ -619,7 +619,21 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) saveHe
 			"id": "1557cc22-c291-45f7-b85b-008b38e60b0b",
 		}).Error("Clearing memoryDB for Server, regarding Header-data")
 
-		return err
+		// Set Error codes to return message
+		var errorCodes []fenixTestDataSyncServerGrpcApi.ErrorCodesEnum
+		var errorCode fenixTestDataSyncServerGrpcApi.ErrorCodesEnum
+
+		errorCode = fenixTestDataSyncServerGrpcApi.ErrorCodesEnum_ERROR_TEMPORARY_STOP_IN_PROCESSING
+		errorCodes = append(errorCodes, errorCode)
+
+		// Create Return message
+		returnMessage := &fenixTestDataSyncServerGrpcApi.AckNackResponse{
+			AckNack:    false,
+			Comments:   "Something went wrong",
+			ErrorCodes: nil,
+		}
+
+		return returnMessage
 
 	}
 
@@ -653,6 +667,9 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) genera
 
 		for valueCounter, value := range rowValues {
 			switch valueType := value.(type) {
+
+			case bool:
+				sqlInsertValuesString = sqlInsertValuesString + fmt.Sprint(value)
 
 			case int:
 				sqlInsertValuesString = sqlInsertValuesString + fmt.Sprint(value)
