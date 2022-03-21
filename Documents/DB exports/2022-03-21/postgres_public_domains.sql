@@ -1,0 +1,3 @@
+insert into public.domains (domain_uuid, domain_name, description, activated, deleted, update_timestamp, replaced_by_new_version, domain_id, domain_version)
+values  ('1a164df8-55a6-4a83-82d0-944d8ca52df7', 'Sub Custody', 'Everything that has to do with Sub Custody', true, false, '2022-01-25 18:58:09.000000', false, 1, 1),
+        ('8a645b7b-2bb4-4a3e-84db-6869b5ad292d', 'Custody Cash', 'Stuff that is maintained by CAX-team', true, false, '2022-01-25 19:00:17.000000', false, 1, 1);

@@ -1,0 +1,2 @@
+insert into public.testdata_headerItems_hashes (client_uuid, header_items_hash, header_labels_hash, updated_timestamp)
+values  ('45a217d1-55ed-4531-a801-779e566d75cb', '0dd24497b0e5cefbd28ab0a7b20530bb93fbb43e13893b2ef640242ac50cc521', '', '2022-03-15 15:04:26.151218');
