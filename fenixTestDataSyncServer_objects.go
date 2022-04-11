@@ -5,6 +5,7 @@ import (
 	fenixTestDataSyncServerGrpcAdminApi "github.com/jlambert68/FenixGrpcApi/Fenix/fenixTestDataSyncServerGrpcApi/go_grpc_admin_api"
 	fenixTestDataSyncServerGrpcApi "github.com/jlambert68/FenixGrpcApi/Fenix/fenixTestDataSyncServerGrpcApi/go_grpc_api"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/oauth2"
 	"google.golang.org/grpc"
 	"net"
 )
@@ -50,6 +51,7 @@ type fenixTestDataSyncServerObjectStruct struct {
 	stateProcessIncomingAndOutgoingMessage bool
 	currentTestDataState                   executionStateTestDataTypeType
 	currentTestDataHeaderState             executionStateTestDataHeaderTypeType
+	gcpAccessToken                         *oauth2.Token
 }
 
 var fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct

@@ -8,6 +8,7 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"time"
 )
 
 // SetConnectionToFenixClientTestDataSyncServer :
@@ -71,6 +72,9 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) AskCli
 		"id": "28020281-ae9d-439c-bc80-d6c227323f7b",
 	}).Debug("Outgoing gRPC 'AskClientToSendMerkleHash'")
 
+	var ctx context.Context
+	var returnMessageAckNack bool
+
 	// Check if TestData server should process outgoing messages
 	returnMessageStop := fenixTestDataSyncServerObject.isThereATemporaryStopInProcessingInOrOutgoingMessages()
 	if returnMessageStop != nil {
@@ -86,7 +90,25 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) AskCli
 	}
 
 	// Do gRPC-call
-	ctx := context.Background()
+	//ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer func() {
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"ID": "baee9a42-2f70-4977-8c35-f5f7850bbd3a",
+		}).Error("Running Defer Cancel function")
+		cancel()
+	}()
+
+	// Only add access token when run on GCP
+	if fenixSyncShared.ExecutionLocationForClient == fenixSyncShared.GCP {
+
+		// Add Access token
+		ctx, returnMessageAckNack, _ = fenixTestDataSyncServerObject.generateGCPAccessToken(ctx)
+		if returnMessageAckNack == false {
+			return
+		}
+	}
+
 	returnMessage, err := fenixClientTestDataSyncServerClient.SendMerkleHash(ctx, emptyParameter)
 
 	// Shouldn't happen
@@ -118,6 +140,9 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) AskCli
 		"id": "7a806598-e60d-492f-8a0b-2afd555707b3",
 	}).Debug("Outgoing gRPC 'AskClientToSendMerkleTree'")
 
+	var ctx context.Context
+	var returnMessageAckNack bool
+
 	// Check if TestData server should process outgoing messages
 	returnMessageStop := fenixTestDataSyncServerObject.isThereATemporaryStopInProcessingInOrOutgoingMessages()
 	if returnMessageStop != nil {
@@ -133,7 +158,25 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) AskCli
 	}
 
 	// Do gRPC-call
-	ctx := context.Background()
+	//ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer func() {
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"ID": "baee9a42-2f70-4977-8c35-f5f7850bbd3a",
+		}).Error("Running Defer Cancel function")
+		cancel()
+	}()
+
+	// Only add access token when run on GCP
+	if fenixSyncShared.ExecutionLocationForClient == fenixSyncShared.GCP {
+
+		// Add Access token
+		ctx, returnMessageAckNack, _ = fenixTestDataSyncServerObject.generateGCPAccessToken(ctx)
+		if returnMessageAckNack == false {
+			return
+		}
+	}
+
 	returnMessage, err := fenixClientTestDataSyncServerClient.SendMerkleTree(ctx, emptyParameter)
 
 	// Shouldn't happen
@@ -166,6 +209,9 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) AskCli
 		"id": "d3ad936d-6239-4024-8005-e4e198e70026",
 	}).Debug("Outgoing gRPC 'AskClientToSendTestDataHeaderHash'")
 
+	var ctx context.Context
+	var returnMessageAckNack bool
+
 	// Check if TestData server should process outgoing messages
 	returnMessageStop := fenixTestDataSyncServerObject.isThereATemporaryStopInProcessingInOrOutgoingMessages()
 	if returnMessageStop != nil {
@@ -181,7 +227,25 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) AskCli
 	}
 
 	// Do gRPC-call
-	ctx := context.Background()
+	//ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer func() {
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"ID": "baee9a42-2f70-4977-8c35-f5f7850bbd3a",
+		}).Error("Running Defer Cancel function")
+		cancel()
+	}()
+
+	// Only add access token when run on GCP
+	if fenixSyncShared.ExecutionLocationForClient == fenixSyncShared.GCP {
+
+		// Add Access token
+		ctx, returnMessageAckNack, _ = fenixTestDataSyncServerObject.generateGCPAccessToken(ctx)
+		if returnMessageAckNack == false {
+			return
+		}
+	}
+
 	returnMessage, err := fenixClientTestDataSyncServerClient.SendTestDataHeaderHash(ctx, emptyParameter)
 
 	// Shouldn't happen
@@ -214,6 +278,9 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) AskCli
 		"id": "c7685518-f8f5-4478-9c72-424181cde74e",
 	}).Debug("Outgoing gRPC 'AskClientToSendTestDataHeaders'")
 
+	var ctx context.Context
+	var returnMessageAckNack bool
+
 	// Check if TestData server should process outgoing messages
 	returnMessageStop := fenixTestDataSyncServerObject.isThereATemporaryStopInProcessingInOrOutgoingMessages()
 	if returnMessageStop != nil {
@@ -229,7 +296,25 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) AskCli
 	}
 
 	// Do gRPC-call
-	ctx := context.Background()
+	//ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer func() {
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"ID": "baee9a42-2f70-4977-8c35-f5f7850bbd3a",
+		}).Error("Running Defer Cancel function")
+		cancel()
+	}()
+
+	// Only add access token when run on GCP
+	if fenixSyncShared.ExecutionLocationForClient == fenixSyncShared.GCP {
+
+		// Add Access token
+		ctx, returnMessageAckNack, _ = fenixTestDataSyncServerObject.generateGCPAccessToken(ctx)
+		if returnMessageAckNack == false {
+			return
+		}
+	}
+
 	returnMessage, err := fenixClientTestDataSyncServerClient.SendTestDataHeaders(ctx, emptyParameter)
 
 	// Shouldn't happen
@@ -262,6 +347,9 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) AskCli
 		"id": "4d25404b-41b2-46e2-b0e9-ab948a675c65",
 	}).Debug("Outgoing gRPC 'AskClientToSendTestDataRows'")
 
+	var ctx context.Context
+	var returnMessageAckNack bool
+
 	// Check if TestData server should process outgoing messages
 	returnMessageStop := fenixTestDataSyncServerObject.isThereATemporaryStopInProcessingInOrOutgoingMessages()
 	if returnMessageStop != nil {
@@ -287,7 +375,25 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) AskCli
 	}
 
 	// Do gRPC-call
-	ctx := context.Background()
+	//ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer func() {
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"ID": "baee9a42-2f70-4977-8c35-f5f7850bbd3a",
+		}).Error("Running Defer Cancel function")
+		cancel()
+	}()
+
+	// Only add access token when run on GCP
+	if fenixSyncShared.ExecutionLocationForClient == fenixSyncShared.GCP {
+
+		// Add Access token
+		ctx, returnMessageAckNack, _ = fenixTestDataSyncServerObject.generateGCPAccessToken(ctx)
+		if returnMessageAckNack == false {
+			return
+		}
+	}
+
 	returnMessage, err := fenixClientTestDataSyncServerClient.SendTestDataRows(ctx, merklePathsMessage)
 
 	// Shouldn't happen
@@ -320,6 +426,9 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) AskCli
 		"id": "001fb9fa-2577-49e2-806f-f8d64f05a3d3",
 	}).Debug("Outgoing gRPC 'AskClientToSendAllTestDataRows'")
 
+	var ctx context.Context
+	var returnMessageAckNack bool
+
 	// Check if TestData server should process outgoing messages
 	returnMessageStop := fenixTestDataSyncServerObject.isThereATemporaryStopInProcessingInOrOutgoingMessages()
 	if returnMessageStop != nil {
@@ -335,7 +444,25 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) AskCli
 	}
 
 	// Do gRPC-call
-	ctx := context.Background()
+	//ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer func() {
+		fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+			"ID": "baee9a42-2f70-4977-8c35-f5f7850bbd3a",
+		}).Error("Running Defer Cancel function")
+		cancel()
+	}()
+
+	// Only add access token when run on GCP
+	if fenixSyncShared.ExecutionLocationForClient == fenixSyncShared.GCP {
+
+		// Add Access token
+		ctx, returnMessageAckNack, _ = fenixTestDataSyncServerObject.generateGCPAccessToken(ctx)
+		if returnMessageAckNack == false {
+			return
+		}
+	}
+
 	returnMessage, err := fenixClientTestDataSyncServerClient.SendAllTestDataRows(ctx, emptyParameter)
 
 	// Shouldn't happen

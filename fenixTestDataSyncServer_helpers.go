@@ -6,9 +6,13 @@ import (
 	fenixTestDataSyncServerGrpcApi "github.com/jlambert68/FenixGrpcApi/Fenix/fenixTestDataSyncServerGrpcApi/go_grpc_api"
 	fenixSyncShared "github.com/jlambert68/FenixSyncShared"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/net/context"
+	"google.golang.org/api/idtoken"
+	grpcMetadata "google.golang.org/grpc/metadata"
 	"log"
 	"os"
 	"strconv"
+	"time"
 )
 
 // ********************************************************************************************************************
@@ -1200,5 +1204,55 @@ func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) verify
 	//TODO verifyThatHeaderItemsHashIsCorrectCalculated
 
 	return nil
+
+}
+
+// Generate Google access token. Used when running in GCP
+func (fenixTestDataSyncServerObject *fenixTestDataSyncServerObjectStruct) generateGCPAccessToken(ctx context.Context) (appendedCtx context.Context, returnAckNack bool, returnMessage string) {
+
+	// Only create the token if there is none, or it has expired
+	if fenixTestDataSyncServerObject.gcpAccessToken == nil || fenixTestDataSyncServerObject.gcpAccessToken.Expiry.Before(time.Now()) {
+
+		// Create an identity token.
+		// With a global TokenSource tokens would be reused and auto-refreshed at need.
+		// A given TokenSource is specific to the audience.
+		tokenSource, err := idtoken.NewTokenSource(ctx, "https://"+clientTestDataSyncServerAddress)
+		if err != nil {
+			fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+				"ID":  "8ba622d8-b4cd-46c7-9f81-d9ade2568eca",
+				"err": err,
+			}).Error("Couldn't generate access token")
+
+			return nil, false, "Couldn't generate access token"
+		}
+
+		token, err := tokenSource.Token()
+		if err != nil {
+			fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+				"ID":  "0cf31da5-9e6b-41bc-96f1-6b78fb446194",
+				"err": err,
+			}).Error("Problem getting the token")
+
+			return nil, false, "Problem getting the token"
+		} else {
+			fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+				"ID":    "8b1ca089-0797-4ee6-bf9d-f9b06f606ae9",
+				"token": token,
+			}).Debug("Got Bearer Token")
+		}
+
+		fenixTestDataSyncServerObject.gcpAccessToken = token
+
+	}
+
+	fenixTestDataSyncServerObject.logger.WithFields(logrus.Fields{
+		"ID": "cd124ca3-87bb-431b-9e7f-e044c52b4960",
+		"fenixClientTestDataSyncServerObject.gcpAccessToken": fenixTestDataSyncServerObject.gcpAccessToken,
+	}).Debug("Will use Bearer Token")
+
+	// Add token to gRPC Request.
+	appendedCtx = grpcMetadata.AppendToOutgoingContext(ctx, "authorization", "Bearer "+fenixTestDataSyncServerObject.gcpAccessToken.AccessToken)
+
+	return appendedCtx, true, ""
 
 }
